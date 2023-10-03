@@ -39,25 +39,28 @@ def makearray(startfreq1,startfreq2,separation,size,dim2):
 # random.shuffle(startpoints[:,0])
 # random.shuffle(startpoints[:,1])
 
-startpoints = makearray(20,20,1,100,10)
-random.shuffle(startpoints[:,0])
-random.shuffle(startpoints[:,1])
-startpoints = pd.DataFrame(startpoints)
-startpoints = startpoints.drop_duplicates()
-startpoints = startpoints.to_numpy()
-startpoints = startpoints[:30,:]
-
-endpoints = makearray(22, 22, 1, 30, 6)
-endpoints = endpoints[:len(startpoints),:]
-
 # endpoints = np.arange(45,15,-0.25).reshape(60,2)
 # random.shuffle(endpoints[:,0]) 
 # random.shuffle(endpoints[:,1])
 
+# startpoints = makearray(20,20,1,100,10)
+# random.shuffle(startpoints[:,0])
+# random.shuffle(startpoints[:,1])
+# startpoints = pd.DataFrame(startpoints)
+# startpoints = startpoints.drop_duplicates()
+# startpoints = startpoints.to_numpy()
+# startpoints = startpoints[:30,:]
 
-d = cdist(startpoints, endpoints)
+# endpoints = makearray(22, 22, 1, 100, 6)
+# endpoints = endpoints[:len(startpoints),:]
 
-row_ind, col_ind = linear_sum_assignment(d)
+def optimalassignment(startpoints, endpoints):
+
+    d = cdist(startpoints, endpoints)
+
+    row_ind, col_ind = linear_sum_assignment(d)
+    
+    return row_ind, col_ind
 
 
 def pathfinder(startpoints, endpoints, row_ind, col_ind):
@@ -126,11 +129,6 @@ def pathfinder(startpoints, endpoints, row_ind, col_ind):
         xtravellines.append(xsegment)
         ytravellines.append(ysegment)
     
-        plt.plot(xsegment, ysegment,'.')
-        plt.plot(xsegment[0], ysegment[0], 'og')
-        plt.plot(xsegment[-1], ysegment[-1], 'ob')
-    
-    plt.show()
     
     return xtravellines, ytravellines
 
@@ -158,7 +156,7 @@ def proximitycheck(xtravellines, ytravellines, row_ind, col_ind,swapenabled):
                 distcheck = np.sqrt((xlocs[i2] - xlocs[i1])**2 + (ylocs[i2]-ylocs[i1])**2)
                 if i1 != i2 and distcheck < 0.4 and (i1 not in alreadyswappedlist) and (i2 not in alreadyswappedlist):
                     alarm = True
-                    print("Pairs "+ str(i1) + ' and '+ str(i2) + " paths overlap")
+                    #print("Pairs "+ str(i1) + ' and '+ str(i2) + " paths overlap")
                     if swapenabled == True:
                         swap1 = col_ind[i1]
                         swap2 = col_ind[i2]
@@ -168,8 +166,8 @@ def proximitycheck(xtravellines, ytravellines, row_ind, col_ind,swapenabled):
                     alreadyswappedlist.append(i2)
                     counter = counter + 1
                     
-    print("There were " + str(counter) + " conflicts \n \n")                 
-    return alarm, row_ind, col_ind
+    #print("There were " + str(counter) + " conflicts \n \n")                 
+    return alarm, row_ind, col_ind, counter
 
 
 # def polylinepaths(xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints):
@@ -260,7 +258,10 @@ def delaypath(xtravellines, ytravellines, row_ind, col_ind):
                     else:
                         dchoice = i2
                     if i > len(xtravellines[dchoice]):
-                        pos = -10
+                        if 10 > len(xtravellines[dchoice]):
+                            pos = -2
+                        else:
+                            pos = -10
                     else:
                         pos = i-2
                     xtravellines[dchoice] = np.concatenate((xtravellines[dchoice][:pos], [xtravellines[dchoice][pos]]*10, xtravellines[dchoice][pos:]))
@@ -268,42 +269,119 @@ def delaypath(xtravellines, ytravellines, row_ind, col_ind):
                     alreadyfixed.append(i1)
                     alreadyfixed.append(i2)
     return xtravellines, ytravellines
-
-
-
-xtravellines, ytravellines = pathfinder(startpoints, endpoints, row_ind, col_ind)
-
-alarm, row_ind, col_ind = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True) 
+ 
 
 
 def doublecheck(alarm,xtravellines,ytravellines,row_ind,col_ind,startpoints, endpoints):
     
+    for i in range(0,10):
+    
+        if alarm == True:
+            xtravellines, ytravellines = pathfinder(startpoints, endpoints, row_ind, col_ind)
+            alarm, row_ind, col_ind, counter = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
+    
+    trieddelay = False
+    flippeddelay = False
+    delaycounter = 0
     if alarm == True:
-        xtravellines, ytravellines = pathfinder(startpoints, endpoints, row_ind, col_ind)
-        alarm, row_ind, col_ind = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
-   
-    return alarm, xtravellines, ytravellines, row_ind, col_ind
+       xtravellines, ytravellines = delaypath(xtravellines, ytravellines, row_ind, col_ind)
+       trieddelay = True
+       alarm, row_ind, col_ind, delaycounter = proximitycheck(xtravellines, ytravellines, row_ind, col_ind, True)
+       if alarm == True:
+           flippeddelay = True
+           xtravellines, ytravellines = pathfinder(startpoints, endpoints, row_ind, col_ind)
+           xtravellines, ytravellines = delaypath(xtravellines, ytravellines, row_ind, col_ind)
+           alarm, row_ind, col_ind, delaycounter = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,False)
+    return xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, flippeddelay, delaycounter
 
-for i in range(0,10):
-    alarm, xtravellines, ytravellines, row_ind, col_ind = doublecheck(alarm, xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints)
-    
 
-if alarm == True:
-    
-    newxtravellines, newytravellines = delaypath(xtravellines, ytravellines, row_ind, col_ind)
-    print('Delayed a path to prevent collision')
-    alarm, row_ind, col_ind = proximitycheck(newxtravellines, newytravellines, row_ind, col_ind, False)
-    if alarm == True:
-        alarm, row_ind, col_ind = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
-        print("Trying delay on swap")
-        newxtravellines, newytravellines = delaypath(xtravellines, ytravellines, row_ind, col_ind)
-        alarm, row_ind, col_ind = proximitycheck(newxtravellines, newytravellines, row_ind, col_ind,False)
-    
-    for i in range(len(xtravellines)):
-        plt.plot(newxtravellines[i], newytravellines[i],'.')
-        plt.plot(newxtravellines[i][0], newytravellines[i][0], 'og')
-        plt.plot(newxtravellines[i][-1], newytravellines[i][-1], 'ob')
-    plt.title('Delayed path')
-    
-    plt.show()
+
+numspheres = [20,30,49,75,81,100,125]
+
+freqset = [22, 22, 21, 20, 20, 20, 19]
+arraysize = [5,5,7,8,9,10,12]
+
+countertrials = [ [] for i in range(len(numspheres)) ]
+delaytrials = [ [] for i in range(len(numspheres)) ]
+flippedtrials = [ [] for i in range(len(numspheres)) ]
+delaycountertrials = [ [] for i in range(len(numspheres)) ]
+countertrialsavg = []
+delaycountertrialsavg = []
+
+for select in range(len(numspheres)):
+    for t in range(1000):
         
+    
+        counter = 0
+        trieddelay = False
+        flippeddelay = False
+        delaycounter = 0
+        
+        startpoints = makearray(17,17,1,256,16)
+        random.shuffle(startpoints[:,0])
+        random.shuffle(startpoints[:,1])
+        startpoints = pd.DataFrame(startpoints)
+        startpoints = startpoints.drop_duplicates()
+        startpoints = startpoints.to_numpy()
+        startpoints = startpoints[:numspheres[select],:]
+        
+        endpoints = makearray(freqset[select], freqset[select], 1, numspheres[select], arraysize[select])
+        endpoints = endpoints[:len(startpoints),:]
+        
+        row_ind, col_ind = optimalassignment(startpoints, endpoints)
+        
+        xtravellines, ytravellines = pathfinder(startpoints, endpoints, row_ind, col_ind)
+        
+        alarm, row_ind, col_ind, counter = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
+        
+        if alarm == True:
+            xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, flippeddelay, delaycounter = doublecheck(alarm, xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints)
+    
+        countertrials[select].append(counter)
+        delaytrials[select].append(trieddelay)
+        flippedtrials[select].append(flippeddelay)
+        delaycountertrials[select].append(delaycounter)
+        
+    binning = max(countertrials[select])
+    _ = plt.hist(countertrials[select], binning)
+    plt.title("Histogram of number of expected collisions for rearranging " + str(numspheres[select]) + ' spheres')
+    plt.xlabel('Number of collisions')
+    plt.ylabel('Frequency in 1000 simulation trials')
+    
+    binning = max(delaycountertrials[select])
+    _ = plt.hist(delaycountertrials[select], binning)
+    plt.title("Histogram of number of expected collisions for rearranging with delays " + str(numspheres[select]) + ' spheres')
+    plt.xlabel('Number of collisions')
+    plt.ylabel('Frequency in 1000 simulation trials')
+    
+    countertrialsavg.append(np.mean(countertrials[select]))
+    delaycountertrialsavg.append(np.mean(delaycountertrials[select]))
+    
+delaysums = []
+flippedsums = []
+for i in delaytrials:
+    delaysums.append(i.sum())
+for i in flippedtrials:
+    flippedsums.append(i.sum())
+
+fig, ax1 = plt.subplot()
+ax1.plot([str(j) for j in numspheres], countertrialsavg)
+ax1.set_xlabel('Spheres to Rearrange')
+ax1.set_ylabel('Average Number of Collisions')
+ax1.set_title('Collision per number of spheres for 1000 simulations')
+
+fig, ax2 = plt.subplot()
+ax2.plot([str(j) for j in numspheres], delaycountertrialsavg)
+ax2.set_xlabel('Spheres to Rearrange')
+ax2.set_ylabel('Average Number of Collisions')
+ax2.set_title('Collision per number of spheres with delays, for 1000 simulations')
+
+fig, ax3 = plt.subplot()
+ax3.plot([str(j) for j in numspheres], delaysums)
+ax3.plot([str(j) for j in numspheres], delaysums)
+ax3.legend(['Delay tried', 'Flipped delay tried'])
+ax3.set_xlabel('Spheres to Rearrange')
+ax3.set_ylabel('Number of times delayed')
+ax3.set_title('Attempts to delay path per number of spheres for 1000 simulations')
+
+
