@@ -355,19 +355,19 @@ for i in delaytrials:
 for i in flippedtrials:
     flippedsums.append(i.sum())
 
-fig, ax1 = plt.subplot()
+fig1, ax1 = plt.subplot()
 ax1.plot([str(j) for j in numspheres], countertrialsavg)
 ax1.set_xlabel('Spheres to Rearrange')
 ax1.set_ylabel('Average Number of Collisions')
 ax1.set_title('Collision per number of spheres for 1000 simulations')
 
-fig, ax2 = plt.subplot()
+fig2, ax2 = plt.subplot()
 ax2.plot([str(j) for j in numspheres], delaycountertrialsavg)
 ax2.set_xlabel('Spheres to Rearrange')
 ax2.set_ylabel('Average Number of Collisions')
 ax2.set_title('Collision per number of spheres with delays, for 1000 simulations')
 
-fig, ax3 = plt.subplot()
+fig3, ax3 = plt.subplot()
 ax3.plot([str(j) for j in numspheres], delaysums)
 ax3.plot([str(j) for j in numspheres], flippedsums)
 ax3.legend(['Delay tried', 'Flipped delay tried'])
@@ -375,17 +375,21 @@ ax3.set_xlabel('Spheres to Rearrange')
 ax3.set_ylabel('Number of times delayed')
 ax3.set_title('Attempts to delay path per number of spheres for 1000 simulations')
 
-plots = [ax4, ax5, ax6, ax7, ax8, ax9, ax10]
+figs={}
+axs={}
 for i in range(len(countertrials)):
     
-    fig, plots[i] = plt.subplots(1, 2, sharey=True, tight_layout=True) 
+    figs[i], axs[i] = plt.subplots(1, 2, sharey=True, tight_layout=True) 
 
     binning = max(countertrials[i])
-    plots[i][0].hist(countertrials[i], binning)
-    plots[i].set_title("Histogram of number of expected collisions for rearranging " + str(numspheres[i]) + ' spheres \n Left:Swapping   Right: Swapping and delay')
-    plots[i][0].set_xlabel('Number of collisions')
-    plots[i].set_ylabel('Frequency in 1000 simulation trials')
+    axs[i][0].hist(countertrials[i], binning)
+    figs[i].suptitle("Histogram of number of expected collisions for rearranging " + str(numspheres[i]) + ' spheres')
+    axs[i][0].set_xlabel('Number of collisions')
+    axs[i][0].set_ylabel('Frequency in 1000 simulation trials')
+    axs[i][0].set_title('Swapping method')
     
     binning = max(delaycountertrials[i])
-    plots[i][1].hist(delaycountertrials[i], binning)
-    plots[i][1].set_xlabel('Number of collisions')
+    axs[i][1].hist(delaycountertrials[i], binning)
+    axs[i][1].set_title('Swap and delay method')
+    axs[i][1].set_xlabel('Number of collisions')
+    plt.show()
