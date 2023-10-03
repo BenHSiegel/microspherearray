@@ -75,7 +75,7 @@ def pathfinder(startpoints, endpoints, row_ind, col_ind):
             
             if startpoints[row_ind[i]][0] > endpoints[col_ind[i]][0]:
                 step = -0.05
-                xsegment = np.arange(startpoints[row_ind[i]][0], endpoints[col_ind[i]][0]+step, step)
+                xsegment = np.arange(startpoints[row_ind[i]][0], endpoints[col_ind[i]][0]-step, step)
             else:
                 step = 0.05
                 xsegment = np.arange(startpoints[row_ind[i]][0], endpoints[col_ind[i]][0]+step, step)
@@ -90,7 +90,7 @@ def pathfinder(startpoints, endpoints, row_ind, col_ind):
             
             if startpoints[row_ind[i]][1] > endpoints[col_ind[i]][1]:
                 step = -0.05
-                ysegment = np.arange(startpoints[row_ind[i]][1], endpoints[col_ind[i]][1]+step, step)
+                ysegment = np.arange(startpoints[row_ind[i]][1], endpoints[col_ind[i]][1]-step, step)
             else:
                 step = 0.05
                 ysegment = np.arange(startpoints[row_ind[i]][1], endpoints[col_ind[i]][1]+step, step)
@@ -126,6 +126,8 @@ def pathfinder(startpoints, endpoints, row_ind, col_ind):
         
         ######################################################################
         
+        xsegment = np.append(xsegment,endpoints[col_ind[i]][0])
+        ysegment = np.append(ysegment,endpoints[col_ind[i]][1])
         xtravellines.append(xsegment)
         ytravellines.append(ysegment)
     
@@ -342,17 +344,6 @@ for select in range(len(numspheres)):
         flippedtrials[select].append(flippeddelay)
         delaycountertrials[select].append(delaycounter)
         
-    binning = max(countertrials[select])
-    _ = plt.hist(countertrials[select], binning)
-    plt.title("Histogram of number of expected collisions for rearranging " + str(numspheres[select]) + ' spheres')
-    plt.xlabel('Number of collisions')
-    plt.ylabel('Frequency in 1000 simulation trials')
-    
-    binning = max(delaycountertrials[select])
-    _ = plt.hist(delaycountertrials[select], binning)
-    plt.title("Histogram of number of expected collisions for rearranging with delays " + str(numspheres[select]) + ' spheres')
-    plt.xlabel('Number of collisions')
-    plt.ylabel('Frequency in 1000 simulation trials')
     
     countertrialsavg.append(np.mean(countertrials[select]))
     delaycountertrialsavg.append(np.mean(delaycountertrials[select]))
@@ -378,10 +369,23 @@ ax2.set_title('Collision per number of spheres with delays, for 1000 simulations
 
 fig, ax3 = plt.subplot()
 ax3.plot([str(j) for j in numspheres], delaysums)
-ax3.plot([str(j) for j in numspheres], delaysums)
+ax3.plot([str(j) for j in numspheres], flippedsums)
 ax3.legend(['Delay tried', 'Flipped delay tried'])
 ax3.set_xlabel('Spheres to Rearrange')
 ax3.set_ylabel('Number of times delayed')
 ax3.set_title('Attempts to delay path per number of spheres for 1000 simulations')
 
+plots = [ax4, ax5, ax6, ax7, ax8, ax9, ax10]
+for i in range(len(countertrials)):
+    
+    fig, plots[i] = plt.subplots(1, 2, sharey=True, tight_layout=True) 
 
+    binning = max(countertrials[i])
+    plots[i][0].hist(countertrials[i], binning)
+    plots[i].set_title("Histogram of number of expected collisions for rearranging " + str(numspheres[i]) + ' spheres \n Left:Swapping   Right: Swapping and delay')
+    plots[i][0].set_xlabel('Number of collisions')
+    plots[i].set_ylabel('Frequency in 1000 simulation trials')
+    
+    binning = max(delaycountertrials[i])
+    plots[i][1].hist(delaycountertrials[i], binning)
+    plots[i][1].set_xlabel('Number of collisions')
