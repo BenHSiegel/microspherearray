@@ -271,6 +271,7 @@ def delaypath(xtravellines, ytravellines, row_ind, col_ind, delaylist):
                             pos = -2
                         else:
                             pos = -10
+                        #if performance is bad, change delaylength to just 10 for all cases
                         delaylength = i - len(xtravellines[dchoice]) + 10
                     else:
                         pos = i-2
@@ -381,15 +382,12 @@ for i in flippedtrials:
 
 fig1, ax1 = plt.subplots()
 ax1.plot([str(j) for j in numspheres], countertrialsavg)
+ax1.plot([str(j) for j in numspheres], delaycountertrialsavg)
 ax1.set_xlabel('Spheres to Rearrange')
 ax1.set_ylabel('Average Number of Collisions')
+ax1.legend(['Swapping', 'Swapping + Delay'])
 ax1.set_title('Collision per number of spheres for 1000 simulations')
 
-fig2, ax2 = plt.subplots()
-ax2.plot([str(j) for j in numspheres], delaycountertrialsavg)
-ax2.set_xlabel('Spheres to Rearrange')
-ax2.set_ylabel('Average Number of Collisions')
-ax2.set_title('Collision per number of spheres with delays, for 1000 simulations')
 
 fig3, ax3 = plt.subplots()
 ax3.plot([str(j) for j in numspheres], delaysums)
