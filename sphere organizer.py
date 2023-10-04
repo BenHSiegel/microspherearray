@@ -381,8 +381,9 @@ for i in flippedtrials:
     flippedsums.append(sum(i))
 
 fig1, ax1 = plt.subplots()
-ax1.plot([str(j) for j in numspheres], countertrialsavg)
-ax1.plot([str(j) for j in numspheres], delaycountertrialsavg)
+ax1.plot([str(j) for j in numspheres], countertrialsavg, '.')
+ax1.plot([str(j) for j in numspheres], delaycountertrialsavg, '.')
+ax1.grid(axis='y')
 ax1.set_xlabel('Spheres to Rearrange')
 ax1.set_ylabel('Average Number of Collisions')
 ax1.legend(['Swapping', 'Swapping + Delay'])
@@ -390,8 +391,8 @@ ax1.set_title('Collision per number of spheres for 1000 simulations')
 
 
 fig3, ax3 = plt.subplots()
-ax3.plot([str(j) for j in numspheres], delaysums)
-ax3.plot([str(j) for j in numspheres], flippedsums)
+ax3.plot([str(j) for j in numspheres], delaysums, '.')
+ax3.plot([str(j) for j in numspheres], flippedsums, '.')
 ax3.legend(['Delay tried', 'Flipped delay tried'])
 ax3.set_xlabel('Spheres to Rearrange')
 ax3.set_ylabel('Number of times delayed')
