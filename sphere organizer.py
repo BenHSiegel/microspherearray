@@ -9,10 +9,9 @@ import pandas as pd
 from scipy.optimize import linear_sum_assignment
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from scipy import fft
 from scipy.spatial.distance import cdist
 import random
-
+import os
 
 
 
@@ -185,7 +184,6 @@ def pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_
     
     
     return xtravellines, ytravellines
-
 
 
 def proximitycheck(xtravellines, ytravellines, row_ind, col_ind, swapenabled):
@@ -384,11 +382,16 @@ def doublecheck(alarm,xtravellines,ytravellines,row_ind,col_ind,startpoints, end
 
 
 
+path = r"D:\Research\testingorganizing"
 
 
+filename = "\startfreqs.csv"
+filename = path + filename
+
+startfile = np.genfromtxt(filename,delimiter=',')
 
 
-
+print(startpoints)
 
 
 
