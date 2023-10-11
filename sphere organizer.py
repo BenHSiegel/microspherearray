@@ -393,10 +393,18 @@ Run this section to generate a file to load into labview with the sorting paths
 path = r"C:\Users\Ben\Downloads"
 os.chdir(path)
 
-filename = "\startpoints.csv"
-filename = path + filename
+# filename = "\startpoints.csv"
+# filename = path + filename
 
-startpoints = np.genfromtxt(filename,delimiter=',')
+# startpoints = np.genfromtxt(filename,delimiter=',')
+
+startpoints = makearray(17,17,1,256,16)
+random.shuffle(startpoints[:,0])
+random.shuffle(startpoints[:,1])
+startpoints = pd.DataFrame(startpoints)
+startpoints = startpoints.drop_duplicates()
+startpoints = startpoints.to_numpy()
+startpoints = startpoints[:36,:]
 
 endpoints = makearray(22, 22, 1, len(startpoints), 6)
 
@@ -433,7 +441,32 @@ plt.title('Sorting paths')
 
 plt.show()
 
-#fix path lengths not being same size so can't save to file
+fixedrowsize = max(len(a) for a in xtravellines)
+for i in range(len(xtravellines)):
+    comparelength = len(xtravellines[i])
+    if comparelength < fixedrowsize:
+        padding = fixedrowsize - comparelength
+        xtravellines[i] = np.concatenate((xtravellines[i], [xtravellines[i][-1]]*padding))
+        
+
+fixedrowsize = max(len(a) for a in ytravellines)        
+for i in range(len(ytravellines)):
+    comparelength = len(ytravellines[i])
+    if comparelength < fixedrowsize:
+        padding = fixedrowsize - comparelength
+        ytravellines[i] = np.concatenate((ytravellines[i], [ytravellines[i][-1]]*padding))
+
+#sanitize folder to make sure there isn't junk from previous sortings
+try:
+    os.remove("ch0paths.csv")
+except OSError:
+    pass
+
+try:
+    os.remove("ch1paths.csv")
+except OSError:
+    pass
+        
 np.savetxt("ch0paths.csv", xtravellines, delimiter=",", fmt='%1.4f')
 np.savetxt("ch1paths.csv", ytravellines, delimiter=",", fmt='%1.4f')
 
