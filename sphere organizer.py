@@ -179,6 +179,8 @@ def pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_
         #adds the endpoints to the end of the paths to ensure that it ends at the desired spots
         xsegment = np.append(xsegment,endpoints[col_ind[i]][0])
         ysegment = np.append(ysegment,endpoints[col_ind[i]][1])
+        xsegment = np.round(xsegment, 4)
+        ysegment = np.round(ysegment, 4)
         xtravellines[i] = xsegment
         ytravellines[i] = ysegment
     
@@ -388,145 +390,143 @@ def doublecheck(alarm,xtravellines,ytravellines,row_ind,col_ind,startpoints, end
 Run this section to generate a file to load into labview with the sorting paths
 '''
 
-path = r"C:\Users\Ben\Downloads"
-filename = "\startpoints.csv"
-filename = path + filename
+# path = r"C:\Users\Ben\Downloads"
+# os.chdir(path)
 
-startpoints = np.genfromtxt(filename,delimiter=',')
+# filename = "\startpoints.csv"
+# filename = path + filename
 
-startpoints = makearray(17,17,1,256,16)
-random.shuffle(startpoints[:,0])
-random.shuffle(startpoints[:,1])
-startpoints = pd.DataFrame(startpoints)
-startpoints = startpoints.drop_duplicates()
-startpoints = startpoints.to_numpy()
-startpoints = startpoints[:36,:]
+# startpoints = np.genfromtxt(filename,delimiter=',')
 
-endpoints = makearray(22, 22, 1, len(startpoints), 6)
+# endpoints = makearray(22, 22, 1, len(startpoints), 6)
 
-counter = 0
-trieddelay = False
-delaycounter = 0
+# counter = 0
+# trieddelay = False
+# delaycounter = 0
 
-xtravellines, ytravellines, row_ind, col_ind = optimalassignment(startpoints, endpoints)
+# xtravellines, ytravellines, row_ind, col_ind = optimalassignment(startpoints, endpoints)
 
-xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_ind, np.arange(0,(len(startpoints))))
+# xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_ind, np.arange(0,(len(startpoints))))
 
-alarm, row_ind, col_ind, counter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
+# alarm, row_ind, col_ind, counter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
 
-if alarm == True:
-    xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, delaycounter, badpaths = doublecheck(alarm, xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints, redrawlist)
+# if alarm == True:
+#     xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, delaycounter, badpaths = doublecheck(alarm, xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints, redrawlist)
 
-print(counter)
-print(delaycounter)
+# print('The number of collisions with just swapping is ' + str(counter))
+# print('The number of collisions with swapping and delaying is ' + str(delaycounter))
 
-for i in range(len(xtravellines)):
-    plt.plot(xtravellines[i], ytravellines[i],'.')
-    plt.plot(xtravellines[i][0], ytravellines[i][0], 'og')
-    plt.plot(xtravellines[i][-1], ytravellines[i][-1], 'ob')
+# for i in range(len(xtravellines)):
+#     plt.plot(xtravellines[i], ytravellines[i],'.')
+#     plt.plot(xtravellines[i][0], ytravellines[i][0], 'og')
+#     plt.plot(xtravellines[i][-1], ytravellines[i][-1], 'ob')
 
-for i in badpaths:
-    lines = plt.plot(xtravellines[i], ytravellines[i],'--')
-    plt.setp(lines, color='black')
-    plt.plot(xtravellines[i][0], ytravellines[i][0], 'rs')
-    plt.plot(xtravellines[i][-1], ytravellines[i][-1], 'r^')
+# for i in badpaths:
+#     lines = plt.plot(xtravellines[i], ytravellines[i],'--')
+#     plt.setp(lines, color='black')
+#     plt.plot(xtravellines[i][0], ytravellines[i][0], 'rs')
+#     plt.plot(xtravellines[i][-1], ytravellines[i][-1], 'r^')
     
-plt.grid()
+# plt.grid()
     
-plt.title('Sorting paths')
+# plt.title('Sorting paths')
 
-plt.show()
+# plt.show()
+
+#fix it not saving nice round numbers!!!!!
+# np.savetxt("ch0paths.csv", xtravellines, delimiter=",")
+# np.savetxt("ch1paths.csv", ytravellines, delimiter=",")
 
 
 ###############################################################################
 #Testing code for efficiency of sorting and brute force finding errors
 
 
-# numspheres = [20,30,49,75,81,100]
+numspheres = [20,30,49,75,81,100]
 
-# freqset = [22, 22, 21, 20, 20, 20]
-# arraysize = [5,5,7,8,9,10]
+freqset = [22, 22, 21, 20, 20, 20]
+arraysize = [5,5,7,8,9,10]
 
-# countertrials = [ [] for i in range(len(numspheres)) ]
-# delaytrials = [ [] for i in range(len(numspheres)) ]
-# delaycountertrials = [ [] for i in range(len(numspheres)) ]
-# countertrialsavg = []
-# delaycountertrialsavg = []
+countertrials = [ [] for i in range(len(numspheres)) ]
+delaytrials = [ [] for i in range(len(numspheres)) ]
+delaycountertrials = [ [] for i in range(len(numspheres)) ]
+countertrialsavg = []
+delaycountertrialsavg = []
 
-# for select in range(len(numspheres)):
+for select in range(len(numspheres)):
     
-#     print('Doing ' + str(numspheres[select]) + ' spheres')
+    print('Doing ' + str(numspheres[select]) + ' spheres')
     
-#     for t in range(1000):
+    for t in range(1000):
         
-#         counter = 0
-#         trieddelay = False
-#         delaycounter = 0
+        counter = 0
+        trieddelay = False
+        delaycounter = 0
         
-#         startpoints = makearray(17,17,1,256,16)
-#         random.shuffle(startpoints[:,0])
-#         random.shuffle(startpoints[:,1])
-#         startpoints = pd.DataFrame(startpoints)
-#         startpoints = startpoints.drop_duplicates()
-#         startpoints = startpoints.to_numpy()
-#         startpoints = startpoints[:numspheres[select],:]
+        startpoints = makearray(17,17,1,256,16)
+        random.shuffle(startpoints[:,0])
+        random.shuffle(startpoints[:,1])
+        startpoints = pd.DataFrame(startpoints)
+        startpoints = startpoints.drop_duplicates()
+        startpoints = startpoints.to_numpy()
+        startpoints = startpoints[:numspheres[select],:]
         
-#         endpoints = makearray(freqset[select], freqset[select], 1, numspheres[select], arraysize[select])
-#         endpoints = endpoints[:len(startpoints),:]
+        endpoints = makearray(freqset[select], freqset[select], 1, numspheres[select], arraysize[select])
+        endpoints = endpoints[:len(startpoints),:]
         
-#         xtravellines, ytravellines, row_ind, col_ind = optimalassignment(startpoints, endpoints)
+        xtravellines, ytravellines, row_ind, col_ind = optimalassignment(startpoints, endpoints)
         
-#         xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_ind, np.arange(0,(len(startpoints))))
+        xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_ind, np.arange(0,(len(startpoints))))
         
-#         alarm, row_ind, col_ind, counter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
+        alarm, row_ind, col_ind, counter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
         
-#         if alarm == True:
-#             xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, delaycounter = doublecheck(alarm, xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints, redrawlist)
+        if alarm == True:
+            xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, delaycounter, redrawlist = doublecheck(alarm, xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints, redrawlist)
     
-#         countertrials[select].append(counter)
-#         delaytrials[select].append(trieddelay)
-#         delaycountertrials[select].append(delaycounter)
+        countertrials[select].append(counter)
+        delaytrials[select].append(trieddelay)
+        delaycountertrials[select].append(delaycounter)
         
     
-#     countertrialsavg.append(np.mean(countertrials[select]))
-#     delaycountertrialsavg.append(np.mean(delaycountertrials[select]))
+    countertrialsavg.append(np.mean(countertrials[select]))
+    delaycountertrialsavg.append(np.mean(delaycountertrials[select]))
     
-# delaysums = []
-# for i in delaytrials:
-#     delaysums.append(sum(i))
+delaysums = []
+for i in delaytrials:
+    delaysums.append(sum(i))
 
 
-# fig1, ax1 = plt.subplots()
-# ax1.plot([str(j) for j in numspheres], countertrialsavg, '.')
-# ax1.plot([str(j) for j in numspheres], delaycountertrialsavg, '.')
-# ax1.grid(axis='y')
-# ax1.set_xlabel('Spheres to Rearrange')
-# ax1.set_ylabel('Average Number of Collisions')
-# ax1.legend(['Swapping', 'Swapping + Delay'])
-# ax1.set_title('Collision per number of spheres for 1000 simulations')
+fig1, ax1 = plt.subplots()
+ax1.plot([str(j) for j in numspheres], countertrialsavg, '.')
+ax1.plot([str(j) for j in numspheres], delaycountertrialsavg, '.')
+ax1.grid(axis='y')
+ax1.set_xlabel('Spheres to Rearrange')
+ax1.set_ylabel('Average Number of Collisions')
+ax1.legend(['Swapping', 'Swapping + Delay'])
+ax1.set_title('Collision per number of spheres for 1000 simulations')
 
 
-# fig3, ax3 = plt.subplots()
-# ax3.plot([str(j) for j in numspheres], delaysums, '.')
-# ax3.set_xlabel('Spheres to Rearrange')
-# ax3.set_ylabel('Number of times delayed')
-# ax3.set_title('Attempts to delay path per number of spheres for 1000 simulations')
+fig3, ax3 = plt.subplots()
+ax3.plot([str(j) for j in numspheres], delaysums, '.')
+ax3.set_xlabel('Spheres to Rearrange')
+ax3.set_ylabel('Number of times delayed')
+ax3.set_title('Attempts to delay path per number of spheres for 1000 simulations')
 
-# figs={}
-# axs={}
-# for i in range(len(countertrials)):
+figs={}
+axs={}
+for i in range(len(countertrials)):
     
-#     figs[i], axs[i] = plt.subplots(1, 2, sharey=True, tight_layout=True) 
+    figs[i], axs[i] = plt.subplots(1, 2, sharey=True, tight_layout=True) 
 
-#     binning = max(countertrials[i])
-#     axs[i][0].hist(countertrials[i], binning)
-#     figs[i].suptitle("Histogram of number of expected collisions for rearranging " + str(numspheres[i]) + ' spheres')
-#     axs[i][0].set_xlabel('Number of collisions')
-#     axs[i][0].set_ylabel('Frequency in 1000 simulation trials')
-#     axs[i][0].set_title('Swapping method')
+    binning = max(countertrials[i])
+    axs[i][0].hist(countertrials[i], binning)
+    figs[i].suptitle("Histogram of number of expected collisions for rearranging " + str(numspheres[i]) + ' spheres')
+    axs[i][0].set_xlabel('Number of collisions')
+    axs[i][0].set_ylabel('Frequency in 1000 simulation trials')
+    axs[i][0].set_title('Swapping method')
     
-#     binning = max(delaycountertrials[i])
-#     axs[i][1].hist(delaycountertrials[i], binning)
-#     axs[i][1].set_title('Swap and delay method')
-#     axs[i][1].set_xlabel('Number of collisions')
-#     plt.show()
+    binning = max(delaycountertrials[i])
+    axs[i][1].hist(delaycountertrials[i], binning)
+    axs[i][1].set_title('Swap and delay method')
+    axs[i][1].set_xlabel('Number of collisions')
+    plt.show()
