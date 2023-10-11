@@ -330,7 +330,7 @@ def delaypath(xtravellines, ytravellines, row_ind, col_ind, delaylist):
                         else:
                             pos = -10
                         #if performance is bad, change delaylength to just 10 for all cases
-                        delaylength = i - len(xtravellines[dchoice]) + 10
+                        delaylength = (i - len(xtravellines[dchoice])) + 20
                     else:
                         pos = i-2
                         delaylength = 10
@@ -364,36 +364,79 @@ def doublecheck(alarm,xtravellines,ytravellines,row_ind,col_ind,startpoints, end
     
         if alarm == True:
             xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_ind, redrawlist)
+            redrawlist = []
             alarm, row_ind, col_ind, counter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
-    
     trieddelay = False
     flippeddelay = False
     delaycounter = 0
-    if alarm == True:
-       xtravellines, ytravellines = delaypath(xtravellines, ytravellines, row_ind, col_ind, redrawlist)
-       trieddelay = True
-       alarm, row_ind, col_ind, delaycounter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind, True)
-       if alarm == True:
-           flippeddelay = True
-           xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_ind, redrawlist)
+    
+    for i in range(0,1):
+        if alarm == True:
            xtravellines, ytravellines = delaypath(xtravellines, ytravellines, row_ind, col_ind, redrawlist)
-           alarm, row_ind, col_ind, delaycounter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,False)
-    return xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, flippeddelay, delaycounter
+           trieddelay = True
+           redrawlist = []
+           alarm, row_ind, col_ind, delaycounter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind, True)
+           if alarm == True:
+               flippeddelay = True
+               xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_ind, redrawlist)
+               xtravellines, ytravellines = delaypath(xtravellines, ytravellines, row_ind, col_ind, redrawlist)
+               alarm, row_ind, col_ind, delaycounter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind, False)
+        
+        
+    return xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, flippeddelay, delaycounter, redrawlist
 
 
 
-path = r"D:\Research\testingorganizing"
-
-
-filename = "\startfreqs.csv"
+path = r"C:\Users\Ben\Downloads"
+filename = "\startpoints.csv"
 filename = path + filename
 
-startfile = np.genfromtxt(filename,delimiter=',')
+startpoints = np.genfromtxt(filename,delimiter=',')
 
+startpoints = makearray(17,17,1,256,16)
+random.shuffle(startpoints[:,0])
+random.shuffle(startpoints[:,1])
+startpoints = pd.DataFrame(startpoints)
+startpoints = startpoints.drop_duplicates()
+startpoints = startpoints.to_numpy()
+startpoints = startpoints[:36,:]
 
-print(startpoints)
+endpoints = makearray(22, 22, 1, len(startpoints), 6)
 
+counter = 0
+trieddelay = False
+flippeddelay = False
+delaycounter = 0
 
+xtravellines, ytravellines, row_ind, col_ind = optimalassignment(startpoints, endpoints)
+
+xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_ind, np.arange(0,(len(startpoints))))
+
+alarm, row_ind, col_ind, counter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
+
+if alarm == True:
+    xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, flippeddelay, delaycounter, badpaths = doublecheck(alarm, xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints, redrawlist)
+
+print(counter)
+print(delaycounter)
+print(flippeddelay)
+
+for i in range(len(xtravellines)):
+    plt.plot(xtravellines[i], ytravellines[i],'.')
+    plt.plot(xtravellines[i][0], ytravellines[i][0], 'og')
+    plt.plot(xtravellines[i][-1], ytravellines[i][-1], 'ob')
+
+for i in badpaths:
+    lines = plt.plot(xtravellines[i], ytravellines[i],'--')
+    plt.setp(lines, color='black')
+    plt.plot(xtravellines[i][0], ytravellines[i][0], 'rs')
+    plt.plot(xtravellines[i][-1], ytravellines[i][-1], 'r^')
+    
+plt.grid()
+    
+plt.title('Sorting paths')
+
+plt.show()
 
 
 ###############################################################################
