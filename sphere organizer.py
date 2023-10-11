@@ -330,14 +330,15 @@ def delaypath(xtravellines, ytravellines, row_ind, col_ind, delaylist):
                         else:
                             pos = -10
                         #if performance is bad, change delaylength to just 10 for all cases
-                        delaylength = (i - len(xtravellines[dchoice])) + 20
+                        delaylength = (i - len(xtravellines[dchoice])) + 10
                     else:
                         pos = i-2
                         delaylength = 10
                         
                     xtest = np.concatenate((xtravellines[dchoice][:pos], [xtravellines[dchoice][pos]]*delaylength, xtravellines[dchoice][pos:]))
                     ytest = np.concatenate((ytravellines[dchoice][:pos], [ytravellines[dchoice][pos]]*delaylength, ytravellines[dchoice][pos:]))
-                    
+                    #xtest = np.concatenate(([xtravellines[dchoice][0]]*30, xtravellines[dchoice]))
+                    #ytest = np.concatenate(([ytravellines[dchoice][0]]*30, ytravellines[dchoice]))
                     delaysuccess = True
                     for k in range(len(xtravellines[longer])):
                         if k >= len(xtest):
@@ -364,28 +365,28 @@ def doublecheck(alarm,xtravellines,ytravellines,row_ind,col_ind,startpoints, end
     
         if alarm == True:
             xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_ind, redrawlist)
-            redrawlist = []
             alarm, row_ind, col_ind, counter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
     trieddelay = False
-    flippeddelay = False
-    delaycounter = 0
+    delaycounter = counter
     
-    for i in range(0,1):
+    for i in range(0,3):
         if alarm == True:
-           xtravellines, ytravellines = delaypath(xtravellines, ytravellines, row_ind, col_ind, redrawlist)
-           trieddelay = True
-           redrawlist = []
-           alarm, row_ind, col_ind, delaycounter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind, True)
-           if alarm == True:
-               flippeddelay = True
-               xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_ind, redrawlist)
-               xtravellines, ytravellines = delaypath(xtravellines, ytravellines, row_ind, col_ind, redrawlist)
-               alarm, row_ind, col_ind, delaycounter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind, False)
-        
-        
-    return xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, flippeddelay, delaycounter, redrawlist
+            lastcounter = delaycounter
+            trieddelay = True
+            xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_ind, redrawlist)
+            newxtravellines, newytravellines = delaypath(xtravellines, ytravellines, row_ind, col_ind, redrawlist)
+            alarm, row_ind, col_ind, delaycounter, redrawlist = proximitycheck(newxtravellines, newytravellines, row_ind, col_ind, True)
+            if delaycounter < lastcounter:
+                xtravellines = newxtravellines
+                ytravellines = newytravellines
+            else:
+                delaycounter = lastcounter
+    return xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, delaycounter, redrawlist
 
-
+###############################################################################
+'''
+Run this section to generate a file to load into labview with the sorting paths
+'''
 
 path = r"C:\Users\Ben\Downloads"
 filename = "\startpoints.csv"
@@ -405,7 +406,6 @@ endpoints = makearray(22, 22, 1, len(startpoints), 6)
 
 counter = 0
 trieddelay = False
-flippeddelay = False
 delaycounter = 0
 
 xtravellines, ytravellines, row_ind, col_ind = optimalassignment(startpoints, endpoints)
@@ -415,11 +415,10 @@ xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints,
 alarm, row_ind, col_ind, counter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
 
 if alarm == True:
-    xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, flippeddelay, delaycounter, badpaths = doublecheck(alarm, xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints, redrawlist)
+    xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, delaycounter, badpaths = doublecheck(alarm, xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints, redrawlist)
 
 print(counter)
 print(delaycounter)
-print(flippeddelay)
 
 for i in range(len(xtravellines)):
     plt.plot(xtravellines[i], ytravellines[i],'.')
@@ -450,7 +449,6 @@ plt.show()
 
 # countertrials = [ [] for i in range(len(numspheres)) ]
 # delaytrials = [ [] for i in range(len(numspheres)) ]
-# flippedtrials = [ [] for i in range(len(numspheres)) ]
 # delaycountertrials = [ [] for i in range(len(numspheres)) ]
 # countertrialsavg = []
 # delaycountertrialsavg = []
@@ -463,7 +461,6 @@ plt.show()
         
 #         counter = 0
 #         trieddelay = False
-#         flippeddelay = False
 #         delaycounter = 0
         
 #         startpoints = makearray(17,17,1,256,16)
@@ -484,11 +481,10 @@ plt.show()
 #         alarm, row_ind, col_ind, counter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
         
 #         if alarm == True:
-#             xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, flippeddelay, delaycounter = doublecheck(alarm, xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints, redrawlist)
+#             xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, delaycounter = doublecheck(alarm, xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints, redrawlist)
     
 #         countertrials[select].append(counter)
 #         delaytrials[select].append(trieddelay)
-#         flippedtrials[select].append(flippeddelay)
 #         delaycountertrials[select].append(delaycounter)
         
     
@@ -496,11 +492,9 @@ plt.show()
 #     delaycountertrialsavg.append(np.mean(delaycountertrials[select]))
     
 # delaysums = []
-# flippedsums = []
 # for i in delaytrials:
 #     delaysums.append(sum(i))
-# for i in flippedtrials:
-#     flippedsums.append(sum(i))
+
 
 # fig1, ax1 = plt.subplots()
 # ax1.plot([str(j) for j in numspheres], countertrialsavg, '.')
@@ -514,8 +508,6 @@ plt.show()
 
 # fig3, ax3 = plt.subplots()
 # ax3.plot([str(j) for j in numspheres], delaysums, '.')
-# ax3.plot([str(j) for j in numspheres], flippedsums, '.')
-# ax3.legend(['Delay tried', 'Flipped delay tried'])
 # ax3.set_xlabel('Spheres to Rearrange')
 # ax3.set_ylabel('Number of times delayed')
 # ax3.set_title('Attempts to delay path per number of spheres for 1000 simulations')
