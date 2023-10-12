@@ -393,7 +393,7 @@ Run this section to generate a file to load into labview with the sorting paths
 path = r"C:\Users\Ben\Downloads"
 os.chdir(path)
 
-# filename = "\startpoints.csv"
+# filename = r"\startpoints.csv"
 # filename = path + filename
 
 # startpoints = np.genfromtxt(filename,delimiter=',')
