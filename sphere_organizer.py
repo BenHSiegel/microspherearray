@@ -398,6 +398,8 @@ os.chdir(path)
 
 # startpoints = np.genfromtxt(filename,delimiter=',')
 
+custompattern = False
+
 startpoints = makearray(17,17,1,256,16)
 random.shuffle(startpoints[:,0])
 random.shuffle(startpoints[:,1])
@@ -406,7 +408,12 @@ startpoints = startpoints.drop_duplicates()
 startpoints = startpoints.to_numpy()
 startpoints = startpoints[:36,:]
 
-endpoints = makearray(22, 22, 1, len(startpoints), 6)
+if custompattern == True:
+    customfile = r"\startpoints.csv"
+    customfile = path + customfile
+    endpoints = np.genfromtxt(customfile,delimiter=',')
+else:
+    endpoints = makearray(22, 22, 1, len(startpoints), 6)
 
 counter = 0
 trieddelay = False
