@@ -32,11 +32,11 @@ def gray(image):
 def processmovie(filename, framerate):
     #open a avi file with pims and converts to one color
     spheres = gray(pims.open(filename))
-
+    tp.quiet()
     #process every frame in the tiff image stack to find the locations of bright spots
     #minmass defines the minimum brightness and processes means no parallelization since that breaks it
     #invert=true looks for dark spots instead of light spots
-    f = tp.batch(spheres[:], 31, invert=False, minmass=1000, processes=1)
+    f = tp.batch(spheres[:], 31, invert=False, minmass=10000, processes=1)
     #to check the mass brightness make this figure
     fig, ax = plt.subplots()
     ax.hist(f['mass'], bins=100)
@@ -50,9 +50,10 @@ def PSDmaker(spheres, f):
     
     #look at the location in each frame and labels them. It looks for maximum 5 pixel movement between frames
     #if it vanishes for one frame, memory prevents it from thinking the sphere is gone (up to 3 frames)
-    t = tp.link(f, 20, memory=10)
-    #suppress output so that it runs faster
     tp.quiet()
+
+    t = tp.link(f, 15, memory=5)
+    #suppress output so that it runs faster
     
     plt.figure(0)
     #plot the trajectory of the sphere over the video
@@ -164,8 +165,8 @@ def PSDmaker(spheres, f):
 
 path = r"C:\Users\Ben\Documents\Image processing jupyter notebooks"
 os.chdir(path)
-filename = 'beam jitter pre chamber.avi'
-framerate = 304.23
+filename = '10-25-23_beam_stability.avi'
+framerate = 291.71
 [spheres, f] = processmovie(filename, framerate)
 
 t = PSDmaker(spheres, f)
