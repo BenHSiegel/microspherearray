@@ -60,6 +60,7 @@ def motiontracer(spheres, f):
     plt.figure(0)
     #plot the trajectory of the sphere over the video
     tp.plot_traj(t)
+    tp.pl
 
     return t
 
@@ -112,7 +113,7 @@ def psdplotter(t,framerate,spheres,f):
     for i in range(0,len(xposlist)):
         
         if len(xposlist[i]) < nodrops:
-            print('Sphere ' + str(i) + ' drops frames')
+            print('Sphere ' + str(i+1) + ' drops frames')
         else:
             xcentered = xposlist[i] - np.mean(xposlist[i])
             xfreq, xPSD = welch(xcentered, framerate, 'hann', segmentsize, segmentsize/4, None, 'constant', True, 'density', 0,'mean')
@@ -154,7 +155,7 @@ def psdplotter(t,framerate,spheres,f):
             for j, txt in enumerate(np.around(xfreq_uncor[peaks1])):
                 axs[i][0].annotate(txt, (xfreq_uncor[peaks1[j]],xPSD_uncor[peaks1[j]]))
             
-            figs[i].suptitle("Sphere " + str(i) + ' uncorrelation attempt')
+            figs[i].suptitle("Sphere " + str(i+1) + ' uncorrelation attempt')
             
             axs[i][0].set_xlabel('Frequency [Hz]')
             axs[i][0].set_ylabel(r'PSD [$m^2/ Hz$]')
