@@ -38,7 +38,7 @@ def processmovie(filename, framerate):
     #process every frame in the tiff image stack to find the locations of bright spots
     #minmass defines the minimum brightness and processes means no parallelization since that breaks it
     #invert=true looks for dark spots instead of light spots
-    f = tp.batch(spheres[:], 15, invert=True, minmass=200, processes=1)
+    f = tp.batch(spheres[:], 15, invert=True, minmass=400, processes=1)
     #to check the mass brightness make this figure
     fig, ax = plt.subplots()
     ax.hist(f['mass'], bins=100)
@@ -58,13 +58,14 @@ def motiontracer(spheres, f):
 
     t = tp.link(f, 30, memory=10)
     
-    
+    figa, ax00 = plt.subplots()
     #plot the trajectory of the sphere over the video
-    tp.plot_traj(t, label=False, mpp = 10/13)
+    pixtoum = 10/13
+    tp.plot_traj(t, ax=ax00, label=False, mpp = pixtoum)
     
-    # ax00.set_xlabel(r'x [$ \mu m$]')
-    # ax00.set_ylabel(r'y [$ \mu m$]')
-    # ax00.set_title("Spheres' Trajectories")
+    ax00.set_xlabel(r'x [$ \mu m$]')
+    ax00.set_ylabel(r'y [$ \mu m$]')
+    ax00.set_title("Spheres' Trajectories")
     return t
 
 def lorentzian(f, f0, gam, cal_fac):
@@ -123,7 +124,7 @@ def psdplotter(t,framerate,spheres,f):
             #xPSD = 2 * timeinc / numframes * np.abs(fft.rfft(xcentered))**2
             xASDlist[i] = np.sqrt(xPSD)
             
-            axa.semilogy(xfreq, xASDlist[i])
+            axa.loglog(xfreq, xASDlist[i])
             Legendx.append('Sphere ' + str(i))
     
             ycentered = yposlist[i] - np.mean(yposlist[i])
@@ -131,7 +132,7 @@ def psdplotter(t,framerate,spheres,f):
             #yPSD = 2 * timeinc / numframes * np.abs(fft.rfft(ycentered))**2
             yASDlist[i] = np.sqrt(yPSD)
             
-            axb.semilogy(yfreq, yASDlist[i])
+            axb.loglog(yfreq, yASDlist[i])
             Legendy.append('Sphere ' + str(i))
             
             spheredata[i] = np.vstack((xcentered, ycentered)).T
@@ -151,8 +152,10 @@ def psdplotter(t,framerate,spheres,f):
             best_paramsx, cov = curve_fit(lorentzian, xfreq_uncor, xPSD_uncor, p0=init_guessx)
             
             
-            axs[i][0].semilogy(xfreq_uncor, xPSD_uncor, 'k', label = "Data")
+            axs[i][0].loglog(xfreq_uncor, xPSD_uncor, 'k', label = "Data")
             axs[i][0].plot(xfreq_uncor, lorentzian(xfreq_uncor, *best_paramsx), 'r', label="Fit")
+            
+            axs[i][0].set_ylim([1E-17,None])
 
             peaks1, _ = find_peaks(xPSD_uncor,threshold=1E-15)
             for j, txt in enumerate(np.around(xfreq_uncor[peaks1])):
@@ -170,12 +173,14 @@ def psdplotter(t,framerate,spheres,f):
             best_paramsy, cov = curve_fit(lorentzian, yfreq_uncor, yPSD_uncor, p0=init_guessy)
             
             
-            axs[i][1].semilogy(yfreq_uncor, yPSD_uncor, 'k', label = "Data")
+            axs[i][1].loglog(yfreq_uncor, yPSD_uncor, 'k', label = "Data")
             axs[i][1].plot(yfreq_uncor, lorentzian(yfreq_uncor, *best_paramsy), 'r', label="Fit")
             
             peaks2, _ = find_peaks(yPSD_uncor,threshold=1E-15)
             for j, txt in enumerate(np.around(yfreq_uncor[peaks2])):
                 axs[i][1].annotate(txt, (yfreq_uncor[peaks2[j]],yPSD_uncor[peaks2[j]]))
+            
+            axs[i][1].set_ylim([1E-17,None])
             
             axs[i][1].set_xlabel('Frequency [Hz]')
             axs[i][1].set_ylabel(r'PSD [$m^2/ Hz$]')
@@ -224,4 +229,4 @@ filename = 'pressurepoint29mbar.avi'
 framerate = 1274
 [spheres, f] = processmovie(filename, framerate)
 t = motiontracer(spheres, f)
-#psdplotter(t, framerate, spheres, f)
+psdplotter(t, framerate, spheres, f)
