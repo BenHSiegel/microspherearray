@@ -33,6 +33,15 @@ totaldelaytime = 4.8E-5
 
 ##############################################################################
 
+
+
+f = h5py.File(filename, 'r')
+group = f['beads/data/pos_data']
+samplingrate = group.attrs['Fsamp']
+
+
+
+
 df = pd.read_csv(filename, delimiter=',', header=2, usecols=[0,1,2,3,4], names=['Time','CH1','CH2','CH3','trig'])
 df.Time = df.Time*inc
 triglocs = []
