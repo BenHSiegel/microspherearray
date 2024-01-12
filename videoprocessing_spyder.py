@@ -38,7 +38,7 @@ def processmovie(filename, framerate):
     #process every frame in the tiff image stack to find the locations of bright spots
     #minmass defines the minimum brightness and processes means no parallelization since that breaks it
     #invert=true looks for dark spots instead of light spots
-    f = tp.batch(spheres[:], 17, invert=True, minmass=1000, processes=1)
+    f = tp.batch(spheres[:], 15, invert=True, minmass=200, processes=1)
     #to check the mass brightness make this figure
     fig, ax = plt.subplots()
     ax.hist(f['mass'], bins=100)
@@ -58,16 +58,13 @@ def motiontracer(spheres, f):
 
     t = tp.link(f, 30, memory=10)
     
-    figa, ax00 = plt.subplots()
-    #plot the trajectory of the sphere over the video
-    tp.plot_traj(t, ax=ax00, mpp=0.6667)
-    label_kwargs = {'transform': ax00.transAxes}
-    ax00.cla()
-    tp.plot_traj(t, ax=ax00, label=True, label_kwargs=label_kwargs, offset=(-20,20), mpp=0.6667, )
     
-    ax00.set_xlabel(r'x [$ \mu m$]')
-    ax00.set_ylabel(r'y [$ \mu m$]')
-    ax00.set_title("Spheres' Trajectories")
+    #plot the trajectory of the sphere over the video
+    tp.plot_traj(t, label=False, mpp = 10/13)
+    
+    # ax00.set_xlabel(r'x [$ \mu m$]')
+    # ax00.set_ylabel(r'y [$ \mu m$]')
+    # ax00.set_title("Spheres' Trajectories")
     return t
 
 def lorentzian(f, f0, gam, cal_fac):
@@ -82,8 +79,8 @@ def psdplotter(t,framerate,spheres,f):
     ypx = t.loc[:,'y']
     xpx = t.loc[:,'x']
     spherenumber = t.loc[:,'particle']
-    ypos = ypx * 10/15 * 10**(-6) #convert pixel to meter  (pixel dimension 4.8x4.8um)
-    xpos = xpx * 10/15 * 10**(-6) #convert pixel to meter
+    ypos = ypx * 10/13 * 10**(-6) #convert pixel to meter  (pixel dimension 4.8x4.8um)
+    xpos = xpx * 10/13 * 10**(-6) #convert pixel to meter
 
     totalspheres = max(t.loc[:,'particle']) + 1 
     xposlist = [[] for i in range(totalspheres)]
@@ -221,10 +218,10 @@ def psdplotter(t,framerate,spheres,f):
 
 
 
-path = r"C:\Users\Ben\Documents\Image processing jupyter notebooks"
+path = r"C:\Users\Ben\Documents\Research\Moore Lab\11-21-23"
 os.chdir(path)
-filename = '7-31_7E-2mbar.avi'
-framerate = 330.15
+filename = 'pressurepoint29mbar.avi'
+framerate = 1274
 [spheres, f] = processmovie(filename, framerate)
 t = motiontracer(spheres, f)
-psdplotter(t, framerate, spheres, f)
+#psdplotter(t, framerate, spheres, f)
