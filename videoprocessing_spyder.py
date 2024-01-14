@@ -5,7 +5,7 @@ Created on Sun Oct 15 10:27:38 2023
 @author: Ben
 """
 
-import av as av
+#import av as av
 import collections.abc
 collections.Iterable = collections.abc.Iterable
 collections.Iterator = collections.abc.Iterator
@@ -223,7 +223,7 @@ def psdplotter(t,framerate,spheres,f):
 
 
 
-path = r"C:\Users\Ben\Documents\Research\Moore Lab\11-21-23"
+path = r"C:\Users\bensi\Documents\Research\11-21-23\11-21-23"
 os.chdir(path)
 filename = 'pressurepoint29mbar.avi'
 framerate = 1274
