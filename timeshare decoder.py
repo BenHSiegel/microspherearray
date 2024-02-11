@@ -67,7 +67,7 @@ for item in file_data_directory:
     yposlist = np.transpose(item[1,:])
     sumlist = np.transpose(item[2,:])
     samplerate = file_samplerate_directory[j]
-    segmentsize = round(samplerate*0.2)
+    segmentsize = round(samplerate*0.25)
     
     
     xcentered = xposlist - np.mean(xposlist)
@@ -104,24 +104,28 @@ axa.loglog(xfreq, xASDavg)
 axb.loglog(yfreq, yASDavg)
 axc.loglog(sumfreq, sumASDavg)
 
-peaks1, _ = find_peaks(xASDavg,height=2E-2)
+peaks1, _ = find_peaks(xASDavg,height=2E-1)
 for j, txt in enumerate(np.around(xfreq[peaks1])):
     axa.annotate(txt, (xfreq[peaks1[j]],xASDavg[peaks1[j]]))
     
-peaks2, _ = find_peaks(yASDavg,height=2E-2)
-for j, txt in enumerate(np.around(yfreq[peaks1])):
+peaks2, _ = find_peaks(yASDavg,height=6E-2 )
+for j, txt in enumerate(np.around(yfreq[peaks2])):
     axb.annotate(txt, (yfreq[peaks2[j]],yASDavg[peaks2[j]]))
     
-peaks3, _ = find_peaks(sumASDavg,height=1E-2)
-for j, txt in enumerate(np.around(sumfreq[peaks1])):
+peaks3, _ = find_peaks(sumASDavg,height=1.3E-2)
+for j, txt in enumerate(np.around(sumfreq[peaks3])):
     axc.annotate(txt, (sumfreq[peaks3[j]],sumASDavg[peaks3[j]]))
     
 axa.set_xlabel('Frequency [Hz]')
 axb.set_xlabel('Frequency [Hz]')
 axc.set_xlabel('Frequency [Hz]')
 
-axa.set_title('X Averaged ASD of Sphere Motion')
-axb.set_title('Y Averaged ASD of Sphere Motion')
+axa.set_ylabel('QPD Readout [arb. units]')
+axb.set_ylabel('QPD Readout [arb. units]')
+axc.set_ylabel('QPD Readout [arb. units]')
+
+axa.set_title('Y Averaged ASD of Sphere Motion')
+axb.set_title('X Averaged ASD of Sphere Motion')
 axc.set_title('Sum Averaged ASD of Sphere Motion')
 
     

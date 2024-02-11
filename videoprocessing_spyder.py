@@ -35,7 +35,7 @@ def processmovie(filename, framerate):
     #process every frame in the tiff image stack to find the locations of bright spots
     #minmass defines the minimum brightness and processes means no parallelization since that breaks it
     #invert=true looks for dark spots instead of light spots
-    f = tp.batch(spheres[:], 15, invert=True, minmass=400, processes=1)
+    f = tp.batch(spheres[:], 17, invert=True, minmass=400, processes=1)
     #to check the mass brightness make this figure
     fig, ax = plt.subplots()
     ax.hist(f['mass'], bins=100)
@@ -53,11 +53,11 @@ def motiontracer(spheres, f):
     #suppress output so that it runs faster
     tp.quiet()
 
-    t = tp.link(f, 30, memory=10)
+    t = tp.link(f, 30, memory=20)
     
     figa, ax00 = plt.subplots()
     #plot the trajectory of the sphere over the video
-    pixtoum = 10/13
+    pixtoum = 10/15
     tp.plot_traj(t, ax=ax00, label=False, mpp = pixtoum)
     
     ax00.set_xlabel(r'x [$ \mu m$]')
@@ -77,8 +77,8 @@ def psdplotter(t,framerate,spheres,f):
     ypx = t.loc[:,'y']
     xpx = t.loc[:,'x']
     spherenumber = t.loc[:,'particle']
-    ypos = ypx * 10/13 * 10**(-6) #convert pixel to meter  (pixel dimension 4.8x4.8um)
-    xpos = xpx * 10/13 * 10**(-6) #convert pixel to meter
+    ypos = ypx * 10/15 * 10**(-6) #convert pixel to meter  (pixel dimension 4.8x4.8um)
+    xpos = xpx * 10/15 * 10**(-6) #convert pixel to meter
 
     totalspheres = max(t.loc[:,'particle']) + 1 
     xposlist = [[] for i in range(totalspheres)]
@@ -220,10 +220,10 @@ def psdplotter(t,framerate,spheres,f):
 
 
 
-path = r"C:\Users\bensi\Documents\Research\11-21-23"
+path = r"C:\Users\bensi\Documents\Research\11-21-23\11-21-23"
 os.chdir(path)
-filename = '7-12_9SphereArray.avi'
-framerate = 332
+filename = 'pressurepoint29mbar.avi'
+framerate = 1274
 [spheres, f] = processmovie(filename, framerate)
 t = motiontracer(spheres, f)
 psdplotter(t, framerate, spheres, f)
