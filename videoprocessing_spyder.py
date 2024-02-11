@@ -5,10 +5,7 @@ Created on Sun Oct 15 10:27:38 2023
 @author: Ben
 """
 
-#import av as av
-import collections.abc
-collections.Iterable = collections.abc.Iterable
-collections.Iterator = collections.abc.Iterator
+import av as av
 import pims
 import trackpy as tp
 import numpy as np
@@ -223,10 +220,10 @@ def psdplotter(t,framerate,spheres,f):
 
 
 
-path = r"C:\Users\bensi\Documents\Research\11-21-23\11-21-23"
+path = r"C:\Users\bensi\Documents\Research\11-21-23"
 os.chdir(path)
-filename = 'pressurepoint29mbar.avi'
-framerate = 1274
+filename = '7-12_9SphereArray.avi'
+framerate = 332
 [spheres, f] = processmovie(filename, framerate)
 t = motiontracer(spheres, f)
 psdplotter(t, framerate, spheres, f)
