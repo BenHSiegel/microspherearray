@@ -105,15 +105,15 @@ axb.loglog(yfreq, yASDavg)
 axc.loglog(sumfreq, sumASDavg)
 
 peaks1, _ = find_peaks(xASDavg,height=2E-1)
-for j, txt in enumerate(np.around(xfreq[peaks1])):
+for j, txt in enumerate(np.round(xfreq[peaks1], 0)):
     axa.annotate(txt, (xfreq[peaks1[j]],xASDavg[peaks1[j]]))
     
-peaks2, _ = find_peaks(yASDavg,height=6E-2 )
-for j, txt in enumerate(np.around(yfreq[peaks2])):
+peaks2, _ = find_peaks(yASDavg,height=6E-2)
+for j, txt in enumerate(np.round(yfreq[peaks2], 0)):
     axb.annotate(txt, (yfreq[peaks2[j]],yASDavg[peaks2[j]]))
     
 peaks3, _ = find_peaks(sumASDavg,height=1.3E-2)
-for j, txt in enumerate(np.around(sumfreq[peaks3])):
+for j, txt in enumerate(np.round(sumfreq[peaks3], 0)):
     axc.annotate(txt, (sumfreq[peaks3[j]],sumASDavg[peaks3[j]]))
     
 axa.set_xlabel('Frequency [Hz]')
