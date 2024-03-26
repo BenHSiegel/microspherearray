@@ -339,6 +339,7 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
     if saveflag:
         savename = savename + '.h5'
         hf = h5py.File(savename, 'w')
+        hf.create_dataset('frequencies', data=freqs)
         hf.create_dataset('XASD RMS Avg', data=xrms_averaged)
         hf.create_dataset('YASD RMS Avg', data=yrms_averaged)
 
