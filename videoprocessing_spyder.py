@@ -36,7 +36,7 @@ def processmovie(filename, framerate):
     #process every frame in the tiff image stack to find the locations of bright spots
     #minmass defines the minimum brightness and processes means no parallelization since that breaks it
     #invert=true looks for dark spots instead of light spots
-    f = tp.batch(spheres[:], 17, invert=True, minmass=800, processes=1)
+    f = tp.batch(spheres[:500], 13, invert=True, minmass=400, processes='auto')
     #to check the mass brightness make this figure
     fig, ax = plt.subplots()
 
@@ -55,13 +55,13 @@ def motiontracer(spheres, f):
     #suppress output so that it runs faster
     tp.quiet()
 
-    t = tp.link(f, 30, memory=20)
+    t = tp.link(f, 20, memory=10)
     
     fig1, ax00 = plt.subplots()
     fig1.set_dpi(1200)
 
     #plot the trajectory of the sphere over the video
-    pixtoum = 10/15
+    pixtoum = 10/11
     tp.plot_traj(t, ax=ax00, label=False, mpp = pixtoum)
     
     ax00.set_xlabel(r'x [$ \mu m$]')
@@ -72,7 +72,7 @@ def motiontracer(spheres, f):
 def lorentzian(f, f0, gam, cal_fac):
   kb = 1.38e-23 # Boltzmann's constant, SI units
   temp = 293 # Room temp, K
-  m = 1e-12 # Mass given in problem set, kg
+  m = 1e-12 # Mass kg
   omega = 2*np.pi*f
   omega0 = 2*np.pi*f0
   return 1/(cal_fac)**2 * 2*kb*temp/m * gam/((omega0**2 - omega**2)**2 + omega**2*gam**2)
@@ -81,8 +81,9 @@ def psdplotter(t,framerate,spheres,f):
     ypx = t.loc[:,'y']
     xpx = t.loc[:,'x']
     spherenumber = t.loc[:,'particle']
-    ypos = ypx * 10/15 * 10**(-6) #convert pixel to meter  (pixel dimension 4.8x4.8um)
-    xpos = xpx * 10/15 * 10**(-6) #convert pixel to meter
+    pixtoum = 10/11
+    ypos = ypx * pixtoum * 10**(-6) #convert pixel to meter  (pixel dimension 4.8x4.8um)
+    xpos = xpx * pixtoum * 10**(-6) #convert pixel to meter
 
     totalspheres = max(t.loc[:,'particle']) + 1 
     xposlist = [[] for i in range(totalspheres)]
@@ -102,7 +103,7 @@ def psdplotter(t,framerate,spheres,f):
     time = np.arange(0, numframes*timeinc, timeinc)
     #freq = fft.rfftfreq(numframes, timeinc)
     #w = blackman(numframes)
-    segmentsize = round(framerate)
+    segmentsize = round(framerate/4)
 
     xASDlist = [[] for i in range(totalspheres)]
     yASDlist = [[] for i in range(totalspheres)]
@@ -142,62 +143,62 @@ def psdplotter(t,framerate,spheres,f):
             axb.loglog(yfreq, yASDlist[i], linewidth=2)
             Legendy.append('Sphere ' + str(i))
             
-            # spheredata[i] = np.vstack((xcentered, ycentered)).T
+            spheredata[i] = np.vstack((xcentered, ycentered)).T
             
-            # pca = PCA(n_components=2) ## keep 3 components (x,y,z)
-            # pca.fit(spheredata[i]) ## fit our data
-            # orig = pca.transform(spheredata[i]) ## reconstruct the original data from the PCA transform
+            pca = PCA(n_components=2) ## keep 3 components (x,y,z)
+            pca.fit(spheredata[i]) ## fit our data
+            orig = pca.transform(spheredata[i]) ## reconstruct the original data from the PCA transform
             
-            # figs[i], axs[i] = plt.subplots(1, 2, sharey=False, tight_layout=True)
+            figs[i], axs[i] = plt.subplots(1, 2, sharey=False, tight_layout=True)
             
-            # figs[i].set_size_inches(18.5, 10.5)
-            # figs[i].set_dpi(1200)
-            # plt.rcParams.update({'font.size': 22})
+            figs[i].set_size_inches(18.5, 10.5)
+            figs[i].set_dpi(1200)
+            plt.rcParams.update({'font.size': 22})
             
-            # xfreq_uncor, xPSD_uncor = welch(orig[:,0], framerate, 'hann', segmentsize, segmentsize/4, None, 'constant', True, 'density', 0,'mean')
-            # init_guessx = [xfreq_uncor[np.argmax(xPSD_uncor)],70,1e-7] # guess for the initial parameters
-            # best_paramsx, cov = curve_fit(lorentzian, xfreq_uncor, xPSD_uncor, p0=init_guessx)
+            xfreq_uncor, xPSD_uncor = welch(orig[:,0], framerate, 'hann', segmentsize, segmentsize/4, None, 'constant', True, 'density', 0,'mean')
+            init_guessx = [xfreq_uncor[np.argmax(xPSD_uncor)],70,1e-7] # guess for the initial parameters
+            best_paramsx, cov = curve_fit(lorentzian, xfreq_uncor, xPSD_uncor, p0=init_guessx)
             
             
-            # axs[i][0].loglog(xfreq_uncor, xPSD_uncor, 'k', label = "Data")
-            # axs[i][0].plot(xfreq_uncor, lorentzian(xfreq_uncor, *best_paramsx), 'r', label="Fit")
+            axs[i][0].loglog(xfreq_uncor, xPSD_uncor, 'k', label = "Data")
+            axs[i][0].plot(xfreq_uncor, lorentzian(xfreq_uncor, *best_paramsx), 'r', label="Fit")
             
-            # axs[i][0].set_ylim([1E-17,None])
+            axs[i][0].set_ylim([1E-17,None])
 
-            # peaks1, _ = find_peaks(xPSD_uncor,threshold=1E-15)
-            # for j, txt in enumerate(np.around(xfreq_uncor[peaks1])):
-            #     axs[i][0].annotate(txt, (xfreq_uncor[peaks1[j]],xPSD_uncor[peaks1[j]]))
+            peaks1, _ = find_peaks(xPSD_uncor,threshold=1E-15)
+            for j, txt in enumerate(np.around(xfreq_uncor[peaks1])):
+                axs[i][0].annotate(txt, (xfreq_uncor[peaks1[j]],xPSD_uncor[peaks1[j]]))
             
-            # figs[i].suptitle("Sphere " + str(i) + ' uncorrelation attempt')
+            figs[i].suptitle("Sphere " + str(i) + ' uncorrelation attempt')
             
-            # axs[i][0].set_xlabel('Frequency [Hz]')
-            # axs[i][0].set_ylabel(r'PSD [$m^2/ Hz$]')
-            # axs[i][0].set_title('X PSD')
-            # axs[i][0].legend()
+            axs[i][0].set_xlabel('Frequency [Hz]')
+            axs[i][0].set_ylabel(r'PSD [$m^2/ Hz$]')
+            axs[i][0].set_title('X PSD')
+            axs[i][0].legend()
             
-            # yfreq_uncor, yPSD_uncor = welch(orig[:,1], framerate, 'hann', segmentsize, segmentsize/4, None, 'constant', True, 'density', 0,'mean')
-            # init_guessy = [yfreq_uncor[np.argmax(yPSD_uncor)],70,1E-7] # guess for the initial parameters
-            # best_paramsy, cov = curve_fit(lorentzian, yfreq_uncor, yPSD_uncor, p0=init_guessy)
+            yfreq_uncor, yPSD_uncor = welch(orig[:,1], framerate, 'hann', segmentsize, segmentsize/4, None, 'constant', True, 'density', 0,'mean')
+            init_guessy = [yfreq_uncor[np.argmax(yPSD_uncor)],70,1E-7] # guess for the initial parameters
+            best_paramsy, cov = curve_fit(lorentzian, yfreq_uncor, yPSD_uncor, p0=init_guessy)
             
             
-            # axs[i][1].loglog(yfreq_uncor, yPSD_uncor, 'k', label = "Data")
-            # axs[i][1].plot(yfreq_uncor, lorentzian(yfreq_uncor, *best_paramsy), 'r', label="Fit")
+            axs[i][1].loglog(yfreq_uncor, yPSD_uncor, 'k', label = "Data")
+            axs[i][1].plot(yfreq_uncor, lorentzian(yfreq_uncor, *best_paramsy), 'r', label="Fit")
             
-            # peaks2, _ = find_peaks(yPSD_uncor,threshold=1E-15)
-            # for j, txt in enumerate(np.around(yfreq_uncor[peaks2])):
-            #     axs[i][1].annotate(txt, (yfreq_uncor[peaks2[j]],yPSD_uncor[peaks2[j]]))
+            peaks2, _ = find_peaks(yPSD_uncor,threshold=1E-15)
+            for j, txt in enumerate(np.around(yfreq_uncor[peaks2])):
+                axs[i][1].annotate(txt, (yfreq_uncor[peaks2[j]],yPSD_uncor[peaks2[j]]))
             
-            # axs[i][1].set_ylim([1E-17,None])
+            axs[i][1].set_ylim([1E-17,None])
             
-            # axs[i][1].set_xlabel('Frequency [Hz]')
-            # axs[i][1].set_ylabel(r'PSD [$m^2/ Hz$]')
-            # axs[i][1].set_title('Y PSD')
+            axs[i][1].set_xlabel('Frequency [Hz]')
+            axs[i][1].set_ylabel(r'PSD [$m^2/ Hz$]')
+            axs[i][1].set_title('Y PSD')
 
     print(max(yfreq))
     axa.grid()
     axa.set_xlabel('Frequency [Hz]', fontsize=18)
     axa.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
-    #axa.legend(Legendx, loc="lower left", fontsize=22)
+    axa.legend(Legendx, loc="lower left", fontsize=22)
     axa.set_title('X motion ASD', fontsize=22)
     axa.tick_params(axis='both', which='major', labelsize=12)
     axa.set_xlim(8,167)
@@ -206,7 +207,7 @@ def psdplotter(t,framerate,spheres,f):
 
     axb.grid()
     axb.set_xlabel('Frequency [Hz]', fontsize=18)
-    #axb.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
+    axb.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
     axb.legend(Legendy, loc="upper left", fontsize=12)
     axb.set_title('Y motion ASD', fontsize=22)
     axb.tick_params(axis='both', which='major', labelsize=12)
@@ -237,10 +238,10 @@ def psdplotter(t,framerate,spheres,f):
 
 
 
-path = r"C:\Users\bensi\Documents\Research\11-21-23"
+path = r"C:\Users\bensi\Documents\Research\20240319"
 os.chdir(path)
-filename = '7-31_7E-2mbar.avi'
-framerate = 333
+filename = 'middle0-6mbar_vid4.avi'
+framerate = 1248
 [spheres, f] = processmovie(filename, framerate)
 t = motiontracer(spheres, f)
 psdplotter(t, framerate, spheres, f)
