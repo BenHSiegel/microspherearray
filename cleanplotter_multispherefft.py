@@ -20,3 +20,8 @@ hf = h5py.File(fullpath, 'r')
 freqs = hf.frequencies
 X_psd = hf.X_psd
 Y_psd = hf.Y_psd
+
+# peak_indices, peak_dict = signal.find_peaks(spline, height=(None, None), distance=50)
+# peak_heights = peak_dict['peak_heights']
+# highest_peak_index = peak_indices[np.argmax(peak_heights)]
+# second_highest_peak_index = peak_indices[np.argpartition(peak_heights,-2)[-2]]
