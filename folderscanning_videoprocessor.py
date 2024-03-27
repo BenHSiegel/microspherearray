@@ -103,13 +103,14 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
     time = np.arange(0, numframes*timeinc, timeinc)
     #freq = fft.rfftfreq(numframes, timeinc)
     #w = blackman(numframes)
-    segmentsize = round(framerate/5)
+    segmentsize = round(framerate/4)
 
     xASDlist = [[] for i in range(totalspheres)]
     yASDlist = [[] for i in range(totalspheres)]
 
     spheredata = [[] for i in range(totalspheres)]
     
+    '''
     Legendx = []
     Legendy = []
     figa, axa = plt.subplots()
@@ -120,6 +121,7 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
     figb, axb = plt.subplots()
     figb.set_size_inches(7.6, 4.5)
     figb.set_dpi(1200)
+    '''
     figs={}
     axs={}
     for i in range(0,len(xposlist)):
@@ -128,20 +130,20 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
             print('Sphere ' + str(i) + ' drops frames')
         else:
             xcentered = xposlist[i] - np.mean(xposlist[i])
-            xfreq, xPSD = welch(xcentered, framerate, 'hann', segmentsize, segmentsize/2, None, 'constant', True, 'density', 0,'mean')
+            xfreq, xPSD = welch(xcentered, framerate, 'hann', segmentsize, segmentsize/2, 2048, 'constant', True, 'density', 0,'mean')
             xASD = np.sqrt(xPSD)
             xASDlist[i] = np.vstack((xfreq,xASD)).T
             
-            axa.semilogy(xfreq, xASD, linewidth=2)
-            Legendx.append('Sphere ' + str(i))
+            #axa.semilogy(xfreq, xASD, linewidth=2)
+            #Legendx.append('Sphere ' + str(i))
     
             ycentered = yposlist[i] - np.mean(yposlist[i])
-            yfreq, yPSD = welch(ycentered, framerate, 'hann', segmentsize, segmentsize/2, None, 'constant', True, 'density', 0,'mean')
+            yfreq, yPSD = welch(ycentered, framerate, 'hann', segmentsize, segmentsize/2, 2048, 'constant', True, 'density', 0,'mean')
             yASD = np.sqrt(yPSD)
             yASDlist[i] = np.vstack((yfreq,yASD)).T
             
-            axb.semilogy(yfreq, yASD, linewidth=2)
-            Legendy.append('Sphere ' + str(i))
+            #axb.semilogy(yfreq, yASD, linewidth=2)
+            #Legendy.append('Sphere ' + str(i))
             
             spheredata[i] = np.vstack((xcentered, ycentered)).T
             
@@ -156,7 +158,7 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
                 figs[i].set_dpi(1200)
                 plt.rcParams.update({'font.size': 22})
                 
-                xfreq_uncor, xPSD_uncor = welch(orig[:,0], framerate, 'hann', segmentsize, segmentsize/4, None, 'constant', True, 'density', 0,'mean')
+                xfreq_uncor, xPSD_uncor = welch(orig[:,0], framerate, 'hann', segmentsize, segmentsize/4, 2048, 'constant', True, 'density', 0,'mean')
                 init_guessx = [xfreq_uncor[np.argmax(xPSD_uncor)],70,1e-7] # guess for the initial parameters
                 best_paramsx, cov = curve_fit(lorentzian, xfreq_uncor, xPSD_uncor, p0=init_guessx)
                 
@@ -177,7 +179,7 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
                 axs[i][0].set_title('X PSD')
                 axs[i][0].legend()
                 
-                yfreq_uncor, yPSD_uncor = welch(orig[:,1], framerate, 'hann', segmentsize, segmentsize/4, None, 'constant', True, 'density', 0,'mean')
+                yfreq_uncor, yPSD_uncor = welch(orig[:,1], framerate, 'hann', segmentsize, segmentsize/4, 2048, 'constant', True, 'density', 0,'mean')
                 init_guessy = [yfreq_uncor[np.argmax(yPSD_uncor)],70,1E-7] # guess for the initial parameters
                 best_paramsy, cov = curve_fit(lorentzian, yfreq_uncor, yPSD_uncor, p0=init_guessy)
                 
@@ -196,6 +198,7 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
                 axs[i][1].set_title('Y PSD')
 
     print(max(yfreq))
+    '''
     axa.grid()
     axa.set_xlabel('Frequency [Hz]', fontsize=18)
     axa.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
@@ -215,6 +218,7 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
     #axb.set_xlim(8,167)
     for location in ['left', 'right', 'top', 'bottom']:
         axb.spines[location].set_linewidth(1)
+    '''
     
     if saveposdata:
         savename = savename + '.h5'
@@ -345,14 +349,14 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
 
         hf.close()
         
-path = r"C:\Users\bensi\Documents\Research\20240319\middle"
+path = r"C:\Users\bensi\Documents\Research\20240319\condensed"
 os.chdir(path)
 #filename = 'middle0-6mbar_vid4.avi'
-framerate = 1248
+framerate = 1252
 pcacheck = False
-saveposdata = False
-saveFFTavg = False
-fftsave = "middleposition20240319rmsavg"
+saveposdata = True
+saveFFTavg = True
+fftsave = "condensedposition20240319rmsavg"
 
-#totalspheres = videofolder_dataextractions(path, framerate, pcacheck, saveposdata)
-hdf5file_RMSprocessing(path, 10, saveFFTavg, fftsave)
+totalspheres = videofolder_dataextractions(path, framerate, pcacheck, saveposdata)
+hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)
