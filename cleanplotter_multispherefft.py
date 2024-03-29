@@ -29,7 +29,7 @@ def justpeakplotter(path):
     
     for i in range(len(X_asd)):
         ax0.semilogy(freqs, X_asd[i,:])
-        x_peak_indices, x_peak_dict = find_peaks(X_asd[i,:], height=2E-9)
+        x_peak_indices, x_peak_dict = find_peaks(X_asd[i,:], height=3E-9, threshold=1E-11)
         x_peak_heights = x_peak_dict['peak_heights']
         x_peak_freqs = freqs[x_peak_indices]
         
@@ -37,7 +37,7 @@ def justpeakplotter(path):
         x_peaks_list[i] = x_peaks
         
         ax1.semilogy(freqs, Y_asd[i,:])
-        y_peak_indices, y_peak_dict = find_peaks(Y_asd[i,:], height=2E-9)
+        y_peak_indices, y_peak_dict = find_peaks(Y_asd[i,:], height=3E-9, threshold=1E-11)
         y_peak_heights = y_peak_dict['peak_heights']
         y_peak_freqs = freqs[y_peak_indices]
         
@@ -107,8 +107,8 @@ def justpeakplotter(path):
     
 ###############################################################################
     
-path = r"C:\Users\bensi\Documents\Research\20240319\expanded"
-filename = r"\expandedposition20240319rmsavg.h5"
+path = r"C:\Users\bensi\Documents\Research\20240319\middle"
+filename = r"\middleposition20240319rmsavg.h5"
 
 fullpath = path + filename
 justpeakplotter(fullpath)

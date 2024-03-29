@@ -155,7 +155,7 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
                 figs[i], axs[i] = plt.subplots(1, 2, sharey=False, tight_layout=True)
                 
                 figs[i].set_size_inches(18.5, 10.5)
-                figs[i].set_dpi(1200)
+                figs[i].set_dpi(1600)
                 plt.rcParams.update({'font.size': 22})
                 
                 xfreq_uncor, xPSD_uncor = welch(orig[:,0], framerate, 'hann', segmentsize, segmentsize/4, 2048, 'constant', True, 'density', 0,'mean')
