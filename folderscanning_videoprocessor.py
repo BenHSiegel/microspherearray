@@ -49,8 +49,8 @@ def processmovie(filename, framerate):
 
 def motiontracer(spheres, f):
     
-    #look at the location in each frame and labels them. It looks for maximum 5 pixel movement between frames
-    #if it vanishes for one frame, memory prevents it from thinking the sphere is gone (up to 3 frames)
+    #look at the location in each frame and labels them. It looks for maximum 20 pixel movement between frames
+    #if it vanishes for one frame, memory prevents it from thinking the sphere is gone (up to 10 frames)
     
     #suppress output so that it runs faster
     tp.quiet()
@@ -81,6 +81,7 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
     ypx = t.loc[:,'y']
     xpx = t.loc[:,'x']
     spherenumber = t.loc[:,'particle']
+    framenum = t.loc[:,'frame']
     pixtoum = 10/11
     ypos = ypx * pixtoum * 10**(-6) #convert pixel to meter  (pixel dimension 4.8x4.8um)
     xpos = xpx * pixtoum * 10**(-6) #convert pixel to meter
@@ -88,12 +89,13 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
     totalspheres = max(t.loc[:,'particle']) + 1 
     xposlist = [[] for i in range(totalspheres)]
     yposlist = [[] for i in range(totalspheres)]
-
+    framenumlist = [[] for i in range(totalspheres)]
 
     #sort the dataframe to get the x,y position for each sphere
     for i in range(0, t.shape[0]):
         xposlist[spherenumber[i]].append(xpos[i])
         yposlist[spherenumber[i]].append(ypos[i])
+        framenumlist[spherenumber[i]].append(framenum[i])
     
     nodrops = max(len(i) for i in xposlist)
 
@@ -109,7 +111,7 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
     yASDlist = [[] for i in range(totalspheres)]
 
     spheredata = [[] for i in range(totalspheres)]
-    
+    sphere_pos_data = [[] for i in range(totalspheres)]
     '''
     Legendx = []
     Legendy = []
@@ -122,6 +124,7 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
     figb.set_size_inches(7.6, 4.5)
     figb.set_dpi(1200)
     '''
+    fftbinning = 2048
     figs={}
     axs={}
     for i in range(0,len(xposlist)):
@@ -129,8 +132,9 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
         if len(xposlist[i]) < nodrops:
             print('Sphere ' + str(i) + ' drops frames')
         else:
+            frames = framenumlist[i]
             xcentered = xposlist[i] - np.mean(xposlist[i])
-            xfreq, xPSD = welch(xcentered, framerate, 'hann', segmentsize, segmentsize/2, 2048, 'constant', True, 'density', 0,'mean')
+            xfreq, xPSD = welch(xcentered, framerate, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
             xASD = np.sqrt(xPSD)
             xASDlist[i] = np.vstack((xfreq,xASD)).T
             
@@ -138,7 +142,7 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
             #Legendx.append('Sphere ' + str(i))
     
             ycentered = yposlist[i] - np.mean(yposlist[i])
-            yfreq, yPSD = welch(ycentered, framerate, 'hann', segmentsize, segmentsize/2, 2048, 'constant', True, 'density', 0,'mean')
+            yfreq, yPSD = welch(ycentered, framerate, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
             yASD = np.sqrt(yPSD)
             yASDlist[i] = np.vstack((yfreq,yASD)).T
             
@@ -146,6 +150,7 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
             #Legendy.append('Sphere ' + str(i))
             
             spheredata[i] = np.vstack((xcentered, ycentered)).T
+            sphere_pos_data[i] = np.vstack((frames, xcentered, ycentered)).T
             
             if pcacheck == True:
                 pca = PCA(n_components=2) ## keep 3 components (x,y,z)
@@ -155,10 +160,10 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
                 figs[i], axs[i] = plt.subplots(1, 2, sharey=False, tight_layout=True)
                 
                 figs[i].set_size_inches(18.5, 10.5)
-                figs[i].set_dpi(1600)
+                figs[i].set_dpi(800)
                 plt.rcParams.update({'font.size': 22})
                 
-                xfreq_uncor, xPSD_uncor = welch(orig[:,0], framerate, 'hann', segmentsize, segmentsize/4, 2048, 'constant', True, 'density', 0,'mean')
+                xfreq_uncor, xPSD_uncor = welch(orig[:,0], framerate, 'hann', segmentsize, segmentsize/4, fftbinning, 'constant', True, 'density', 0,'mean')
                 init_guessx = [xfreq_uncor[np.argmax(xPSD_uncor)],70,1e-7] # guess for the initial parameters
                 best_paramsx, cov = curve_fit(lorentzian, xfreq_uncor, xPSD_uncor, p0=init_guessx)
                 
@@ -179,7 +184,7 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
                 axs[i][0].set_title('X PSD')
                 axs[i][0].legend()
                 
-                yfreq_uncor, yPSD_uncor = welch(orig[:,1], framerate, 'hann', segmentsize, segmentsize/4, 2048, 'constant', True, 'density', 0,'mean')
+                yfreq_uncor, yPSD_uncor = welch(orig[:,1], framerate, 'hann', segmentsize, segmentsize/4, fftbinning, 'constant', True, 'density', 0,'mean')
                 init_guessy = [yfreq_uncor[np.argmax(yPSD_uncor)],70,1E-7] # guess for the initial parameters
                 best_paramsy, cov = curve_fit(lorentzian, yfreq_uncor, yPSD_uncor, p0=init_guessy)
                 
@@ -224,10 +229,17 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
         savename = savename + '.h5'
         hf = h5py.File(savename, 'w')
         g1 = hf.create_group('position')
+        g1.attrs.create('framerate (fps)', framerate)
         g2 = hf.create_group('X_psd')
+        g2.attrs.create('framerate (fps)', framerate)
+        g2.attrs.create('FFT bins', fftbinning)
+        g2.attrs.create('FFT segment size', segmentsize)
         g3 = hf.create_group('Y_psd')
+        g3.attrs.create('framerate (fps)', framerate)
+        g3.attrs.create('FFT bins', fftbinning)
+        g3.attrs.create('FFT segment size', segmentsize)
         for sphnum in range(len(spheredata)):
-            g1.create_dataset('Sphere ' + str(sphnum), data=spheredata[sphnum])
+            g1.create_dataset('Sphere ' + str(sphnum), data=sphere_pos_data[sphnum])
             g2.create_dataset('Sphere ' + str(sphnum), data=xASDlist[sphnum])
             g3.create_dataset('Sphere ' + str(sphnum), data=yASDlist[sphnum])
         hf.close()
@@ -309,11 +321,11 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
     
     figc, axc = plt.subplots()
     figc.set_size_inches(7.6, 4.5)
-    figc.set_dpi(1200)
+    figc.set_dpi(600)
     
     figd, axd = plt.subplots()
     figd.set_size_inches(7.6, 4.5)
-    figd.set_dpi(1200)
+    figd.set_dpi(600)
     for i in range(totalspheres):
         
         xrms_avg_i = np.sqrt(np.mean(xfftmatrix[i]**2, axis=1))
