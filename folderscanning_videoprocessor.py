@@ -361,14 +361,13 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
 
         hf.close()
         
-path = r"C:\Users\bensi\Documents\Research\20240319\condensed"
+path = r"C:\Users\bensi\Documents\Research\20240319\expanded"
 os.chdir(path)
-#filename = 'middle0-6mbar_vid4.avi'
-framerate = 1252
+framerate = 1248
 pcacheck = False
 saveposdata = True
 saveFFTavg = True
-fftsave = "condensedposition20240319rmsavg"
+fftsave = "expandedposition20240319rmsavg"
 
 totalspheres = videofolder_dataextractions(path, framerate, pcacheck, saveposdata)
 hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)

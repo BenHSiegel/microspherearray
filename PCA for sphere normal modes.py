@@ -70,11 +70,11 @@ def pcafitting(data, framerate):
     segmentsize = round(framerate/4)
     fftbinning = 2048
     
-    pca = decomposition.PCA()
+    pca = decomposition.PCA('mle')
     pca.fit(data) ## fit our data
     orig = pca.transform(data) ## reconstruct the original data from the PCA transform
     print(len(orig))
-    PSDlist = [[] for i in range(len(orig))]
+    PSDlist = [[] for i in range(orig.shape[1])]
     
     for i in range(orig.shape[1]):
     
@@ -82,7 +82,7 @@ def pcafitting(data, framerate):
         
         PSDlist[i] = dataPSD_uncor
     
-    return freq, PSDlist
+    return freq, PSDlist, orig
     
 
 def normalmodedecomp(path):
@@ -106,58 +106,46 @@ def normalmodedecomp(path):
         if filename.endswith(".h5"):
             if filename[-4] != 'g':
                 hdf5_list.append(filename)
-      
-    averagexPSDs = []
-    averageyPSDs = []
-    averagePSDs = []
-    freq = []
-    counter = 0
+                
+                
+    mpl.rcParams['figure.dpi'] = 600
+    figs = {}
+    axs = {}
     for i in hdf5_list:
         pos_stack_x, pos_stack_y, pos_stack, framerate = filepositionreader(i)
-        
-        if counter == 0:
-            _, averagexPSDs = pcafitting(pos_stack_x, framerate)
-            _, averageyPSDs = pcafitting(pos_stack_y, framerate)
-            _, averagePSDs = pcafitting(pos_stack, framerate)
-        
-        else:
-            freq, xPSDs = pcafitting(pos_stack_x, framerate)
-            _, yPSDs = pcafitting(pos_stack_y, framerate)
-            _, totPSDs = pcafitting(pos_stack, framerate) 
 
-            averagexPSDs = (averagexPSDs + xPSDs) / 2
-            averageyPSDs = (averageyPSDs + yPSDs) / 2
-            averagePSDs = (averagePSDs + totPSDs) / 2
-            
-            
-    fig1, ax1 = plt.subplots()
-    fig2, ax2 = plt.subplots()
-    fig3, ax3 = plt.subplots()
-    
-    for i in range(averagexPSDs.shape[1]):
-        ax1.semilogy(freq, averagexPSDs[i])
+        freqx, xPSDs, origx = pcafitting(pos_stack_x, framerate)
+        freqy, yPSDs, origy = pcafitting(pos_stack_y, framerate)
+        freq, totPSDs, origtot = pcafitting(pos_stack, framerate) 
         
-    for i in range(averageyPSDs.shape[1]):
-        ax2.semilogy(freq, averageyPSDs[i])
+        figs[i], axs[i] = plt.subplots(3, 1, sharex=False)
+        figs[i].set_size_inches(10.5, 18.5)
         
-    for i in range(averagePSDs.shape[1]):
-        ax3.semilogy(freq, averagePSDs[i])
+        for j in range(len(totPSDs)):
+            axs[i][0].semilogy(freq, totPSDs[j])
         
-    ax1.set_xlabel('Frequency [Hz]')
-    ax1.set_ylabel('PSD [arb]')
-    ax1.set_title('X coordinate PCA Attempt')
-    
-    ax2.set_xlabel('Frequency [Hz]')
-    ax2.set_ylabel('PSD [arb]')
-    ax2.set_title('Y coordinate PCA Attempt')
+        for j in range(len(yPSDs)):
+            axs[i][1].semilogy(freqy, yPSDs[j])
+        
+        for j in range(len(xPSDs)):
+            axs[i][2].semilogy(freqx, xPSDs[j])
+           
+        axs[i][2].set_title('X coordinate PCA Attempt')
+        axs[i][2].set_xlabel('Frequency [HZ]')
+        axs[i][2].set_ylabel('PSD [arb.]')
 
-    ax3.set_xlabel('Frequency [Hz]')
-    ax3.set_ylabel('PSD [arb]')
-    ax3.set_title('All coordinate PCA Attempt')
+        axs[i][1].set_title('Y coordinate PCA Attempt')
+        axs[i][1].set_xlabel('Frequency [HZ]')
+        axs[i][1].set_ylabel('PSD [arb.]')
+
+        axs[i][0].set_title('All coordinate PCA Attempt')
+        axs[i][0].set_xlabel('Frequency [HZ]')
+        axs[i][0].set_ylabel('PSD [arb.]')
+
+    return origtot, totPSDs
 
 ###############################################################################
-    
-
-
-path = r"C:\Users\bensi\Documents\Research\20240319\condensed"
-normalmodedecomp(path)
+  
+path = r"C:\Users\bensi\Documents\Research\20240319\middle"
+os.chdir(path)
+orig, psds = normalmodedecomp(path)
