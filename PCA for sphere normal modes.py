@@ -131,14 +131,17 @@ def normalmodedecomp(path):
             axs[i][2].semilogy(freqx, xPSDs[j])
            
         axs[i][2].set_title('X coordinate PCA Attempt')
+        axs[i][2].set_xlim(0,150)
         axs[i][2].set_xlabel('Frequency [HZ]')
         axs[i][2].set_ylabel('PSD [arb.]')
 
         axs[i][1].set_title('Y coordinate PCA Attempt')
+        axs[i][1].set_xlim(0,150)
         axs[i][1].set_xlabel('Frequency [HZ]')
         axs[i][1].set_ylabel('PSD [arb.]')
 
         axs[i][0].set_title('All coordinate PCA Attempt')
+        axs[i][0].set_xlim(0,150)
         axs[i][0].set_xlabel('Frequency [HZ]')
         axs[i][0].set_ylabel('PSD [arb.]')
 

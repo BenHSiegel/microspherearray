@@ -361,13 +361,13 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
 
         hf.close()
         
-path = r"C:\Users\bensi\Documents\Research\20240319\expanded"
+path = r"C:\Users\bensi\Documents\Research\20240424\charge check"
 os.chdir(path)
-framerate = 1248
+framerate = 672
 pcacheck = False
 saveposdata = True
-saveFFTavg = True
-fftsave = "expandedposition20240319rmsavg"
+#saveFFTavg = True
+#fftsave = "expandedposition20240319rmsavg"
 
 totalspheres = videofolder_dataextractions(path, framerate, pcacheck, saveposdata)
-hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)
+#hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)
