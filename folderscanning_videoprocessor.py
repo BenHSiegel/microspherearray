@@ -37,11 +37,10 @@ def processmovie(filename, framerate):
     #process every frame in the tiff image stack to find the locations of bright spots
     #minmass defines the minimum brightness and processes means no parallelization since that breaks it
     #invert=true looks for dark spots instead of light spots
-    f = tp.batch(spheres[:], 13, invert=True, minmass=400, processes=1)
+    f = tp.batch(spheres[1000:1500], 13, invert=True, minmass=1000, processes=1)
         #to check the mass brightness make this figure
-    # fig, ax = plt.subplots()
-    # ax.hist(f['mass'], bins=100)
-
+    fig, ax = plt.subplots()
+    ax.hist(f['mass'], bins=1000)
     return [spheres, f]
     
 
@@ -361,13 +360,13 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
 
         hf.close()
         
-path = r"C:\Users\bensi\Documents\Research\20240424\charge check"
-os.chdir(path)
-framerate = 672
-pcacheck = False
-saveposdata = True
-#saveFFTavg = True
-#fftsave = "expandedposition20240319rmsavg"
+# path = r"C:\Users\bensi\Documents\Research\20240424\charge check"
+# os.chdir(path)
+# framerate = 672
+# pcacheck = False
+# saveposdata = True
+# #saveFFTavg = True
+# #fftsave = "expandedposition20240319rmsavg"
 
-totalspheres = videofolder_dataextractions(path, framerate, pcacheck, saveposdata)
-#hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)
+# totalspheres = videofolder_dataextractions(path, framerate, pcacheck, saveposdata)
+# #hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)
