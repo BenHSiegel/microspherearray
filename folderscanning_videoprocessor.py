@@ -37,10 +37,10 @@ def processmovie(filename, framerate):
     #process every frame in the tiff image stack to find the locations of bright spots
     #minmass defines the minimum brightness and processes means no parallelization since that breaks it
     #invert=true looks for dark spots instead of light spots
-    f = tp.batch(spheres[1000:1500], 13, invert=True, minmass=1000, processes=1)
+    f = tp.batch(spheres[:], 13, invert=True, minmass=400, processes=1)
         #to check the mass brightness make this figure
-    fig, ax = plt.subplots()
-    ax.hist(f['mass'], bins=1000)
+    # fig, ax = plt.subplots()
+    # ax.hist(f['mass'], bins=1000)
     return [spheres, f]
     
 
@@ -54,7 +54,7 @@ def motiontracer(spheres, f):
     #suppress output so that it runs faster
     tp.quiet()
 
-    t = tp.link(f, 20, memory=10)
+    t = tp.link(f, 30, memory=50)
     
     # fig1, ax00 = plt.subplots()
     # fig1.set_dpi(1200)
@@ -81,7 +81,7 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
     xpx = t.loc[:,'x']
     spherenumber = t.loc[:,'particle']
     framenum = t.loc[:,'frame']
-    pixtoum = 10/11
+    pixtoum = 10.5/10
     ypos = ypx * pixtoum * 10**(-6) #convert pixel to meter  (pixel dimension 4.8x4.8um)
     xpos = xpx * pixtoum * 10**(-6) #convert pixel to meter
 
@@ -338,14 +338,14 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
         Legend.append('Sphere ' + str(i))
     
     axc.grid()
-    axc.set_xlim(5,180)
+    #axc.set_xlim(5,180)
     axc.set_xlabel('Frequency [Hz]', fontsize=18)
     axc.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
     axc.legend(Legend, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
     axc.set_title('X motion RMS Avg ASD', fontsize=22)
     
     axd.grid()
-    axd.set_xlim(5,180)
+    #axd.set_xlim(5,180)
     axd.set_xlabel('Frequency [Hz]', fontsize=18)
     axd.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
     axd.legend(Legend, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)

@@ -9,14 +9,14 @@ import os
 from folderscanning_videoprocessor import *
 
 
-main_directory = r"C:\Users\Ben\Documents\Research\20240430"
+main_directory = r"D:\Lab data\20240513\part 2"
 
 for path, folders, files in os.walk(main_directory):
     for folder_name in folders:
         directory = f"{path}/{folder_name}"
         os.chdir(directory)
-        
-        f = open(f"{folder_name}info.txt", 'r')
+        print(folder_name)
+        f = open("info.txt", 'r')
         freq = f.read()
         f.close()
         framerate = float(freq)
@@ -26,6 +26,6 @@ for path, folders, files in os.walk(main_directory):
         fftsave = f"{folder_name}_rmsavg"
 
         totalspheres = videofolder_dataextractions(directory, framerate, pcacheck, saveposdata)
-        #hdf5file_RMSprocessing(directory, totalspheres, saveFFTavg, fftsave)
+        hdf5file_RMSprocessing(directory, totalspheres, saveFFTavg, fftsave)
         
     break
