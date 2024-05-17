@@ -53,9 +53,9 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
         for j in group.items():
             pos = np.array(j[1])
             xpos = pos[:,1].reshape(-1,1)
-            xfiltered = butter_highpass(xpos, 40, fs)
+            xfiltered = butter_highpass(xpos, 75, fs)
             ypos = pos[:,2].reshape(-1,1)
-            yfiltered = butter_highpass(ypos, 40, fs)
+            yfiltered = butter_highpass(ypos, 75, fs)
             if l == 0:
                 xposdata = xfiltered[:,0].reshape(-1,1)
                 yposdata = yfiltered[:,0].reshape(-1,1)
@@ -121,7 +121,9 @@ def heatmap(data, row_labels, col_labels, ax=None,
     **kwargs
         All other arguments are forwarded to `imshow`.
     """
-
+    
+    norm = mpl.colors.LogNorm()
+    
     if ax is None:
         ax = plt.gca()
 
@@ -129,10 +131,10 @@ def heatmap(data, row_labels, col_labels, ax=None,
         cbar_kw = {}
 
     # Plot the heatmap
-    im = ax.imshow(data, **kwargs)
+    im = ax.imshow(np.absolute(data), norm=norm, **kwargs)
 
     # Create colorbar
-    cbar = ax.figure.colorbar(im, ax=ax, **cbar_kw)
+    cbar = ax.figure.colorbar(im, ax=ax, shrink=0.6, **cbar_kw)
     cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom")
 
     # Show all ticks and label them with the respective list entries.
@@ -210,7 +212,7 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
     texts = []
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
-            kw.update(color=textcolors[int(im.norm(data[i, j]) > threshold)])
+            kw.update(color=textcolors[int(im.norm(np.absolute(data[i, j])) > threshold)])
             text = im.axes.text(j, i, valfmt(data[i, j], None), **kw)
             texts.append(text)
 
@@ -219,7 +221,7 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
 
 main_directory = r"D:\Lab data\20240513\part 2"
 totalspheres = 3
-saveflag = True
+saveflag = False
 
 for path, folders, files in os.walk(main_directory):
     for folder_name in folders:
@@ -249,18 +251,20 @@ for path, folders, files in os.walk(main_directory):
         
         umsep = sep * 70
         fig, ax = plt.subplots(2, 2, gridspec_kw={'width_ratios': [1, 3]})
-        fig.set_size_inches(7.6, 4.5)
+        fig.tight_layout()
+        fig.set_size_inches(11, 8.5)
         fig.set_dpi(600)
-        fig.suptitle(str(umsep) + ' um Separation Between Spheres')
+        fig.suptitle(str(umsep) + ' um Separation Between Spheres', fontsize=18)
+        plt.subplots_adjust(top=0.9)
         
-        spherenames = ['Sphere 1', 'Sphere 2', 'Sphere 3']
+        spherenames = ['1', '2', '3']
         im, cbar = heatmap(xcorr_averaged, spherenames, spherenames, ax=ax[0,0],
                    cmap="YlGn")
-        texts = annotate_heatmap(im, valfmt="{x:.1f}")
+        texts = annotate_heatmap(im, data=xcorr_averaged, valfmt="{x:.3f}")
         ax[0,0].set_title("X Correlation")
         im, cbar = heatmap(ycorr_averaged, spherenames, spherenames, ax=ax[1,0],
                    cmap="YlGn")
-        texts = annotate_heatmap(im, valfmt="{x:.1f}")
+        texts = annotate_heatmap(im, data=ycorr_averaged, valfmt="{x:.3f}")
         ax[1,0].set_title("Y Correlation")
 
         Legend = []
@@ -272,16 +276,16 @@ for path, folders, files in os.walk(main_directory):
                         
         ax[0,1].grid()
         #axc.set_xlim(5,180)
-        ax[0,1].set_xlabel('Frequency [Hz]', fontsize=18)
-        ax[0,1].set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
+        ax[0,1].set_xlabel('Frequency [Hz]')
+        ax[0,1].set_ylabel(r'ASD [$m/ \sqrt{Hz}$]')
         #ax[0,1].legend(Legend, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
-        ax[0,1].set_title('X motion RMS Avg ASD', fontsize=22)
+        ax[0,1].set_title('X motion RMS Avg ASD')
         
         ax[1,1].grid()
         #axc.set_xlim(5,180)
-        ax[1,1].set_xlabel('Frequency [Hz]', fontsize=18)
-        ax[1,1].set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
-        #ax[1,1].legend(Legend, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
-        ax[1,1].set_title('Y motion RMS Avg ASD', fontsize=22)
+        ax[1,1].set_xlabel('Frequency [Hz]')
+        ax[1,1].set_ylabel(r'ASD [$m/ \sqrt{Hz}$]')
+        ax[1,1].legend(Legend, loc="upper right", borderaxespad=1.5)
+        ax[1,1].set_title('Y motion RMS Avg ASD')
         
     break
