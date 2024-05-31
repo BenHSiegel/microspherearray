@@ -37,7 +37,7 @@ def processmovie(filename, framerate):
     #process every frame in the tiff image stack to find the locations of bright spots
     #minmass defines the minimum brightness and processes means no parallelization since that breaks it
     #invert=true looks for dark spots instead of light spots
-    f = tp.batch(spheres[:], 13, invert=True, minmass=400, processes=1)
+    f = tp.batch(spheres[:], 17, invert=True, minmass=400, processes=1)
         #to check the mass brightness make this figure
     # fig, ax = plt.subplots()
     # ax.hist(f['mass'], bins=1000)
@@ -81,7 +81,7 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
     xpx = t.loc[:,'x']
     spherenumber = t.loc[:,'particle']
     framenum = t.loc[:,'frame']
-    pixtoum = 10.5/10
+    pixtoum = 11/10
     ypos = ypx * pixtoum * 10**(-6) #convert pixel to meter  (pixel dimension 4.8x4.8um)
     xpos = xpx * pixtoum * 10**(-6) #convert pixel to meter
 

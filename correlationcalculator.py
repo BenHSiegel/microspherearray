@@ -67,8 +67,8 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
             
         hf.close()
         
-        xdf = pd.DataFrame(xposdata)  #error
-        ydf = pd.DataFrame(yposdata)  #error
+        xdf = pd.DataFrame(xposdata)
+        ydf = pd.DataFrame(yposdata)
         
         xcorrmatrix = xdf.corr()
         ycorrmatrix = ydf.corr()    
@@ -223,7 +223,13 @@ main_directory = r"D:\Lab data\20240513\part 2"
 totalspheres = 3
 saveflag = False
 
+separation_scan = []
+x_peak_scan = []
+y_peak_scan = []
+correlation_scan = []
+
 for path, folders, files in os.walk(main_directory):
+    
     for folder_name in folders:
         directory = f"{path}/{folder_name}"
         os.chdir(directory)
@@ -232,10 +238,23 @@ for path, folders, files in os.walk(main_directory):
             lines = [line.rstrip() for line in file]
         framerate = float(lines[0])
         sep = float(lines[1])
+        data_label = lines[2]
+        include_in_scan = lines[3]
 
         savename = str(sep) + 'correlationmatrix'
         xcorr_averaged, ycorr_averaged = hdf5file_correlationprocessing(directory, totalspheres, sep, saveflag, savename)
-    
+
+        if include_in_scan == 'True':
+            xcorr_offdiags = []
+            ycorr_offdiags = []
+            for i in range(np.shape(xcorr_averaged)[0]):
+                for j in range(np.shape(xcorr_averaged)[1]):
+                    if j > i:
+                        xcorr_offdiags.append(xcorr_averaged[i][j])
+                        ycorr_offdiags.append(xcorr_averaged[i][j])
+        
+            correlation_scan.append((np.vstack((xcorr_offdiags, ycorr_offdiags))).T)
+
         for filename in sorted(os.listdir(directory)):
             if filename.endswith("rmsavg.h5"):
                 hfpsd = h5py.File(filename, 'r')
@@ -254,7 +273,7 @@ for path, folders, files in os.walk(main_directory):
         fig.tight_layout()
         fig.set_size_inches(11, 8.5)
         fig.set_dpi(600)
-        fig.suptitle(str(umsep) + ' um Separation Between Spheres', fontsize=18)
+        fig.suptitle(data_label, fontsize=18)
         plt.subplots_adjust(top=0.9)
         
         spherenames = ['1', '2', '3']
@@ -268,24 +287,154 @@ for path, folders, files in os.walk(main_directory):
         ax[1,0].set_title("Y Correlation")
 
         Legend = []
-        
+        x_peaks_list = [[] for i in range(totalspheres)]
+        y_peaks_list = [[] for i in range(totalspheres)]
         for i in range(totalspheres):
             ax[0,1].semilogy(freq, xpsd[i,:], linewidth=2)
             ax[1,1].semilogy(freq, ypsd[i,:], linewidth=2)
             Legend.append('Sphere ' + str(i))
+
+            if include_in_scan == 'True':
+                x_peak_indices, x_peak_dict = find_peaks(xpsd[i,:], height=8E-9)
+                x_peak_heights = x_peak_dict['peak_heights']
+                x_peak_freqs = freq[x_peak_indices]
+                x_peaks = (np.vstack((x_peak_indices, x_peak_freqs, x_peak_heights))).T
+                x_peaks_list[i] = x_peaks
+
+                y_peak_indices, y_peak_dict = find_peaks(ypsd[i,:], height=8E-9)
+                y_peak_heights = y_peak_dict['peak_heights']
+                y_peak_freqs = freq[y_peak_indices]
+                y_peaks = (np.vstack((y_peak_indices, y_peak_freqs, y_peak_heights))).T
+                y_peaks_list[i] = y_peaks
+        
+        if include_in_scan == 'True':
+            if x_peak_scan == []:
+                x_peak_scan = [ x_peaks_list ]
+                y_peak_scan = [ y_peaks_list ]
+            
+            else:
+                x_peak_scan.append(x_peaks_list)
+                y_peak_scan.append(y_peaks_list)
+            separation_scan.append(umsep)
                         
         ax[0,1].grid()
-        #axc.set_xlim(5,180)
-        ax[0,1].set_xlabel('Frequency [Hz]')
-        ax[0,1].set_ylabel(r'ASD [$m/ \sqrt{Hz}$]')
+        ax[0,1].set_xlim(2,350)
+        ax[0,1].set_xlabel('Frequency (Hz)')
+        ax[0,1].set_ylabel(r'ASD ($m/ \sqrt{Hz}$)')
         #ax[0,1].legend(Legend, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
         ax[0,1].set_title('X motion RMS Avg ASD')
         
         ax[1,1].grid()
-        #axc.set_xlim(5,180)
-        ax[1,1].set_xlabel('Frequency [Hz]')
-        ax[1,1].set_ylabel(r'ASD [$m/ \sqrt{Hz}$]')
+        ax[1,1].set_xlim(2,350)
+        ax[1,1].set_xlabel('Frequency (Hz)')
+        ax[1,1].set_ylabel(r'ASD ($m/ \sqrt{Hz}$)')
         ax[1,1].legend(Legend, loc="upper right", borderaxespad=1.5)
         ax[1,1].set_title('Y motion RMS Avg ASD')
+    
         
     break
+
+figa, axa = plt.subplots(1,2)
+figa.tight_layout()
+figa.set_size_inches(11, 8.5)
+figa.set_dpi(600)
+
+figb, axb = plt.subplots(1,2)
+figb.tight_layout()
+figb.set_size_inches(11, 8.5)
+figb.set_dpi(600)
+
+figc, axc = plt.subplots(1,2)
+figc.tight_layout()
+figc.set_size_inches(11, 8.5)
+figc.set_dpi(600)
+
+color_codes = ['#FF8C00', '#000080', '#008000', '#00FF00', '#0000FF', '#00FFFF', '#FF0000', '#FF00FF', '#800000', '#808000', '#800080', '#008080']
+
+
+axa[0].set_title('X Correlation vs Separation')
+axa[1].set_title('Y Correlation vs Separation')
+axa[0].set_xlabel(r'Separation ($\mu m$)')
+axa[0].set_ylabel('Correlation')
+axa[1].set_xlabel(r'Separation ($\mu m$)')
+axa[1].set_ylabel('Correlation')
+
+axb[0].set_title('X Peak vs Separation')
+axb[1].set_title('Y Peak vs Separation')
+axb[0].set_xlabel(r'Separation ($\mu m$)')
+axb[0].set_ylabel('Frequency Drift (Hz)')
+axb[1].set_xlabel(r'Separation ($\mu m$)')
+axb[1].set_ylabel('Frequency Drift (Hz)')
+
+axc[0].set_title('X Peak vs Separation')
+axc[1].set_title('Y Peak vs Separation')
+axc[0].set_xlabel(r'Separation ($\mu m$)')
+axc[0].set_ylabel(r'Amplitude ($m/ \sqrt{Hz}$)')
+axc[1].set_xlabel(r'Separation ($\mu m$)')
+axc[1].set_ylabel(r'Amplitude ($m/ \sqrt{Hz}$)')
+
+cor_legend = ['1-2','1-3','2-3']
+xreffreqs = []
+yreffreqs = []
+for i in range(len(separation_scan)):
+    for j in range(len(correlation_scan[i][:,0])):
+        axa[0].scatter(separation_scan[i], correlation_scan[i][j,0], color=color_codes[j], label=cor_legend[j])
+        axa[1].scatter(separation_scan[i], correlation_scan[i][j,1], color=color_codes[j], label=cor_legend[j])
+    
+    
+    for j in range(len(x_peak_scan[i])):
+        # highest_peak_index = peak_indices[np.argmax(peak_heights)]
+        # second_highest_peak_index = peak_indices[np.argpartition(peak_heights,-2)[-2]]
+        xpeaks = x_peak_scan[i][j]
+        peaksortindices = np.argsort(xpeaks[:,2])[::-1]
+        for p in peaksortindices:
+            
+            if xpeaks[p,1] > 60:
+                maxpeak = xpeaks[p,:]
+                break
+        if i == 0:
+            xreffreqs.append(maxpeak[1])
+        
+        normpeakfreq = maxpeak[1] - xreffreqs[j]
+        axb[0].scatter(separation_scan[i], normpeakfreq, color=color_codes[j], label =('Sphere ' + str(j)))
+        
+        axc[0].scatter(separation_scan[i], maxpeak[2], color=color_codes[j], label =('Sphere ' + str(j)))
+        
+    
+    for j in range(len(y_peak_scan[i])):
+        # highest_peak_index = peak_indices[np.argmax(peak_heights)]
+        # second_highest_peak_index = peak_indices[np.argpartition(peak_heights,-2)[-2]]
+        ypeaks = y_peak_scan[i][j]
+        peaksortindices = np.argsort(ypeaks[:,2])[::-1]
+        for p in peaksortindices:
+            
+            if ypeaks[p,1] > 60:
+                maxpeak = ypeaks[p,:]
+                break
+        
+        if i == 0:
+            yreffreqs.append(maxpeak[1])
+        
+        normpeakfreq = maxpeak[1] - yreffreqs[j]
+        axb[1].scatter(separation_scan[i], normpeakfreq, color=color_codes[j], label =('Sphere ' + str(j)))
+        
+        axc[1].scatter(separation_scan[i], maxpeak[2], color=color_codes[j], label =('Sphere ' + str(j)))
+        
+
+
+
+handles, labels = axa[0].get_legend_handles_labels()
+by_label = dict(zip(labels, handles))
+axa[0].legend(by_label.values(), by_label.keys(), fontsize=12, loc="lower right", borderaxespad=1)
+
+
+
+handles, labels = axb[0].get_legend_handles_labels()
+by_label = dict(zip(labels, handles))
+axb[0].legend(by_label.values(), by_label.keys(), fontsize=12, borderaxespad=1)
+
+handles, labels = axc[0].get_legend_handles_labels()
+by_label = dict(zip(labels, handles))
+axc[0].legend(by_label.values(), by_label.keys(), fontsize=12, borderaxespad=1)
+
+

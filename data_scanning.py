@@ -9,17 +9,16 @@ import os
 from folderscanning_videoprocessor import *
 
 
-main_directory = r"D:\Lab data\20240513\part 2"
+main_directory = r"D:\Lab data\20240529"
 
 for path, folders, files in os.walk(main_directory):
     for folder_name in folders:
         directory = f"{path}/{folder_name}"
         os.chdir(directory)
         print(folder_name)
-        f = open("info.txt", 'r')
-        freq = f.read()
-        f.close()
-        framerate = float(freq)
+        with open('info.txt') as file:
+            lines = [line.rstrip() for line in file]
+        framerate = float(lines[0])
         pcacheck = False
         saveposdata = True
         saveFFTavg = True
