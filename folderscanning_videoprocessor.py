@@ -54,7 +54,7 @@ def motiontracer(spheres, f):
     #suppress output so that it runs faster
     tp.quiet()
 
-    t = tp.link(f, 30, memory=50)
+    t = tp.link(f, 10, memory=50)
     
     # fig1, ax00 = plt.subplots()
     # fig1.set_dpi(1200)
@@ -81,7 +81,7 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
     xpx = t.loc[:,'x']
     spherenumber = t.loc[:,'particle']
     framenum = t.loc[:,'frame']
-    pixtoum = 11/10
+    pixtoum = 10/13
     ypos = ypx * pixtoum * 10**(-6) #convert pixel to meter  (pixel dimension 4.8x4.8um)
     xpos = xpx * pixtoum * 10**(-6) #convert pixel to meter
 
@@ -201,7 +201,6 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
                 axs[i][1].set_ylabel(r'PSD [$m^2/ Hz$]')
                 axs[i][1].set_title('Y PSD')
 
-    print(max(yfreq))
     '''
     axa.grid()
     axa.set_xlabel('Frequency [Hz]', fontsize=18)
@@ -238,7 +237,10 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
         g3.attrs.create('FFT bins', fftbinning)
         g3.attrs.create('FFT segment size', segmentsize)
         for sphnum in range(len(spheredata)):
-            g1.create_dataset('Sphere ' + str(sphnum), data=sphere_pos_data[sphnum])
+            d1 = g1.create_dataset('Sphere ' + str(sphnum), data=sphere_pos_data[sphnum])
+            d1.attrs.create('range (m)', [np.ptp(sphere_pos_data[sphnum][:,1]), np.ptp(sphere_pos_data[sphnum][:,2])])
+            d1.attrs.create('std (m)', [np.std(sphere_pos_data[sphnum][:,1]), np.std(sphere_pos_data[sphnum][:,2])])
+            d1.attrs.create('rms (m)', [np.sqrt(np.mean((sphere_pos_data[sphnum][:,1])**2)), np.sqrt(np.mean((sphere_pos_data[sphnum][:,2])**2))])
             g2.create_dataset('Sphere ' + str(sphnum), data=xASDlist[sphnum])
             g3.create_dataset('Sphere ' + str(sphnum), data=yASDlist[sphnum])
         hf.close()

@@ -23,6 +23,10 @@ import h5py
 import pandas as pd
 from matplotlib.colors import LogNorm
 
+main_directory = r"C:\Users\Ben\Documents\Research\20240531"
+totalspheres = 2
+saveflag = True
+
 
 def butter_highpass(data, highpassfq, fs, order=3):
     nyq = 0.5 * fs
@@ -53,9 +57,9 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
         for j in group.items():
             pos = np.array(j[1])
             xpos = pos[:,1].reshape(-1,1)
-            xfiltered = butter_highpass(xpos, 75, fs)
+            xfiltered = butter_highpass(xpos, 40, fs)
             ypos = pos[:,2].reshape(-1,1)
-            yfiltered = butter_highpass(ypos, 75, fs)
+            yfiltered = butter_highpass(ypos, 40, fs)
             if l == 0:
                 xposdata = xfiltered[:,0].reshape(-1,1)
                 yposdata = yfiltered[:,0].reshape(-1,1)
@@ -219,9 +223,7 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
     return texts
 
 
-main_directory = r"D:\Lab data\20240513\part 2"
-totalspheres = 3
-saveflag = False
+
 
 separation_scan = []
 x_peak_scan = []
@@ -276,7 +278,7 @@ for path, folders, files in os.walk(main_directory):
         fig.suptitle(data_label, fontsize=18)
         plt.subplots_adjust(top=0.9)
         
-        spherenames = ['1', '2', '3']
+        spherenames = ['1', '2 ']
         im, cbar = heatmap(xcorr_averaged, spherenames, spherenames, ax=ax[0,0],
                    cmap="YlGn")
         texts = annotate_heatmap(im, data=xcorr_averaged, valfmt="{x:.3f}")
@@ -295,13 +297,13 @@ for path, folders, files in os.walk(main_directory):
             Legend.append('Sphere ' + str(i))
 
             if include_in_scan == 'True':
-                x_peak_indices, x_peak_dict = find_peaks(xpsd[i,:], height=8E-9)
+                x_peak_indices, x_peak_dict = find_peaks(xpsd[i,:], height=3E-9)
                 x_peak_heights = x_peak_dict['peak_heights']
                 x_peak_freqs = freq[x_peak_indices]
                 x_peaks = (np.vstack((x_peak_indices, x_peak_freqs, x_peak_heights))).T
                 x_peaks_list[i] = x_peaks
 
-                y_peak_indices, y_peak_dict = find_peaks(ypsd[i,:], height=8E-9)
+                y_peak_indices, y_peak_dict = find_peaks(ypsd[i,:], height=3E-9)
                 y_peak_heights = y_peak_dict['peak_heights']
                 y_peak_freqs = freq[y_peak_indices]
                 y_peaks = (np.vstack((y_peak_indices, y_peak_freqs, y_peak_heights))).T
@@ -330,23 +332,24 @@ for path, folders, files in os.walk(main_directory):
         ax[1,1].set_ylabel(r'ASD ($m/ \sqrt{Hz}$)')
         ax[1,1].legend(Legend, loc="upper right", borderaxespad=1.5)
         ax[1,1].set_title('Y motion RMS Avg ASD')
-    
+        
+        fig.savefig(os.path.join(main_directory, data_label + '.png'))   # save the figure to file
         
     break
 
 figa, axa = plt.subplots(1,2)
 figa.tight_layout()
-figa.set_size_inches(11, 8.5)
+figa.set_size_inches(10,5)
 figa.set_dpi(600)
 
 figb, axb = plt.subplots(1,2)
 figb.tight_layout()
-figb.set_size_inches(11, 8.5)
+figb.set_size_inches(10,5)
 figb.set_dpi(600)
 
 figc, axc = plt.subplots(1,2)
 figc.tight_layout()
-figc.set_size_inches(11, 8.5)
+figc.set_size_inches(10,5)
 figc.set_dpi(600)
 
 color_codes = ['#FF8C00', '#000080', '#008000', '#00FF00', '#0000FF', '#00FFFF', '#FF0000', '#FF00FF', '#800000', '#808000', '#800080', '#008080']
@@ -373,9 +376,35 @@ axc[0].set_ylabel(r'Amplitude ($m/ \sqrt{Hz}$)')
 axc[1].set_xlabel(r'Separation ($\mu m$)')
 axc[1].set_ylabel(r'Amplitude ($m/ \sqrt{Hz}$)')
 
-cor_legend = ['1-2','1-3','2-3']
+
+cor_legend = ['1-2']
 xreffreqs = []
 yreffreqs = []
+
+#get the frequencies of them when furthest apart in the scan for comparison
+for j in range(len(x_peak_scan[-1])):
+    refpeaks = x_peak_scan[-1][j]
+    refpeaksortindices = np.argsort(refpeaks[:,2])[::-1]
+    for p in refpeaksortindices:
+        
+        if refpeaks[p,1] > 60:
+            refmaxpeak = refpeaks[p,:]
+            break
+    xreffreqs.append(refmaxpeak[1])
+
+for j in range(len(y_peak_scan[-1])):
+    refpeaks = y_peak_scan[-1][j]
+    refpeaksortindices = np.argsort(refpeaks[:,2])[::-1]
+    for p in refpeaksortindices:
+        
+        if refpeaks[p,1] > 60:
+            refmaxpeak = refpeaks[p,:]
+            break
+    yreffreqs.append(refmaxpeak[1])
+
+
+
+
 for i in range(len(separation_scan)):
     for j in range(len(correlation_scan[i][:,0])):
         axa[0].scatter(separation_scan[i], correlation_scan[i][j,0], color=color_codes[j], label=cor_legend[j])
@@ -383,8 +412,6 @@ for i in range(len(separation_scan)):
     
     
     for j in range(len(x_peak_scan[i])):
-        # highest_peak_index = peak_indices[np.argmax(peak_heights)]
-        # second_highest_peak_index = peak_indices[np.argpartition(peak_heights,-2)[-2]]
         xpeaks = x_peak_scan[i][j]
         peaksortindices = np.argsort(xpeaks[:,2])[::-1]
         for p in peaksortindices:
@@ -392,8 +419,7 @@ for i in range(len(separation_scan)):
             if xpeaks[p,1] > 60:
                 maxpeak = xpeaks[p,:]
                 break
-        if i == 0:
-            xreffreqs.append(maxpeak[1])
+            
         
         normpeakfreq = maxpeak[1] - xreffreqs[j]
         axb[0].scatter(separation_scan[i], normpeakfreq, color=color_codes[j], label =('Sphere ' + str(j)))
@@ -402,8 +428,6 @@ for i in range(len(separation_scan)):
         
     
     for j in range(len(y_peak_scan[i])):
-        # highest_peak_index = peak_indices[np.argmax(peak_heights)]
-        # second_highest_peak_index = peak_indices[np.argpartition(peak_heights,-2)[-2]]
         ypeaks = y_peak_scan[i][j]
         peaksortindices = np.argsort(ypeaks[:,2])[::-1]
         for p in peaksortindices:
@@ -411,9 +435,7 @@ for i in range(len(separation_scan)):
             if ypeaks[p,1] > 60:
                 maxpeak = ypeaks[p,:]
                 break
-        
-        if i == 0:
-            yreffreqs.append(maxpeak[1])
+
         
         normpeakfreq = maxpeak[1] - yreffreqs[j]
         axb[1].scatter(separation_scan[i], normpeakfreq, color=color_codes[j], label =('Sphere ' + str(j)))
@@ -436,5 +458,11 @@ axb[0].legend(by_label.values(), by_label.keys(), fontsize=12, borderaxespad=1)
 handles, labels = axc[0].get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
 axc[0].legend(by_label.values(), by_label.keys(), fontsize=12, borderaxespad=1)
+
+figa.savefig(os.path.join(main_directory, 'correlation.png'))   # save the figure to file
+
+figb.savefig(os.path.join(main_directory, 'freqshift.png'))   # save the figure to file
+
+figc.savefig(os.path.join(main_directory, 'amplitudeshift.png'))   # save the figure to file
 
 
