@@ -278,7 +278,7 @@ for path, folders, files in os.walk(main_directory):
         fig.suptitle(data_label, fontsize=18)
         plt.subplots_adjust(top=0.9)
         
-        spherenames = ['1', '2 ']
+        spherenames = [str(x) for x in range(totalspheres)]
         im, cbar = heatmap(xcorr_averaged, spherenames, spherenames, ax=ax[0,0],
                    cmap="YlGn")
         texts = annotate_heatmap(im, data=xcorr_averaged, valfmt="{x:.3f}")
@@ -377,7 +377,12 @@ axc[1].set_xlabel(r'Separation ($\mu m$)')
 axc[1].set_ylabel(r'Amplitude ($m/ \sqrt{Hz}$)')
 
 
-cor_legend = ['1-2']
+
+cor_legend = []
+for i in range(totalspheres):
+    for j in range(totalspheres):
+        if j > i:
+            cor_legend.append(str(i) + '-' + str(j))
 xreffreqs = []
 yreffreqs = []
 
