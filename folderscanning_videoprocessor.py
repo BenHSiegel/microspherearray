@@ -30,14 +30,16 @@ def gray(image):
     return image[:, :, 1]  # Take just the green channel (they are all the same for our camera)
 
 
-def processmovie(filename, framerate):
+def processmovie(filename, framerate, diameter):
     #open a avi file with pims and converts to one color
     spheres = gray(pims.open(filename))
     tp.quiet()
     #process every frame in the tiff image stack to find the locations of bright spots
     #minmass defines the minimum brightness and processes means no parallelization since that breaks it
     #invert=true looks for dark spots instead of light spots
-    f = tp.batch(spheres[:], 17, invert=True, minmass=400, processes=1)
+    #diameter is the centroid size to look for in the images (in units of pixels)
+    #diameter should always be an odd number and greater than the actual sphere size
+    f = tp.batch(spheres[:], diameter, invert=True, minmass=400, processes=1)
         #to check the mass brightness make this figure
     # fig, ax = plt.subplots()
     # ax.hist(f['mass'], bins=1000)
@@ -76,12 +78,12 @@ def lorentzian(f, f0, gam, cal_fac):
   omega0 = 2*np.pi*f0
   return 1/(cal_fac)**2 * 2*kb*temp/m * gam/((omega0**2 - omega**2)**2 + omega**2*gam**2)
 
-def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
+def psdplotter(t, framerate, spheres, f, pixtoum, pcacheck, saveposdata, savename):
     ypx = t.loc[:,'y']
     xpx = t.loc[:,'x']
     spherenumber = t.loc[:,'particle']
     framenum = t.loc[:,'frame']
-    pixtoum = 10/13
+    #pixtoum = 10/13     #diameter of sphere (um) / number of pixels for diameter of sphere
     ypos = ypx * pixtoum * 10**(-6) #convert pixel to meter  (pixel dimension 4.8x4.8um)
     xpos = xpx * pixtoum * 10**(-6) #convert pixel to meter
 
@@ -239,7 +241,6 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
         for sphnum in range(len(spheredata)):
             d1 = g1.create_dataset('Sphere ' + str(sphnum), data=sphere_pos_data[sphnum])
             d1.attrs.create('range (m)', [np.ptp(sphere_pos_data[sphnum][:,1]), np.ptp(sphere_pos_data[sphnum][:,2])])
-            d1.attrs.create('std (m)', [np.std(sphere_pos_data[sphnum][:,1]), np.std(sphere_pos_data[sphnum][:,2])])
             d1.attrs.create('rms (m)', [np.sqrt(np.mean((sphere_pos_data[sphnum][:,1])**2)), np.sqrt(np.mean((sphere_pos_data[sphnum][:,2])**2))])
             g2.create_dataset('Sphere ' + str(sphnum), data=xASDlist[sphnum])
             g3.create_dataset('Sphere ' + str(sphnum), data=yASDlist[sphnum])
@@ -266,16 +267,16 @@ def psdplotter(t,framerate,spheres,f, pcacheck, saveposdata, savename):
 #     print(psdparsevalcheck1)
 
 
-def videofolder_dataextractions(path, framerate, pcacheck, saveposdata):
+def videofolder_dataextractions(path, framerate, diameter, pixtoum, pcacheck, saveposdata):
     file_name_directory = []
     for filename in sorted(os.listdir(path)):
         if filename.endswith(".avi"):
             file_name_directory.append(filename)
          
     for vid in file_name_directory:
-        [spheres, f] = processmovie(vid, framerate)
+        [spheres, f] = processmovie(vid, framerate, diameter)
         t = motiontracer(spheres, f)
-        totalspheres = psdplotter(t, framerate, spheres, f, pcacheck, saveposdata, vid[:-4])
+        totalspheres = psdplotter(t, framerate, spheres, f, pixtoum, pcacheck, saveposdata, vid[:-4])
 
     return totalspheres
 
