@@ -23,7 +23,7 @@ import h5py
 import pandas as pd
 from matplotlib.colors import LogNorm
 
-main_directory = r"C:\Users\Ben\Documents\Research\20240531"
+main_directory = r"C:\Users\Ben\Documents\Research\20240604"
 totalspheres = 2
 saveflag = True
 

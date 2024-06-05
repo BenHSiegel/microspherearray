@@ -22,7 +22,7 @@ from scipy.signal.windows import blackman
 from scipy.signal import find_peaks
 from matplotlib.pyplot import gca
 import h5py
-
+import cv2 as cv
 
 #make a pipeline so that when pims opens a file, it converts each frame to one color
 @pims.pipeline
@@ -266,6 +266,20 @@ def psdplotter(t, framerate, spheres, f, pixtoum, pcacheck, saveposdata, savenam
 #     print(rmsparsevalcheck1)
 #     print(psdparsevalcheck1)
 
+def average_size_calculator(filename):
+    
+    img = 
+    blurredimg = cv.GaussianBlur(img, (3,3), 0)
+    circles = cv.HoughCircles(blurredimg, cv.HOUGH_GRADIENT, 1, 25, param1=50, param2=30, minRadius=5, maxRadius=30)
+    for i in circles[0,:]:
+     # draw the outer circle
+     cv.circle(cimg,(i[0],i[1]),i[2],(0,255,0),2)
+     # draw the center of the circle
+     cv.circle(cimg,(i[0],i[1]),2,(0,0,255),3)
+     
+    cv.imshow('detected circles',cimg)
+    cv.waitKey(0)
+    cv.destroyAllWindows()
 
 def videofolder_dataextractions(path, framerate, diameter, pixtoum, pcacheck, saveposdata):
     file_name_directory = []
