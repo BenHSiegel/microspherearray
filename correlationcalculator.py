@@ -23,7 +23,7 @@ import h5py
 import pandas as pd
 from matplotlib.colors import LogNorm
 
-main_directory = r"C:\Users\Ben\Documents\Research\20240604"
+main_directory = r"C:\Users\bensi\Documents\Research\20240531"
 totalspheres = 2
 saveflag = True
 
@@ -229,10 +229,16 @@ separation_scan = []
 x_peak_scan = []
 y_peak_scan = []
 correlation_scan = []
+xasddata = [ [] for i in range(totalspheres)]
+yasddata = [ [] for i in range(totalspheres)]
+freqasddata = [ [] for i in range(totalspheres)]
+counter = 0
 
 for path, folders, files in os.walk(main_directory):
     
     for folder_name in folders:
+        
+        
         directory = f"{path}/{folder_name}"
         os.chdir(directory)
         print(folder_name)
@@ -242,7 +248,10 @@ for path, folders, files in os.walk(main_directory):
         sep = float(lines[1])
         data_label = lines[2]
         include_in_scan = lines[3]
-
+        
+        if include_in_scan == 'True':
+            counter += 1
+            
         savename = str(sep) + 'correlationmatrix'
         xcorr_averaged, ycorr_averaged = hdf5file_correlationprocessing(directory, totalspheres, sep, saveflag, savename)
 
@@ -308,6 +317,17 @@ for path, folders, files in os.walk(main_directory):
                 y_peak_freqs = freq[y_peak_indices]
                 y_peaks = (np.vstack((y_peak_indices, y_peak_freqs, y_peak_heights))).T
                 y_peaks_list[i] = y_peaks
+                
+                if counter == 1:
+                    freqasddata[i] = freq.reshape(-1,1)
+                    xasddata[i] = xpsd[i,:].reshape(-1,1)
+                    yasddata[i] = ypsd[i,:].reshape(-1,1)
+                else:
+                    freqasddata[i] = np.concatenate((freqasddata[i], freq.reshape(-1,1)), axis=1)
+                    xasddata[i] = np.concatenate((xasddata[i], xpsd[i,:].reshape(-1,1)), axis=1)
+                    yasddata[i] = np.concatenate((yasddata[i], ypsd[i,:].reshape(-1,1)), axis=1)
+
+                    
         
         if include_in_scan == 'True':
             if x_peak_scan == []:
@@ -337,6 +357,8 @@ for path, folders, files in os.walk(main_directory):
         
     break
 
+plt.close()
+
 figa, axa = plt.subplots(1,2)
 figa.tight_layout()
 figa.set_size_inches(10,5)
@@ -352,7 +374,7 @@ figc.tight_layout()
 figc.set_size_inches(10,5)
 figc.set_dpi(600)
 
-color_codes = ['#FF8C00', '#000080', '#008000', '#00FF00', '#0000FF', '#00FFFF', '#FF0000', '#FF00FF', '#800000', '#808000', '#800080', '#008080']
+color_codes = ['#000080', '#FF8C00', '#008000', '#00FF00', '#0000FF', '#00FFFF', '#FF0000', '#FF00FF', '#800000', '#808000', '#800080', '#008080']
 
 
 axa[0].set_title('X Correlation vs Separation')
@@ -469,5 +491,30 @@ figa.savefig(os.path.join(main_directory, 'correlation.png'))   # save the figur
 figb.savefig(os.path.join(main_directory, 'freqshift.png'))   # save the figure to file
 
 figc.savefig(os.path.join(main_directory, 'amplitudeshift.png'))   # save the figure to file
+
+
+figs={}
+axs={}
+for i in range(len(freqasddata)):
+    figs[i], axs[i] = plt.subplots(2, 1, sharex=True, tight_layout=True)
+    figs[i].set_size_inches(18.5, 10.5)
+    figs[i].set_dpi(800)
+    
+    alpharange = np.linspace(0.1, 1, (freqasddata[1].shape)[1])
+    for j in range((freqasddata[i].shape)[1]):
+        axs[i][0].semilogy(freqasddata[i][:,j], xasddata[i][:,j], color = color_codes[i], alpha = alpharange[j])
+        axs[i][1].semilogy(freqasddata[i][:,j], yasddata[i][:,j], color = color_codes[i], alpha = alpharange[j])
+    axs[i][0].set_xlim([5,350])
+    axs[i][1].set_xlim([5,350])
+
+    titlename = "Sphere " + str(i) + ' Response'
+    figs[i].suptitle(titlename)
+    
+    axs[i][1].set_xlabel('Frequency (Hz)')
+    axs[i][0].set_ylabel(r'X ASD ($m/ \sqrt{Hz}$)')
+    axs[i][1].set_ylabel(r'Y ASD ($m/ \sqrt{Hz}$)')
+    
+    figs[i].savefig(os.path.join(main_directory, titlename +'.png'))
+
 
 
