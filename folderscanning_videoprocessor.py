@@ -22,7 +22,7 @@ from scipy.signal.windows import blackman
 from scipy.signal import find_peaks
 from matplotlib.pyplot import gca
 import h5py
-import cv2 as cv
+#import cv2 as cv
 
 #make a pipeline so that when pims opens a file, it converts each frame to one color
 @pims.pipeline
@@ -39,7 +39,7 @@ def processmovie(filename, framerate, diameter):
     #invert=true looks for dark spots instead of light spots
     #diameter is the centroid size to look for in the images (in units of pixels)
     #diameter should always be an odd number and greater than the actual sphere size
-    f = tp.batch(spheres[:], diameter, invert=True, minmass=400, processes=1)
+    f = tp.batch(spheres[:], diameter, invert=True, minmass=350, processes=1)
         #to check the mass brightness make this figure
     # fig, ax = plt.subplots()
     # ax.hist(f['mass'], bins=1000)

@@ -9,7 +9,7 @@ import os
 from folderscanning_videoprocessor import *
 
 
-main_directory = r"C:\Users\Ben\Documents\Research\20240604"
+main_directory = r"C:\Users\bensi\Documents\Research\20240604"
 pixtoum = 10/10  #diameter of sphere (um) / number of pixels for diameter of sphere
 centroid_diameter = 13 #centroid size to look for in the images in pixels, always odd and overestimating size
 pcacheck = False
