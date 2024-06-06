@@ -5,7 +5,6 @@ Created on Sun Oct 15 10:27:38 2023
 @author: Ben
 """
 
-import av as av
 import pims
 import trackpy as tp
 import numpy as np
@@ -39,7 +38,7 @@ def processmovie(filename, framerate, diameter):
     #invert=true looks for dark spots instead of light spots
     #diameter is the centroid size to look for in the images (in units of pixels)
     #diameter should always be an odd number and greater than the actual sphere size
-    f = tp.batch(spheres[:], diameter, invert=True, minmass=350, processes=1)
+    f = tp.batch(spheres[:], diameter, invert=True, minmass=400, processes=1)
         #to check the mass brightness make this figure
     # fig, ax = plt.subplots()
     # ax.hist(f['mass'], bins=1000)
@@ -284,6 +283,8 @@ def psdplotter(t, framerate, spheres, f, pixtoum, pcacheck, saveposdata, savenam
 #     cv.imshow('detected circles',cimg)
 #     cv.waitKey(0)
 #     cv.destroyAllWindows()
+
+
 
 def videofolder_dataextractions(path, framerate, diameter, pixtoum, pcacheck, saveposdata):
     file_name_directory = []
