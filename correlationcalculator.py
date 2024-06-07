@@ -552,27 +552,42 @@ for i in range(len(freqasddata)):
         figs[i].savefig(os.path.join(main_directory, titlename +'.png'))
 
 
+def interpdata(data, freq, index, lb, up, separation_scan):
+    
+    datapoints = max(len(x) for x in freq)
+    freqlist = np.linspace(lb, up, datapoints)
+    interpdata = []
+    for i in range(len(data)):
+        f = interp1d(freq[i],data[i])
+        if interpdata == []:
+            interpdata = f(freqlist).reshape(-1,1)
+        else:
+            interpdata = np.concatenate((interpdata, f(freqlist).reshape(-1,1)), axis=1)
+    return freqlist, interpdata
 
 
-xfigs={}
-xaxs={}
-for i in range(totalspheres):
-    xfigs[i], xaxs[i] = plt.subplots(2, 1, sharex=True, tight_layout=True)
-    xfigs[i].set_size_inches(10.5,18.5)
-    xfigs[i].set_dpi(800)
+def plotheatmap():
     
-    f_z = interp2d(x,y, z) 
-    axs[i][0].set_xlim([5,350])
-    axs[i][1].set_xlim([5,350])
+    
+# xfigs={}
+# xaxs={}
+# for i in range(totalspheres):
+#     xfigs[i], xaxs[i] = plt.subplots(2, 1, sharex=True, tight_layout=True)
+#     xfigs[i].set_size_inches(10.5,18.5)
+#     xfigs[i].set_dpi(800)
+    
+#     f_z = interp2d(x,y, z) 
+#     axs[i][0].set_xlim([5,350])
+#     axs[i][1].set_xlim([5,350])
 
-    titlename = "Sphere " + str(i) + ' Response'
-    figs[i].suptitle(titlename)
+#     titlename = "Sphere " + str(i) + ' Response'
+#     figs[i].suptitle(titlename)
     
-    axs[i][1].set_xlabel('Frequency (Hz)')
-    axs[i][0].set_ylabel(r'X ASD ($m/ \sqrt{Hz}$)')
-    axs[i][1].set_ylabel(r'Y ASD ($m/ \sqrt{Hz}$)')
+#     axs[i][1].set_xlabel('Frequency (Hz)')
+#     axs[i][0].set_ylabel(r'X ASD ($m/ \sqrt{Hz}$)')
+#     axs[i][1].set_ylabel(r'Y ASD ($m/ \sqrt{Hz}$)')
     
-    if savefigs:
-        figs[i].savefig(os.path.join(main_directory, titlename +'.png'))
+#     if savefigs:
+#         figs[i].savefig(os.path.join(main_directory, titlename +'.png'))
 
 
