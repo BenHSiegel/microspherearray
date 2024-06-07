@@ -22,11 +22,15 @@ from matplotlib.pyplot import gca
 import h5py
 import pandas as pd
 from matplotlib.colors import LogNorm
+import seaborn as sn
+from scipy.interpolate import interp1d
 
-main_directory = r"C:\Users\bensi\Documents\Research\20240531"
+main_directory = r"D:\Lab data\20240531"
 totalspheres = 2
-saveflag = True
-
+saveflag = False
+savefigs = False
+anticrossinglbs = [[175, 130],[130, 150]]
+anticrossingubs = [[260,260],[230,190]]
 
 def butter_highpass(data, highpassfq, fs, order=3):
     nyq = 0.5 * fs
@@ -232,6 +236,10 @@ correlation_scan = []
 xasddata = [ [] for i in range(totalspheres)]
 yasddata = [ [] for i in range(totalspheres)]
 freqasddata = [ [] for i in range(totalspheres)]
+anticrossingxfqs = [ [] for i in range(totalspheres)]
+anticrossingyfqs = [ [] for i in range(totalspheres)]
+xanticrossdata = [ [] for i in range(totalspheres)]
+yanticrossdata = [ [] for i in range(totalspheres)]
 counter = 0
 
 for path, folders, files in os.walk(main_directory):
@@ -318,14 +326,38 @@ for path, folders, files in os.walk(main_directory):
                 y_peaks = (np.vstack((y_peak_indices, y_peak_freqs, y_peak_heights))).T
                 y_peaks_list[i] = y_peaks
                 
+                xcrossing = []
+                ycrossing = []
+                fqxcrossing = []
+                fqycrossing = []
+                for indHz in range(len(freq)):
+                    if anticrossinglbs[i][0] < freq[indHz] < anticrossingubs[i][0]:
+                        fqxcrossing.append(freq[indHz])
+                        xcrossing.append(xpsd[i,indHz])
+                    if anticrossinglbs[i][1] < freq[indHz] < anticrossingubs[i][1]:
+                        fqycrossing.append(freq[indHz])
+                        ycrossing.append(ypsd[i,indHz])
+                
+                
                 if counter == 1:
                     freqasddata[i] = freq.reshape(-1,1)
                     xasddata[i] = xpsd[i,:].reshape(-1,1)
                     yasddata[i] = ypsd[i,:].reshape(-1,1)
+                    
+                    anticrossingxfqs[i] = [fqxcrossing]
+                    anticrossingyfqs[i] = [fqycrossing]
+                    xanticrossdata[i] = [xcrossing]
+                    yanticrossdata[i] = [ycrossing]
+                    
                 else:
                     freqasddata[i] = np.concatenate((freqasddata[i], freq.reshape(-1,1)), axis=1)
                     xasddata[i] = np.concatenate((xasddata[i], xpsd[i,:].reshape(-1,1)), axis=1)
                     yasddata[i] = np.concatenate((yasddata[i], ypsd[i,:].reshape(-1,1)), axis=1)
+                    
+                    anticrossingxfqs[i].append(fqxcrossing)
+                    anticrossingyfqs[i].append(fqycrossing)
+                    xanticrossdata[i].append(xcrossing)
+                    yanticrossdata[i].append(ycrossing)
 
                     
         
@@ -353,7 +385,8 @@ for path, folders, files in os.walk(main_directory):
         ax[1,1].legend(Legend, loc="upper right", borderaxespad=1.5)
         ax[1,1].set_title('Y motion RMS Avg ASD')
         
-        fig.savefig(os.path.join(main_directory, data_label + '.png'))   # save the figure to file
+        if savefigs:
+            fig.savefig(os.path.join(main_directory, data_label + '.png'))   # save the figure to file
         
     break
 
@@ -486,12 +519,13 @@ handles, labels = axc[0].get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
 axc[0].legend(by_label.values(), by_label.keys(), fontsize=12, borderaxespad=1)
 
-figa.savefig(os.path.join(main_directory, 'correlation.png'))   # save the figure to file
-
-figb.savefig(os.path.join(main_directory, 'freqshift.png'))   # save the figure to file
-
-figc.savefig(os.path.join(main_directory, 'amplitudeshift.png'))   # save the figure to file
-
+if savefigs:
+    figa.savefig(os.path.join(main_directory, 'correlation.png'))   # save the figure to file
+    
+    figb.savefig(os.path.join(main_directory, 'freqshift.png'))   # save the figure to file
+    
+    figc.savefig(os.path.join(main_directory, 'amplitudeshift.png'))   # save the figure to file
+    
 
 figs={}
 axs={}
@@ -514,7 +548,31 @@ for i in range(len(freqasddata)):
     axs[i][0].set_ylabel(r'X ASD ($m/ \sqrt{Hz}$)')
     axs[i][1].set_ylabel(r'Y ASD ($m/ \sqrt{Hz}$)')
     
-    figs[i].savefig(os.path.join(main_directory, titlename +'.png'))
+    if savefigs:
+        figs[i].savefig(os.path.join(main_directory, titlename +'.png'))
 
+
+
+
+xfigs={}
+xaxs={}
+for i in range(totalspheres):
+    xfigs[i], xaxs[i] = plt.subplots(2, 1, sharex=True, tight_layout=True)
+    xfigs[i].set_size_inches(10.5,18.5)
+    xfigs[i].set_dpi(800)
+    
+    f_z = interp2d(x,y, z) 
+    axs[i][0].set_xlim([5,350])
+    axs[i][1].set_xlim([5,350])
+
+    titlename = "Sphere " + str(i) + ' Response'
+    figs[i].suptitle(titlename)
+    
+    axs[i][1].set_xlabel('Frequency (Hz)')
+    axs[i][0].set_ylabel(r'X ASD ($m/ \sqrt{Hz}$)')
+    axs[i][1].set_ylabel(r'Y ASD ($m/ \sqrt{Hz}$)')
+    
+    if savefigs:
+        figs[i].savefig(os.path.join(main_directory, titlename +'.png'))
 
 
