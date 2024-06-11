@@ -28,9 +28,9 @@ from scipy.interpolate import interp1d
 main_directory = r"D:\Lab data\20240531"
 totalspheres = 2
 saveflag = False
-savefigs = False
-anticrossinglbs = [[175, 130],[130, 150]]
-anticrossingubs = [[260,260],[230,190]]
+savefigs = True
+anticrossinglbs = [[125, 100],[100, 125]]
+anticrossingubs = [[300, 300],[260, 220]]
 
 def butter_highpass(data, highpassfq, fs, order=3):
     nyq = 0.5 * fs
@@ -388,9 +388,10 @@ for path, folders, files in os.walk(main_directory):
         if savefigs:
             fig.savefig(os.path.join(main_directory, data_label + '.png'))   # save the figure to file
         
+        plt.close()
     break
 
-plt.close()
+plt.close('all')
 
 figa, axa = plt.subplots(1,2)
 figa.tight_layout()
@@ -552,42 +553,53 @@ for i in range(len(freqasddata)):
         figs[i].savefig(os.path.join(main_directory, titlename +'.png'))
 
 
-def interpdata(data, freq, index, lb, up, separation_scan):
+def interpdatafn(freq, data, lb, up, separation_scan, sphrindex, direction, fig, ax):
     
-    datapoints = max(len(x) for x in freq)
+    datapoints = max(len(x) for x in freq.T)
     freqlist = np.linspace(lb, up, datapoints)
     interpdata = []
-    for i in range(len(data)):
-        f = interp1d(freq[i],data[i])
-        if interpdata == []:
-            interpdata = f(freqlist).reshape(-1,1)
+    counter = 0
+    for i in range(len(data.T)):
+        f = interp1d(freq[:,i],data[:,i])
+        amp = f(freqlist)
+        normamp = amp / max(amp)
+        if counter == 0:
+            interpdata = normamp.reshape(-1,1)
         else:
-            interpdata = np.concatenate((interpdata, f(freqlist).reshape(-1,1)), axis=1)
-    return freqlist, interpdata
+            interpdata = np.concatenate((interpdata, normamp.reshape(-1,1)), axis=1)
+        counter += 1
+
+    df = pd.DataFrame(data=interpdata, columns = np.round(separation_scan).astype(int))
+    num_ticks = 10
+    ylist = freqlist.tolist()
+    yticks = np.linspace(0, len(ylist)-1, num_ticks, dtype=int)
+    yticklabel = [np.round(ylist[idx]).astype(int) for idx in yticks]
+    sn.heatmap(df, ax=ax[sphrindex], yticklabels=yticklabel, cbar_kws={'label': r'Normalized Amplitude'})
+    ax[sphrindex].invert_yaxis()
+    ax[sphrindex].set_yticks(yticks)
+    ax[sphrindex].set_yticklabels(yticklabel)
+    titlename = "Sphere " + str(sphrindex) + direction + 'Response'
+    ax[sphrindex].set_title(titlename)
+    ax[sphrindex].set_ylabel('Frequency (Hz)')
+    ax[sphrindex].set_xlabel(r'Separation ($\mu m$)')
+    
+    return freqlist, interpdata, df, fig, ax
 
 
-def plotheatmap():
-    
-    
-# xfigs={}
-# xaxs={}
-# for i in range(totalspheres):
-#     xfigs[i], xaxs[i] = plt.subplots(2, 1, sharex=True, tight_layout=True)
-#     xfigs[i].set_size_inches(10.5,18.5)
-#     xfigs[i].set_dpi(800)
-    
-#     f_z = interp2d(x,y, z) 
-#     axs[i][0].set_xlim([5,350])
-#     axs[i][1].set_xlim([5,350])
-
-#     titlename = "Sphere " + str(i) + ' Response'
-#     figs[i].suptitle(titlename)
-    
-#     axs[i][1].set_xlabel('Frequency (Hz)')
-#     axs[i][0].set_ylabel(r'X ASD ($m/ \sqrt{Hz}$)')
-#     axs[i][1].set_ylabel(r'Y ASD ($m/ \sqrt{Hz}$)')
-    
-#     if savefigs:
-#         figs[i].savefig(os.path.join(main_directory, titlename +'.png'))
+figx, axx = plt.subplots(totalspheres, 1, figsize=(5, totalspheres*5), sharex=True, tight_layout=True)
+figx.set_dpi(800)
+figy, axy = plt.subplots(totalspheres, 1, figsize=(5, totalspheres*5), sharex=True, tight_layout=True)
+figy.set_dpi(800)
+for i in range(totalspheres):
+   freqlistx, interpdatax, dfx, figx, axx = interpdatafn(freqasddata[i], xasddata[i], anticrossinglbs[i][0], anticrossingubs[i][0], separation_scan, i, " X ", figx, axx)
+   freqlisty, interpdatay, dfy, figy, axy = interpdatafn(freqasddata[i], yasddata[i], anticrossinglbs[i][1], anticrossingubs[i][1], separation_scan, i, " Y ", figy, axy)
 
 
+if savefigs:
+    savenamex = "Normalized X fq vs separation stacked"
+    savenamey = "Normalized Y fq vs separation stacked"
+    figx.savefig(os.path.join(main_directory, savenamex +'.png'))
+    figy.savefig(os.path.join(main_directory, savenamey +'.png'))
+
+
+plt.close('all')
