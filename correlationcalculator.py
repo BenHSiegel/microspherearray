@@ -25,12 +25,7 @@ from matplotlib.colors import LogNorm
 import seaborn as sn
 from scipy.interpolate import interp1d
 
-main_directory = r"D:\Lab data\20240531"
-totalspheres = 2
-saveflag = False
-savefigs = True
-anticrossinglbs = [[100, 100],[100, 100]]
-anticrossingubs = [[300, 300],[300, 300]]
+
 
 def butter_highpass(data, highpassfq, fs, order=3):
     nyq = 0.5 * fs
@@ -227,330 +222,321 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
     return texts
 
 
+def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs):
+
+    counter = 0
+    correlation_scan = []
+    xasddata = [ [] for i in range(totalspheres)]
+    yasddata = [ [] for i in range(totalspheres)]
+    freqasddata = [ [] for i in range(totalspheres)]
+    separation_scan = []
+    x_peak_scan = []
+    y_peak_scan = []
 
 
-separation_scan = []
-x_peak_scan = []
-y_peak_scan = []
-correlation_scan = []
-xasddata = [ [] for i in range(totalspheres)]
-yasddata = [ [] for i in range(totalspheres)]
-freqasddata = [ [] for i in range(totalspheres)]
-anticrossingxfqs = [ [] for i in range(totalspheres)]
-anticrossingyfqs = [ [] for i in range(totalspheres)]
-xanticrossdata = [ [] for i in range(totalspheres)]
-yanticrossdata = [ [] for i in range(totalspheres)]
-counter = 0
-
-for path, folders, files in os.walk(main_directory):
-    
-    for folder_name in folders:
+    for path, folders, files in os.walk(main_directory):
         
-        
-        directory = f"{path}/{folder_name}"
-        os.chdir(directory)
-        print(folder_name)
-        with open('info.txt') as file:
-            lines = [line.rstrip() for line in file]
-        framerate = float(lines[0])
-        sep = float(lines[1])
-        data_label = lines[2]
-        include_in_scan = lines[3]
-        
-        if include_in_scan == 'True':
-            counter += 1
+        for folder_name in folders:
             
-        savename = str(sep) + 'correlationmatrix'
-        xcorr_averaged, ycorr_averaged = hdf5file_correlationprocessing(directory, totalspheres, sep, saveflag, savename)
-
-        if include_in_scan == 'True':
-            xcorr_offdiags = []
-            ycorr_offdiags = []
-            for i in range(np.shape(xcorr_averaged)[0]):
-                for j in range(np.shape(xcorr_averaged)[1]):
-                    if j > i:
-                        xcorr_offdiags.append(xcorr_averaged[i][j])
-                        ycorr_offdiags.append(xcorr_averaged[i][j])
-        
-            correlation_scan.append((np.vstack((xcorr_offdiags, ycorr_offdiags))).T)
-
-        for filename in sorted(os.listdir(directory)):
-            if filename.endswith("rmsavg.h5"):
-                hfpsd = h5py.File(filename, 'r')
-                freqset = hfpsd.get('frequencies')
-                xpsdset = hfpsd.get('XASD RMS Avg')
-                ypsdset = hfpsd.get('YASD RMS Avg')
-                freq = freqset[()]
-                xpsd = xpsdset[()]
-                ypsd = ypsdset[()]
-
-                hfpsd.close()
-        
-        
-        umsep = sep * 70
-        fig, ax = plt.subplots(2, 2, gridspec_kw={'width_ratios': [1, 3]})
-        fig.tight_layout()
-        fig.set_size_inches(11, 8.5)
-        fig.set_dpi(600)
-        fig.suptitle(data_label, fontsize=18)
-        plt.subplots_adjust(top=0.9)
-        
-        spherenames = [str(x) for x in range(totalspheres)]
-        im, cbar = heatmap(xcorr_averaged, spherenames, spherenames, ax=ax[0,0],
-                   cmap="YlGn")
-        texts = annotate_heatmap(im, data=xcorr_averaged, valfmt="{x:.3f}")
-        ax[0,0].set_title("X Correlation")
-        im, cbar = heatmap(ycorr_averaged, spherenames, spherenames, ax=ax[1,0],
-                   cmap="YlGn")
-        texts = annotate_heatmap(im, data=ycorr_averaged, valfmt="{x:.3f}")
-        ax[1,0].set_title("Y Correlation")
-
-        Legend = []
-        x_peaks_list = [[] for i in range(totalspheres)]
-        y_peaks_list = [[] for i in range(totalspheres)]
-        for i in range(totalspheres):
-            ax[0,1].semilogy(freq, xpsd[i,:], linewidth=2)
-            ax[1,1].semilogy(freq, ypsd[i,:], linewidth=2)
-            Legend.append('Sphere ' + str(i))
+            directory = f"{path}/{folder_name}"
+            os.chdir(directory)
+            print(folder_name)
+            with open('info.txt') as file:
+                lines = [line.rstrip() for line in file]
+            framerate = float(lines[0])
+            sep = float(lines[1])
+            data_label = lines[2]
+            include_in_scan = lines[3]
+            
+            if include_in_scan == 'True':
+                counter += 1
+                
+            savename = str(sep) + 'correlationmatrix'
+            xcorr_averaged, ycorr_averaged = hdf5file_correlationprocessing(directory, totalspheres, sep, saveflag, savename)
 
             if include_in_scan == 'True':
-                x_peak_indices, x_peak_dict = find_peaks(xpsd[i,:], height=3E-9)
-                x_peak_heights = x_peak_dict['peak_heights']
-                x_peak_freqs = freq[x_peak_indices]
-                x_peaks = (np.vstack((x_peak_indices, x_peak_freqs, x_peak_heights))).T
-                x_peaks_list[i] = x_peaks
-
-                y_peak_indices, y_peak_dict = find_peaks(ypsd[i,:], height=3E-9)
-                y_peak_heights = y_peak_dict['peak_heights']
-                y_peak_freqs = freq[y_peak_indices]
-                y_peaks = (np.vstack((y_peak_indices, y_peak_freqs, y_peak_heights))).T
-                y_peaks_list[i] = y_peaks
-                
-                xcrossing = []
-                ycrossing = []
-                fqxcrossing = []
-                fqycrossing = []
-                for indHz in range(len(freq)):
-                    if anticrossinglbs[i][0] < freq[indHz] < anticrossingubs[i][0]:
-                        fqxcrossing.append(freq[indHz])
-                        xcrossing.append(xpsd[i,indHz])
-                    if anticrossinglbs[i][1] < freq[indHz] < anticrossingubs[i][1]:
-                        fqycrossing.append(freq[indHz])
-                        ycrossing.append(ypsd[i,indHz])
-                
-                
-                if counter == 1:
-                    freqasddata[i] = freq.reshape(-1,1)
-                    xasddata[i] = xpsd[i,:].reshape(-1,1)
-                    yasddata[i] = ypsd[i,:].reshape(-1,1)
-                    
-                    anticrossingxfqs[i] = [fqxcrossing]
-                    anticrossingyfqs[i] = [fqycrossing]
-                    xanticrossdata[i] = [xcrossing]
-                    yanticrossdata[i] = [ycrossing]
-                    
-                else:
-                    freqasddata[i] = np.concatenate((freqasddata[i], freq.reshape(-1,1)), axis=1)
-                    xasddata[i] = np.concatenate((xasddata[i], xpsd[i,:].reshape(-1,1)), axis=1)
-                    yasddata[i] = np.concatenate((yasddata[i], ypsd[i,:].reshape(-1,1)), axis=1)
-                    
-                    anticrossingxfqs[i].append(fqxcrossing)
-                    anticrossingyfqs[i].append(fqycrossing)
-                    xanticrossdata[i].append(xcrossing)
-                    yanticrossdata[i].append(ycrossing)
-
-                    
-        
-        if include_in_scan == 'True':
-            if x_peak_scan == []:
-                x_peak_scan = [ x_peaks_list ]
-                y_peak_scan = [ y_peaks_list ]
+                xcorr_offdiags = []
+                ycorr_offdiags = []
+                for i in range(np.shape(xcorr_averaged)[0]):
+                    for j in range(np.shape(xcorr_averaged)[1]):
+                        if j > i:
+                            xcorr_offdiags.append(xcorr_averaged[i][j])
+                            ycorr_offdiags.append(xcorr_averaged[i][j])
             
-            else:
-                x_peak_scan.append(x_peaks_list)
-                y_peak_scan.append(y_peaks_list)
-            separation_scan.append(umsep)
+                correlation_scan.append((np.vstack((xcorr_offdiags, ycorr_offdiags))).T)
+
+            for filename in sorted(os.listdir(directory)):
+                if filename.endswith("rmsavg.h5"):
+                    hfpsd = h5py.File(filename, 'r')
+                    freqset = hfpsd.get('frequencies')
+                    xpsdset = hfpsd.get('XASD RMS Avg')
+                    ypsdset = hfpsd.get('YASD RMS Avg')
+                    freq = freqset[()]
+                    xpsd = xpsdset[()]
+                    ypsd = ypsdset[()]
+
+                    hfpsd.close()
+            
+            
+            umsep = sep * 70
+            fig, ax = plt.subplots(2, 2, gridspec_kw={'width_ratios': [1, 3]})
+            fig.tight_layout()
+            fig.set_size_inches(11, 8.5)
+            fig.set_dpi(600)
+            fig.suptitle(data_label, fontsize=18)
+            plt.subplots_adjust(top=0.9)
+            
+            spherenames = [str(x) for x in range(totalspheres)]
+            im, cbar = heatmap(xcorr_averaged, spherenames, spherenames, ax=ax[0,0],
+                    cmap="YlGn")
+            texts = annotate_heatmap(im, data=xcorr_averaged, valfmt="{x:.3f}")
+            ax[0,0].set_title("X Correlation")
+            im, cbar = heatmap(ycorr_averaged, spherenames, spherenames, ax=ax[1,0],
+                    cmap="YlGn")
+            texts = annotate_heatmap(im, data=ycorr_averaged, valfmt="{x:.3f}")
+            ax[1,0].set_title("Y Correlation")
+
+            Legend = []
+            x_peaks_list = [[] for i in range(totalspheres)]
+            y_peaks_list = [[] for i in range(totalspheres)]
+            for i in range(totalspheres):
+                ax[0,1].semilogy(freq, xpsd[i,:], linewidth=2)
+                ax[1,1].semilogy(freq, ypsd[i,:], linewidth=2)
+                Legend.append('Sphere ' + str(i))
+
+                if include_in_scan == 'True':
+                    x_peak_indices, x_peak_dict = find_peaks(xpsd[i,:], height=3E-9)
+                    x_peak_heights = x_peak_dict['peak_heights']
+                    x_peak_freqs = freq[x_peak_indices]
+                    x_peaks = (np.vstack((x_peak_indices, x_peak_freqs, x_peak_heights))).T
+                    x_peaks_list[i] = x_peaks
+
+                    y_peak_indices, y_peak_dict = find_peaks(ypsd[i,:], height=3E-9)
+                    y_peak_heights = y_peak_dict['peak_heights']
+                    y_peak_freqs = freq[y_peak_indices]
+                    y_peaks = (np.vstack((y_peak_indices, y_peak_freqs, y_peak_heights))).T
+                    y_peaks_list[i] = y_peaks
+                    
+                    
+                    if counter == 1:
+                        freqasddata[i] = freq.reshape(-1,1)
+                        xasddata[i] = xpsd[i,:].reshape(-1,1)
+                        yasddata[i] = ypsd[i,:].reshape(-1,1)
                         
-        ax[0,1].grid()
-        ax[0,1].set_xlim(2,350)
-        ax[0,1].set_xlabel('Frequency (Hz)')
-        ax[0,1].set_ylabel(r'ASD ($m/ \sqrt{Hz}$)')
-        #ax[0,1].legend(Legend, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
-        ax[0,1].set_title('X motion RMS Avg ASD')
+                        
+                    else:
+                        freqasddata[i] = np.concatenate((freqasddata[i], freq.reshape(-1,1)), axis=1)
+                        xasddata[i] = np.concatenate((xasddata[i], xpsd[i,:].reshape(-1,1)), axis=1)
+                        yasddata[i] = np.concatenate((yasddata[i], ypsd[i,:].reshape(-1,1)), axis=1)
+                  
+            
+            if include_in_scan == 'True':
+                if x_peak_scan == []:
+                    x_peak_scan = [ x_peaks_list ]
+                    y_peak_scan = [ y_peaks_list ]
+                
+                else:
+                    x_peak_scan.append(x_peaks_list)
+                    y_peak_scan.append(y_peaks_list)
+
+                separation_scan.append(umsep)
+                            
+            ax[0,1].grid()
+            ax[0,1].set_xlim(2,350)
+            ax[0,1].set_xlabel('Frequency (Hz)')
+            ax[0,1].set_ylabel(r'ASD ($m/ \sqrt{Hz}$)')
+            #ax[0,1].legend(Legend, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
+            ax[0,1].set_title('X motion RMS Avg ASD')
+            
+            ax[1,1].grid()
+            ax[1,1].set_xlim(2,350)
+            ax[1,1].set_xlabel('Frequency (Hz)')
+            ax[1,1].set_ylabel(r'ASD ($m/ \sqrt{Hz}$)')
+            ax[1,1].legend(Legend, loc="upper right", borderaxespad=1.5)
+            ax[1,1].set_title('Y motion RMS Avg ASD')
+            
+            if savefigs:
+                fig.savefig(os.path.join(main_directory, data_label + '.png'))   # save the figure to file
+            
+            
+            plt.close('all')
+            
+        break
+
+    
+
+    return x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata
+
+
+def plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes):
+
+    figa, axa = plt.subplots(1,2)
+    figa.tight_layout()
+    figa.set_size_inches(10,5)
+    figa.set_dpi(600)
+
+    figb, axb = plt.subplots(1,2)
+    figb.tight_layout()
+    figb.set_size_inches(10,5)
+    figb.set_dpi(600)
+
+    figc, axc = plt.subplots(1,2)
+    figc.tight_layout()
+    figc.set_size_inches(10,5)
+    figc.set_dpi(600)
+
+    axa[0].set_title('X Correlation vs Separation')
+    axa[1].set_title('Y Correlation vs Separation')
+    axa[0].set_xlabel(r'Separation ($\mu m$)')
+    axa[0].set_ylabel('Correlation')
+    axa[1].set_xlabel(r'Separation ($\mu m$)')
+    axa[1].set_ylabel('Correlation')
+
+    axb[0].set_title('X Peak vs Separation')
+    axb[1].set_title('Y Peak vs Separation')
+    axb[0].set_xlabel(r'Separation ($\mu m$)')
+    axb[0].set_ylabel('Frequency Drift (Hz)')
+    axb[1].set_xlabel(r'Separation ($\mu m$)')
+    axb[1].set_ylabel('Frequency Drift (Hz)')
+
+    axc[0].set_title('X Peak vs Separation')
+    axc[1].set_title('Y Peak vs Separation')
+    axc[0].set_xlabel(r'Separation ($\mu m$)')
+    axc[0].set_ylabel(r'Amplitude ($m/ \sqrt{Hz}$)')
+    axc[1].set_xlabel(r'Separation ($\mu m$)')
+    axc[1].set_ylabel(r'Amplitude ($m/ \sqrt{Hz}$)')
+
+
+
+    cor_legend = []
+    for i in range(totalspheres):
+        for j in range(totalspheres):
+            if j > i:
+                cor_legend.append(str(i) + '-' + str(j))
+    xreffreqs = []
+    yreffreqs = []
+
+    #get the frequencies of them when furthest apart in the scan for comparison
+    for j in range(len(x_peak_scan[-1])):
+        refpeaks = x_peak_scan[-1][j]
+        refpeaksortindices = np.argsort(refpeaks[:,2])[::-1]
+        for p in refpeaksortindices:
+            
+            if refpeaks[p,1] > 60:
+                refmaxpeak = refpeaks[p,:]
+                break
+        xreffreqs.append(refmaxpeak[1])
+
+    for j in range(len(y_peak_scan[-1])):
+        refpeaks = y_peak_scan[-1][j]
+        refpeaksortindices = np.argsort(refpeaks[:,2])[::-1]
+        for p in refpeaksortindices:
+            
+            if refpeaks[p,1] > 60:
+                refmaxpeak = refpeaks[p,:]
+                break
+        yreffreqs.append(refmaxpeak[1])
+
+
+
+
+    for i in range(len(separation_scan)):
+        for j in range(len(correlation_scan[i][:,0])):
+            axa[0].scatter(separation_scan[i], correlation_scan[i][j,0], color=color_codes[j], label=cor_legend[j])
+            axa[1].scatter(separation_scan[i], correlation_scan[i][j,1], color=color_codes[j], label=cor_legend[j])
         
-        ax[1,1].grid()
-        ax[1,1].set_xlim(2,350)
-        ax[1,1].set_xlabel('Frequency (Hz)')
-        ax[1,1].set_ylabel(r'ASD ($m/ \sqrt{Hz}$)')
-        ax[1,1].legend(Legend, loc="upper right", borderaxespad=1.5)
-        ax[1,1].set_title('Y motion RMS Avg ASD')
+        
+        for j in range(len(x_peak_scan[i])):
+            xpeaks = x_peak_scan[i][j]
+            peaksortindices = np.argsort(xpeaks[:,2])[::-1]
+            for p in peaksortindices:
+                
+                if xpeaks[p,1] > 60:
+                    maxpeak = xpeaks[p,:]
+                    break
+                
+            
+            normpeakfreq = maxpeak[1] - xreffreqs[j]
+            axb[0].scatter(separation_scan[i], normpeakfreq, color=color_codes[j], label =('Sphere ' + str(j)))
+            
+            axc[0].scatter(separation_scan[i], maxpeak[2], color=color_codes[j], label =('Sphere ' + str(j)))
+            
+        
+        for j in range(len(y_peak_scan[i])):
+            ypeaks = y_peak_scan[i][j]
+            peaksortindices = np.argsort(ypeaks[:,2])[::-1]
+            for p in peaksortindices:
+                
+                if ypeaks[p,1] > 60:
+                    maxpeak = ypeaks[p,:]
+                    break
+
+            
+            normpeakfreq = maxpeak[1] - yreffreqs[j]
+            axb[1].scatter(separation_scan[i], normpeakfreq, color=color_codes[j], label =('Sphere ' + str(j)))
+            
+            axc[1].scatter(separation_scan[i], maxpeak[2], color=color_codes[j], label =('Sphere ' + str(j)))
+            
+
+
+
+    handles, labels = axa[0].get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    axa[0].legend(by_label.values(), by_label.keys(), fontsize=12, loc="lower right", borderaxespad=1)
+
+
+
+    handles, labels = axb[0].get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    axb[0].legend(by_label.values(), by_label.keys(), fontsize=12, borderaxespad=1)
+
+    handles, labels = axc[0].get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    axc[0].legend(by_label.values(), by_label.keys(), fontsize=12, borderaxespad=1)
+
+    if savefigs:
+        figa.savefig(os.path.join(main_directory, 'correlation.png'))   # save the figure to file
+        
+        figb.savefig(os.path.join(main_directory, 'freqshift.png'))   # save the figure to file
+        
+        figc.savefig(os.path.join(main_directory, 'amplitudeshift.png'))   # save the figure to file
+    
+    plt.close('all')
+    return
+
+
+def plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes):
+
+    figs={}
+    axs={}
+    for i in range(len(freqasddata)):
+        figs[i], axs[i] = plt.subplots(2, 1, sharex=True, tight_layout=True)
+        figs[i].set_size_inches(18.5, 10.5)
+        figs[i].set_dpi(800)
+        
+        alpharange = np.linspace(0.1, 1, (freqasddata[1].shape)[1])[::-1]
+        for j in range((freqasddata[i].shape)[1]):
+            label_name = str(separation_scan[j]) + 'um'
+            axs[i][0].semilogy(freqasddata[i][:,j], xasddata[i][:,j], color = color_codes[i], alpha = alpharange[j], label=label_name)
+            axs[i][1].semilogy(freqasddata[i][:,j], yasddata[i][:,j], color = color_codes[i], alpha = alpharange[j], label=label_name)
+        axs[i][0].set_xlim([5,350])
+        axs[i][1].set_xlim([5,350])
+
+        handles, labels = axs[i][0].get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))
+        axs[i][0].legend(by_label.values(), by_label.keys(), fontsize=12, loc="upper right", bbox_to_anchor=(1.1, 1), borderaxespad=0.1)
+        titlename = "Sphere " + str(i) + ' Response'
+        figs[i].suptitle(titlename)
+        
+        axs[i][1].set_xlabel('Frequency (Hz)')
+        axs[i][0].set_ylabel(r'X ASD ($m/ \sqrt{Hz}$)')
+        axs[i][1].set_ylabel(r'Y ASD ($m/ \sqrt{Hz}$)')
         
         if savefigs:
-            fig.savefig(os.path.join(main_directory, data_label + '.png'))   # save the figure to file
-        
-        plt.close()
-    break
+            figs[i].savefig(os.path.join(main_directory, titlename +'.png'))
 
-plt.close('all')
-
-figa, axa = plt.subplots(1,2)
-figa.tight_layout()
-figa.set_size_inches(10,5)
-figa.set_dpi(600)
-
-figb, axb = plt.subplots(1,2)
-figb.tight_layout()
-figb.set_size_inches(10,5)
-figb.set_dpi(600)
-
-figc, axc = plt.subplots(1,2)
-figc.tight_layout()
-figc.set_size_inches(10,5)
-figc.set_dpi(600)
-
-color_codes = ['#000080', '#FF8C00', '#008000', '#00FF00', '#0000FF', '#00FFFF', '#FF0000', '#FF00FF', '#800000', '#808000', '#800080', '#008080']
-
-
-axa[0].set_title('X Correlation vs Separation')
-axa[1].set_title('Y Correlation vs Separation')
-axa[0].set_xlabel(r'Separation ($\mu m$)')
-axa[0].set_ylabel('Correlation')
-axa[1].set_xlabel(r'Separation ($\mu m$)')
-axa[1].set_ylabel('Correlation')
-
-axb[0].set_title('X Peak vs Separation')
-axb[1].set_title('Y Peak vs Separation')
-axb[0].set_xlabel(r'Separation ($\mu m$)')
-axb[0].set_ylabel('Frequency Drift (Hz)')
-axb[1].set_xlabel(r'Separation ($\mu m$)')
-axb[1].set_ylabel('Frequency Drift (Hz)')
-
-axc[0].set_title('X Peak vs Separation')
-axc[1].set_title('Y Peak vs Separation')
-axc[0].set_xlabel(r'Separation ($\mu m$)')
-axc[0].set_ylabel(r'Amplitude ($m/ \sqrt{Hz}$)')
-axc[1].set_xlabel(r'Separation ($\mu m$)')
-axc[1].set_ylabel(r'Amplitude ($m/ \sqrt{Hz}$)')
-
-
-
-cor_legend = []
-for i in range(totalspheres):
-    for j in range(totalspheres):
-        if j > i:
-            cor_legend.append(str(i) + '-' + str(j))
-xreffreqs = []
-yreffreqs = []
-
-#get the frequencies of them when furthest apart in the scan for comparison
-for j in range(len(x_peak_scan[-1])):
-    refpeaks = x_peak_scan[-1][j]
-    refpeaksortindices = np.argsort(refpeaks[:,2])[::-1]
-    for p in refpeaksortindices:
-        
-        if refpeaks[p,1] > 60:
-            refmaxpeak = refpeaks[p,:]
-            break
-    xreffreqs.append(refmaxpeak[1])
-
-for j in range(len(y_peak_scan[-1])):
-    refpeaks = y_peak_scan[-1][j]
-    refpeaksortindices = np.argsort(refpeaks[:,2])[::-1]
-    for p in refpeaksortindices:
-        
-        if refpeaks[p,1] > 60:
-            refmaxpeak = refpeaks[p,:]
-            break
-    yreffreqs.append(refmaxpeak[1])
-
-
-
-
-for i in range(len(separation_scan)):
-    for j in range(len(correlation_scan[i][:,0])):
-        axa[0].scatter(separation_scan[i], correlation_scan[i][j,0], color=color_codes[j], label=cor_legend[j])
-        axa[1].scatter(separation_scan[i], correlation_scan[i][j,1], color=color_codes[j], label=cor_legend[j])
-    
-    
-    for j in range(len(x_peak_scan[i])):
-        xpeaks = x_peak_scan[i][j]
-        peaksortindices = np.argsort(xpeaks[:,2])[::-1]
-        for p in peaksortindices:
-            
-            if xpeaks[p,1] > 60:
-                maxpeak = xpeaks[p,:]
-                break
-            
-        
-        normpeakfreq = maxpeak[1] - xreffreqs[j]
-        axb[0].scatter(separation_scan[i], normpeakfreq, color=color_codes[j], label =('Sphere ' + str(j)))
-        
-        axc[0].scatter(separation_scan[i], maxpeak[2], color=color_codes[j], label =('Sphere ' + str(j)))
-        
-    
-    for j in range(len(y_peak_scan[i])):
-        ypeaks = y_peak_scan[i][j]
-        peaksortindices = np.argsort(ypeaks[:,2])[::-1]
-        for p in peaksortindices:
-            
-            if ypeaks[p,1] > 60:
-                maxpeak = ypeaks[p,:]
-                break
-
-        
-        normpeakfreq = maxpeak[1] - yreffreqs[j]
-        axb[1].scatter(separation_scan[i], normpeakfreq, color=color_codes[j], label =('Sphere ' + str(j)))
-        
-        axc[1].scatter(separation_scan[i], maxpeak[2], color=color_codes[j], label =('Sphere ' + str(j)))
-        
-
-
-
-handles, labels = axa[0].get_legend_handles_labels()
-by_label = dict(zip(labels, handles))
-axa[0].legend(by_label.values(), by_label.keys(), fontsize=12, loc="lower right", borderaxespad=1)
-
-
-
-handles, labels = axb[0].get_legend_handles_labels()
-by_label = dict(zip(labels, handles))
-axb[0].legend(by_label.values(), by_label.keys(), fontsize=12, borderaxespad=1)
-
-handles, labels = axc[0].get_legend_handles_labels()
-by_label = dict(zip(labels, handles))
-axc[0].legend(by_label.values(), by_label.keys(), fontsize=12, borderaxespad=1)
-
-if savefigs:
-    figa.savefig(os.path.join(main_directory, 'correlation.png'))   # save the figure to file
-    
-    figb.savefig(os.path.join(main_directory, 'freqshift.png'))   # save the figure to file
-    
-    figc.savefig(os.path.join(main_directory, 'amplitudeshift.png'))   # save the figure to file
-    
-
-figs={}
-axs={}
-for i in range(len(freqasddata)):
-    figs[i], axs[i] = plt.subplots(2, 1, sharex=True, tight_layout=True)
-    figs[i].set_size_inches(18.5, 10.5)
-    figs[i].set_dpi(800)
-    
-    alpharange = np.linspace(0.1, 1, (freqasddata[1].shape)[1])
-    for j in range((freqasddata[i].shape)[1]):
-        axs[i][0].semilogy(freqasddata[i][:,j], xasddata[i][:,j], color = color_codes[i], alpha = alpharange[j])
-        axs[i][1].semilogy(freqasddata[i][:,j], yasddata[i][:,j], color = color_codes[i], alpha = alpharange[j])
-    axs[i][0].set_xlim([5,350])
-    axs[i][1].set_xlim([5,350])
-
-    titlename = "Sphere " + str(i) + ' Response'
-    figs[i].suptitle(titlename)
-    
-    axs[i][1].set_xlabel('Frequency (Hz)')
-    axs[i][0].set_ylabel(r'X ASD ($m/ \sqrt{Hz}$)')
-    axs[i][1].set_ylabel(r'Y ASD ($m/ \sqrt{Hz}$)')
-    
-    if savefigs:
-        figs[i].savefig(os.path.join(main_directory, titlename +'.png'))
+    plt.close('all')
+    return
 
 
 def interpdatafn(freq, data, lb, up, separation_scan, sphrindex, direction, fig, ax):
@@ -585,21 +571,37 @@ def interpdatafn(freq, data, lb, up, separation_scan, sphrindex, direction, fig,
     
     return freqlist, interpdata, df, fig, ax
 
+def heatmap_scan_plotter(freqasddata, xasddata, yasddata, anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs):
+    figx, axx = plt.subplots(1, totalspheres, figsize=(totalspheres*5, 5), sharey=True, tight_layout=True)
+    figx.set_dpi(800)
+    figy, axy = plt.subplots(1, totalspheres, figsize=(totalspheres*5, 5), sharey=True, tight_layout=True)
+    figy.set_dpi(800)
+    for i in range(totalspheres):
+        freqlistx, interpdatax, dfx, figx, axx = interpdatafn(freqasddata[i], xasddata[i], anticrossinglbs[i][0], anticrossingubs[i][0], separation_scan, i, " X ", figx, axx)
+        freqlisty, interpdatay, dfy, figy, axy = interpdatafn(freqasddata[i], yasddata[i], anticrossinglbs[i][1], anticrossingubs[i][1], separation_scan, i, " Y ", figy, axy)
+    axx[0].set_ylabel('Frequency (Hz)')
+    axy[0].set_ylabel('Frequency (Hz)')
+    if savefigs:
+        savenamex = "Normalized X fq vs separation"
+        savenamey = "Normalized Y fq vs separation"
+        figx.savefig(os.path.join(main_directory, savenamex +'.png'))
+        figy.savefig(os.path.join(main_directory, savenamey +'.png'))
 
-figx, axx = plt.subplots(1, totalspheres, figsize=(totalspheres*5, 5), sharey=True, tight_layout=True)
-figx.set_dpi(800)
-figy, axy = plt.subplots(1, totalspheres, figsize=(totalspheres*5, 5), sharey=True, tight_layout=True)
-figy.set_dpi(800)
-for i in range(totalspheres):
-   freqlistx, interpdatax, dfx, figx, axx = interpdatafn(freqasddata[i], xasddata[i], anticrossinglbs[i][0], anticrossingubs[i][0], separation_scan, i, " X ", figx, axx)
-   freqlisty, interpdatay, dfy, figy, axy = interpdatafn(freqasddata[i], yasddata[i], anticrossinglbs[i][1], anticrossingubs[i][1], separation_scan, i, " Y ", figy, axy)
-axx[0].set_ylabel('Frequency (Hz)')
-axy[0].set_ylabel('Frequency (Hz)')
-if savefigs:
-    savenamex = "Normalized X fq vs separation"
-    savenamey = "Normalized Y fq vs separation"
-    figx.savefig(os.path.join(main_directory, savenamex +'.png'))
-    figy.savefig(os.path.join(main_directory, savenamey +'.png'))
+
+    plt.close('all')
+    return
 
 
-plt.close('all')
+
+main_directory = r"D:\Lab data\20240531"
+totalspheres = 2
+saveflag = False
+savefigs = True
+anticrossinglbs = [[100, 100],[100, 100]]
+anticrossingubs = [[300, 300],[300, 300]]
+color_codes = ['#000080', '#FF8C00', '#008000', '#00FF00', '#0000FF', '#00FFFF', '#FF0000', '#FF00FF', '#800000', '#808000', '#800080', '#008080']
+
+x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
+plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes)
+plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes)
+heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
