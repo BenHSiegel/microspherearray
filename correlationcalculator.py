@@ -29,8 +29,8 @@ main_directory = r"D:\Lab data\20240531"
 totalspheres = 2
 saveflag = False
 savefigs = True
-anticrossinglbs = [[125, 100],[100, 125]]
-anticrossingubs = [[300, 300],[260, 220]]
+anticrossinglbs = [[100, 100],[100, 100]]
+anticrossingubs = [[300, 300],[300, 300]]
 
 def butter_highpass(data, highpassfq, fs, order=3):
     nyq = 0.5 * fs
@@ -580,24 +580,24 @@ def interpdatafn(freq, data, lb, up, separation_scan, sphrindex, direction, fig,
     ax[sphrindex].set_yticklabels(yticklabel)
     titlename = "Sphere " + str(sphrindex) + direction + 'Response'
     ax[sphrindex].set_title(titlename)
-    ax[sphrindex].set_ylabel('Frequency (Hz)')
+    #ax[sphrindex].set_ylabel('Frequency (Hz)')
     ax[sphrindex].set_xlabel(r'Separation ($\mu m$)')
     
     return freqlist, interpdata, df, fig, ax
 
 
-figx, axx = plt.subplots(totalspheres, 1, figsize=(5, totalspheres*5), sharex=True, tight_layout=True)
+figx, axx = plt.subplots(1, totalspheres, figsize=(totalspheres*5, 5), sharey=True, tight_layout=True)
 figx.set_dpi(800)
-figy, axy = plt.subplots(totalspheres, 1, figsize=(5, totalspheres*5), sharex=True, tight_layout=True)
+figy, axy = plt.subplots(1, totalspheres, figsize=(totalspheres*5, 5), sharey=True, tight_layout=True)
 figy.set_dpi(800)
 for i in range(totalspheres):
    freqlistx, interpdatax, dfx, figx, axx = interpdatafn(freqasddata[i], xasddata[i], anticrossinglbs[i][0], anticrossingubs[i][0], separation_scan, i, " X ", figx, axx)
    freqlisty, interpdatay, dfy, figy, axy = interpdatafn(freqasddata[i], yasddata[i], anticrossinglbs[i][1], anticrossingubs[i][1], separation_scan, i, " Y ", figy, axy)
-
-
+axx[0].set_ylabel('Frequency (Hz)')
+axy[0].set_ylabel('Frequency (Hz)')
 if savefigs:
-    savenamex = "Normalized X fq vs separation stacked"
-    savenamey = "Normalized Y fq vs separation stacked"
+    savenamex = "Normalized X fq vs separation"
+    savenamey = "Normalized Y fq vs separation"
     figx.savefig(os.path.join(main_directory, savenamex +'.png'))
     figy.savefig(os.path.join(main_directory, savenamey +'.png'))
 
