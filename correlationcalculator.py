@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
 """
 Created on Thu May 16 11:42:25 2024
 Correlation matrix generator for spheres
-@author: yalem
 """
 
 import os
