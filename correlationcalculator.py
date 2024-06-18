@@ -25,10 +25,11 @@ from scipy.interpolate import interp1d
 
 
 
-def butter_highpass(data, highpassfq, fs, order=3):
+def butter_bandpass(data, highpassfq, fs, order=3):
     nyq = 0.5 * fs
-    cornerfq = highpassfq / nyq
-    b, a = butter(order, cornerfq, btype='highpass')
+    highpasscornerfq = highpassfq / nyq
+    lowpasscornerfq = 200/nyq
+    b, a = butter(order, [highpasscornerfq, lowpasscornerfq], btype='bandpass')
     filtered_data = lfilter(b, a, data)
     return filtered_data
     
@@ -54,9 +55,9 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
         for j in group.items():
             pos = np.array(j[1])
             xpos = pos[:,1].reshape(-1,1)
-            xfiltered = butter_highpass(xpos, 40, fs)
+            xfiltered = butter_bandpass(xpos, 70, fs)
             ypos = pos[:,2].reshape(-1,1)
-            yfiltered = butter_highpass(ypos, 40, fs)
+            yfiltered = butter_bandpass(ypos, 70, fs)
             if l == 0:
                 xposdata = xfiltered[:,0].reshape(-1,1)
                 yposdata = yfiltered[:,0].reshape(-1,1)
@@ -143,11 +144,11 @@ def heatmap(data, row_labels, col_labels, ax=None,
     ax.set_yticks(np.arange(data.shape[0]), labels=row_labels)
 
     # Let the horizontal axes labeling appear on top.
-    ax.tick_params(top=True, bottom=False,
-                   labeltop=True, labelbottom=False)
+    ax.tick_params(top=False, bottom=True,
+                   labeltop=False, labelbottom=True)
 
     # Rotate the tick labels and set their alignment.
-    plt.setp(ax.get_xticklabels(), rotation=-30, ha="right",
+    plt.setp(ax.get_xticklabels(), rotation=0, ha="right",
              rotation_mode="anchor")
 
     # Turn spines off and create white grid.
@@ -155,7 +156,7 @@ def heatmap(data, row_labels, col_labels, ax=None,
 
     ax.set_xticks(np.arange(data.shape[1]+1)-.5, minor=True)
     ax.set_yticks(np.arange(data.shape[0]+1)-.5, minor=True)
-    ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
+    ax.grid(which="minor", color="w", linestyle='-', linewidth=0)
     ax.tick_params(which="minor", bottom=False, left=False)
 
     return im, cbar
@@ -591,15 +592,18 @@ def heatmap_scan_plotter(freqasddata, xasddata, yasddata, anticrossinglbs, antic
 
 
 
-main_directory = r"D:\Lab data\20240531"
-totalspheres = 2
-saveflag = False
-savefigs = True
-anticrossinglbs = [[100, 100],[100, 100]]
-anticrossingubs = [[300, 300],[300, 300]]
-color_codes = ['#000080', '#FF8C00', '#008000', '#00FF00', '#0000FF', '#00FFFF', '#FF0000', '#FF00FF', '#800000', '#808000', '#800080', '#008080']
+# main_directory = r"D:\Lab data\20240604"
+# totalspheres = 25
+# saveflag = True
+# savefigs = True
+# anticrossinglbs = [[100, 100],[100, 100]]
+# anticrossingubs = [[300, 300],[300, 300]]
 
-x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
-plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes)
-plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes)
-heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
+# color_value = np.linspace(0,1,totalspheres)
+# color_value_T = color_value[::-1]
+# color_codes = [(color_value[i],0,color_value_T[i]) for i in range(totalspheres)]
+
+# x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
+# plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes)
+# plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes)
+# heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)

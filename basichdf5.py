@@ -85,4 +85,4 @@ def hdf5_sphere_data_scraper(filename):
     #close the hdf5 file once complete   
     hf.close()
 
-    return xposdata, yposdata, xfftmatrix, yfftmatrix, frequency_bins
+    return xposdata, yposdata, xfftmatrix, yfftmatrix, frequency_bins, fs
