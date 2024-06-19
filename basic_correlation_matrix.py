@@ -33,11 +33,11 @@ for i in range(len(files)):
     for l in range(xcor.shape[0]):
         for m in range(xcor.shape[1]):
 
-            if ycor[l][m] == 1:
-                ycor[l][m] = 0
+            if xcor[l][m] == 1:
+                xcor[l][m] = 0
 
-    print(np.max(ycor))
-    print(np.min(ycor))
+    print(np.max(xcor))
+    print(np.min(xcor))
 
 
     spherenames = [str(x+1) for x in range(totalspheres)]
@@ -52,10 +52,10 @@ for i in range(len(files)):
         cbar_kws = None
         cbar_ax = None
         
-    mask = np.triu(np.ones_like(ycor, dtype=bool))
-    sn.heatmap(ycor, mask=mask, square=True, cmap = 'viridis', vmin=-0.25, vmax=0.1, ax=ax[i], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
-    ax[i].set_xticks(np.arange(ycor.shape[1])+.5, labels=spherenames)
-    ax[i].set_yticks(np.arange(ycor.shape[0])+.5, labels=spherenames)
+    mask = np.triu(np.ones_like(xcor, dtype=bool))
+    sn.heatmap(xcor, mask=mask, square=True, cmap = 'viridis', vmin=-0.25, vmax=0.1, ax=ax[i], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
+    ax[i].set_xticks(np.arange(xcor.shape[1])+.5, labels=spherenames)
+    ax[i].set_yticks(np.arange(xcor.shape[0])+.5, labels=spherenames)
     plt.setp(ax[i].get_xticklabels(), rotation=90)
     ax[i].set_title(separations[i] + 'um Spacing')
     ax[i].set_xlabel('Sphere Index')

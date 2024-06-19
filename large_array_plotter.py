@@ -74,4 +74,4 @@ def array_single_file_plot(single_file):
 folder_list = ['0-8MHz', '1MHz', '1-25MHz', '1-5MHz']
 
 single_file = r'D:\Lab data\20240604\0-8MHz\0-8MHz_25grid-lp-1.h5'
-#array_single_file_plot(single_file)
+array_single_file_plot(single_file)

@@ -28,7 +28,7 @@ def justpeakplotter(path, color_codes):
     legendlist = []
     offset = np.linspace(0,0.5E-14,len(X_asd))
     for i in range(len(X_asd)):
-        ax0.semilogy(freqs, (X_asd[i,:]**2 + offset[i]), color=color_codes[i])
+        ax0.plot(freqs, (X_asd[i,:]**2 + offset[i]), color=color_codes[i])
         x_peak_indices, x_peak_dict = find_peaks(X_asd[i,:], height=3E-9)
         x_peak_heights = x_peak_dict['peak_heights']
         x_peak_freqs = freqs[x_peak_indices]

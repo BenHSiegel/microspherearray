@@ -7,10 +7,10 @@ import os
 from folderscanning_videoprocessor import *
 
 
-main_directory = r"D:\Lab data\20240604"
-pixtoum = 10/10  #diameter of sphere (um) / number of pixels for diameter of sphere
+main_directory = r"D:\Lab data\20240430"
+pixtoum = 10/10.5  #diameter of sphere (um) / number of pixels for diameter of sphere
 centroid_diameter = 13 #centroid size to look for in the images in pixels, always odd and overestimating size
-rowlen = 5
+rowlen = 1
 pcacheck = False
 saveposdata = True
 saveFFTavg = True
