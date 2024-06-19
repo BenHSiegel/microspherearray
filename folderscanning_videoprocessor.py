@@ -77,7 +77,7 @@ def lorentzian(f, f0, gam, cal_fac):
   omega0 = 2*np.pi*f0
   return 1/(cal_fac)**2 * 2*kb*temp/m * gam/((omega0**2 - omega**2)**2 + omega**2*gam**2)
 
-def psdplotter(t, framerate, spheres, f, pixtoum, pcacheck, saveposdata, savename):
+def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata, savename):
     ypx = t.loc[:,'y']
     xpx = t.loc[:,'x']
     spherenumber = t.loc[:,'particle']
@@ -98,6 +98,31 @@ def psdplotter(t, framerate, spheres, f, pixtoum, pcacheck, saveposdata, savenam
         framenumlist[spherenumber[i]].append(framenum[i])
     
     nodrops = max(len(i) for i in xposlist)
+
+    #sort the spheres by their position in the frame so it can be consistent across videos
+    xposmeans = [np.average(xposlist[i]) for i in range(len(xposlist))]
+    yposmeans = [np.average(yposlist[i]) for i in range(len(yposlist))]
+
+    xsortedind = np.argsort(xposmeans)
+    xsorted = [ xposmeans[i] for i in xsortedind ]
+    ysorted = [ yposmeans[i] for i in xsortedind ]
+
+    ysortedind = np.empty(0).astype(int)
+    i = rowlen
+    lasti = 0
+
+    while i <= totalspheres:
+        rowsort = np.argsort(ysorted[lasti:i])+lasti
+        rowsort = rowsort.astype(int)
+        ysortedind = np.concatenate((ysortedind, rowsort))
+        lasti = i
+        i = i + rowlen
+
+    xposlist = [ xposlist[j] for j in xsortedind ]
+    xposlist = [ xposlist[j] for j in ysortedind ]
+
+    yposlist = [ yposlist[j] for j in xsortedind ]
+    yposlist = [ yposlist[j] for j in ysortedind ]
 
     #make an array of the time for each frame in the video
     timeinc = 1/framerate 
@@ -286,7 +311,7 @@ def psdplotter(t, framerate, spheres, f, pixtoum, pcacheck, saveposdata, savenam
 
 
 
-def videofolder_dataextractions(path, framerate, diameter, pixtoum, pcacheck, saveposdata):
+def videofolder_dataextractions(path, framerate, diameter, rowlen, pixtoum, pcacheck, saveposdata):
     file_name_directory = []
     for filename in sorted(os.listdir(path)):
         if filename.endswith(".avi"):
@@ -295,7 +320,7 @@ def videofolder_dataextractions(path, framerate, diameter, pixtoum, pcacheck, sa
     for vid in file_name_directory:
         [spheres, f] = processmovie(vid, framerate, diameter)
         t = motiontracer(spheres, f)
-        totalspheres = psdplotter(t, framerate, spheres, f, pixtoum, pcacheck, saveposdata, vid[:-4])
+        totalspheres = psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata, vid[:-4])
 
     return totalspheres
 
@@ -387,8 +412,9 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
 # framerate = 672
 # pcacheck = False
 # saveposdata = True
-# #saveFFTavg = True
-# #fftsave = "expandedposition20240319rmsavg"
+# saveFFTavg = True
+# rowlen = 1
+# fftsave = "expandedposition20240319rmsavg"
 
-# totalspheres = videofolder_dataextractions(path, framerate, pcacheck, saveposdata)
+# totalspheres = videofolder_dataextractions(path, framerate, diameter, rowlen, pixtoum, pcacheck, saveposdata):
 # #hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)
