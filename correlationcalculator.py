@@ -559,7 +559,7 @@ def interpdatafn(freq, data, lb, up, separation_scan, sphrindex, direction, fig,
     ylist = freqlist.tolist()
     yticks = np.linspace(0, len(ylist)-1, num_ticks, dtype=int)
     yticklabel = [np.round(ylist[idx]).astype(int) for idx in yticks]
-    sn.heatmap(df, ax=ax[sphrindex], yticklabels=yticklabel, cbar_kws={'label': r'Normalized Amplitude'})
+    sn.heatmap(df, ax=ax[sphrindex], yticklabels=yticklabel, cbar_kws={'label': r'Amplitude ($m/ \sqrt{Hz}$)'})
     ax[sphrindex].invert_yaxis()
     ax[sphrindex].set_yticks(yticks)
     ax[sphrindex].set_yticklabels(yticklabel)
@@ -571,9 +571,9 @@ def interpdatafn(freq, data, lb, up, separation_scan, sphrindex, direction, fig,
     return freqlist, interpdata, df, fig, ax
 
 def heatmap_scan_plotter(freqasddata, xasddata, yasddata, anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs):
-    figx, axx = plt.subplots(1, totalspheres, figsize=(totalspheres*5, 5), sharey=True, tight_layout=True)
+    figx, axx = plt.subplots(totalspheres, 1,figsize=(5, totalspheres*5), sharex=True, tight_layout=True)
     figx.set_dpi(800)
-    figy, axy = plt.subplots(1, totalspheres, figsize=(totalspheres*5, 5), sharey=True, tight_layout=True)
+    figy, axy = plt.subplots(totalspheres, 1, figsize=(5, totalspheres*5), sharex=True, tight_layout=True)
     figy.set_dpi(800)
     for i in range(totalspheres):
         freqlistx, interpdatax, dfx, figx, axx = interpdatafn(freqasddata[i], xasddata[i], anticrossinglbs[i][0], anticrossingubs[i][0], separation_scan, i, " X ", figx, axx)
@@ -581,8 +581,8 @@ def heatmap_scan_plotter(freqasddata, xasddata, yasddata, anticrossinglbs, antic
     axx[0].set_ylabel('Frequency (Hz)')
     axy[0].set_ylabel('Frequency (Hz)')
     if savefigs:
-        savenamex = "Normalized X fq vs separation"
-        savenamey = "Normalized Y fq vs separation"
+        savenamex = "Normalized X fq vs separation stacked"
+        savenamey = "Normalized Y fq vs separation stacked"
         figx.savefig(os.path.join(main_directory, savenamex +'.png'))
         figy.savefig(os.path.join(main_directory, savenamey +'.png'))
 
@@ -592,18 +592,18 @@ def heatmap_scan_plotter(freqasddata, xasddata, yasddata, anticrossinglbs, antic
 
 
 
-# main_directory = r"D:\Lab data\20240604"
-# totalspheres = 25
-# saveflag = True
-# savefigs = True
-# anticrossinglbs = [[100, 100],[100, 100]]
-# anticrossingubs = [[300, 300],[300, 300]]
+main_directory = r"D:\Lab data\20240531"
+totalspheres = 2
+saveflag = True
+savefigs = True
+anticrossinglbs = [[100, 100],[100, 100]]
+anticrossingubs = [[300, 300],[300, 300]]
 
-# color_value = np.linspace(0,1,totalspheres)
-# color_value_T = color_value[::-1]
-# color_codes = [(color_value[i],0,color_value_T[i]) for i in range(totalspheres)]
+color_value = np.linspace(0,1,totalspheres)
+color_value_T = color_value[::-1]
+color_codes = [(color_value[i],0,color_value_T[i]) for i in range(totalspheres)]
 
-# x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
-# plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes)
-# plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes)
-# heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
+x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
+plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes)
+plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes)
+heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
