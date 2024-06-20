@@ -26,7 +26,8 @@ def justpeakplotter(path, color_codes):
     fig0, ax0 = plt.subplots()
     fig1, ax1 = plt.subplots()
     legendlist = []
-    offset = np.linspace(0,0.5E-14,len(X_asd))
+    offset = np.linspace(0,5E-15,len(X_asd))
+    offsety = np.linspace(0,3E-14,len(X_asd))
     for i in range(len(X_asd)):
         ax0.plot(freqs, (X_asd[i,:]**2 + offset[i]), color=color_codes[i])
         x_peak_indices, x_peak_dict = find_peaks(X_asd[i,:], height=3E-9)
@@ -38,7 +39,7 @@ def justpeakplotter(path, color_codes):
         
         x_peaks_list[i] = x_peaks
         
-        ax1.plot(freqs, Y_asd[i,:])
+        ax1.plot(freqs, Y_asd[i,:]**2 + offsety[i], color=color_codes[i])
         y_peak_indices, y_peak_dict = find_peaks(Y_asd[i,:], height=3E-9, threshold=1E-11)
         y_peak_heights = y_peak_dict['peak_heights']
         y_peak_freqs = freqs[y_peak_indices]
@@ -49,7 +50,7 @@ def justpeakplotter(path, color_codes):
         legendlist.append('Sphere ' + str(i))
     
     ax0.set_xlim(60,200)
-    ax0.set_ylim(0,6.1E-15)
+    ax0.set_ylim(0,6.5E-15)
     ax0.set_xlabel('Frequency (Hz)', fontsize=18)
     ax0.set_ylabel('Sphere Index', fontsize=18)
     spherenames = [str(x+1) for x in range(25)]
@@ -57,12 +58,13 @@ def justpeakplotter(path, color_codes):
     #ax0.legend(legendlist, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
     ax0.set_title('X Motion Spectra', fontsize=22)
     
-    ax1.grid()
-    #ax1.set_xlim(0,170)
+    ax1.set_xlim(60,150)
+    ax1.set_ylim(0,3.2E-14)
     ax1.set_xlabel('Frequency (Hz)', fontsize=18)
-    ax1.set_ylabel(r'ASD ($m/ \sqrt{Hz}$)', fontsize=18)
-    ax1.legend(legendlist, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
-    ax1.set_title('Y motion ASD', fontsize=22)
+    ax1.set_ylabel('Sphere Index', fontsize=18)
+    ax1.set_yticks(offsety, labels=spherenames)
+    #ax1.legend(legendlist, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
+    ax1.set_title('Y Motion Spectra', fontsize=22)
         
     # highest_peak_index = peak_indices[np.argmax(peak_heights)]
     # second_highest_peak_index = peak_indices[np.argpartition(peak_heights,-2)[-2]]

@@ -12,7 +12,7 @@ from scipy import fft
 from sklearn.decomposition import PCA ## need this for principle component analysis below
 from matplotlib.mlab import psd
 from scipy.optimize import minimize, curve_fit
-from scipy.stats import chi2
+from scipy.stats import chi2, pearsonr
 from scipy.signal import welch
 from scipy.signal.windows import blackman
 from scipy.signal import find_peaks, butter, lfilter
@@ -28,10 +28,26 @@ from scipy.interpolate import interp1d
 def butter_bandpass(data, highpassfq, fs, order=3):
     nyq = 0.5 * fs
     highpasscornerfq = highpassfq / nyq
-    lowpasscornerfq = 200/nyq
+    lowpasscornerfq = 250/nyq
     b, a = butter(order, [highpasscornerfq, lowpasscornerfq], btype='bandpass')
     filtered_data = lfilter(b, a, data)
     return filtered_data
+
+    
+def corr_cross_calc(X, Y):
+    #calculates the Pearson correlation coefficient between the columns of two 
+    #arrays for all combinations of the columns
+    
+    cor_matrix = np.zeros((X.shape[1],Y.shape[1]))
+    
+    for n in range(X.shape[1]):
+        for m in range(Y.shape[1]):
+            cor_matrix[n,m] = pearsonr(X[:,n], Y[:,m])[0]
+    
+    return cor_matrix
+
+
+
     
 def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
     hdf5_list = []
@@ -41,6 +57,7 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
     
     xcorrlist = []
     ycorrlist = []
+    xycorrlist = []
     
     counter = 0
     for i in hdf5_list:
@@ -61,6 +78,7 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
             if l == 0:
                 xposdata = xfiltered[:,0].reshape(-1,1)
                 yposdata = yfiltered[:,0].reshape(-1,1)
+                
             else:
                 xposdata = np.concatenate((xposdata, xfiltered[:,0].reshape(-1,1)), axis=1)
                 yposdata = np.concatenate((yposdata, yfiltered[:,0].reshape(-1,1)), axis=1)
@@ -73,18 +91,22 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
         ydf = pd.DataFrame(yposdata)
         
         xcorrmatrix = xdf.corr()
-        ycorrmatrix = ydf.corr()    
+        ycorrmatrix = ydf.corr()  
+        xycorrmatrix = corr_cross_calc(xposdata, yposdata)
         
         if counter == 0:
             xcorrlist = xcorrmatrix
             ycorrlist = ycorrmatrix
+            xycorrlist = xycorrmatrix
         else:
             xcorrlist = np.dstack((xcorrlist,xcorrmatrix))
             ycorrlist = np.dstack((ycorrlist,ycorrmatrix))
+            xycorrlist = np.dstack((xycorrlist, xycorrmatrix))
         counter += 1
             
     xcorr_averaged = np.mean(xcorrlist, axis=2)
     ycorr_averaged = np.mean(ycorrlist, axis=2)
+    xycorr_averaged = np.mean(xycorrlist, axis=2)
     
     if saveflag:
         savename = savename + '.h5'
@@ -94,10 +116,11 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
         hf.attrs.create('Number of spheres', totalspheres)
         hf.create_dataset('X_correlations', data=xcorr_averaged)
         hf.create_dataset('Y_correlations', data=ycorr_averaged)
+        hf.create_dataset('X-Y Cross Correlations', data=xycorr_averaged)
 
         hf.close()
     
-    return xcorr_averaged, ycorr_averaged
+    return xcorr_averaged, ycorr_averaged, xycorr_averaged
 
 
 def heatmap(data, row_labels, col_labels, ax=None,
@@ -232,9 +255,13 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
     x_peak_scan = []
     y_peak_scan = []
 
+    figcros = plt.figure()
+    axcros = figcros.add_subplot(111,projection='3d')
+    xcros, ycros = np.arange(1,totalspheres+1)
+    xgrid, ygrid = np.meshgrid(xcros,ycros)
 
     for path, folders, files in os.walk(main_directory):
-        
+       
         for folder_name in folders:
             
             directory = f"{path}/{folder_name}"
@@ -244,6 +271,7 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
                 lines = [line.rstrip() for line in file]
             framerate = float(lines[0])
             sep = float(lines[1])
+            umsep = sep * 70
             data_label = lines[2]
             include_in_scan = lines[3]
             
@@ -251,9 +279,10 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
                 counter += 1
                 
             savename = str(sep) + 'correlationmatrix'
-            xcorr_averaged, ycorr_averaged = hdf5file_correlationprocessing(directory, totalspheres, sep, saveflag, savename)
+            xcorr_averaged, ycorr_averaged, xycorr_averaged = hdf5file_correlationprocessing(directory, totalspheres, sep, saveflag, savename)
 
             if include_in_scan == 'True':
+                
                 xcorr_offdiags = []
                 ycorr_offdiags = []
                 for i in range(np.shape(xcorr_averaged)[0]):
@@ -263,6 +292,10 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
                             ycorr_offdiags.append(xcorr_averaged[i][j])
             
                 correlation_scan.append((np.vstack((xcorr_offdiags, ycorr_offdiags))).T)
+                
+                #######broken
+                #color_map = mpl.cm.get_cmap('viridis')
+                #axcros.scatter(xgrid,ygrid,umsep, c=xycorr_averaged, cmap=color_map)
 
             for filename in sorted(os.listdir(directory)):
                 if filename.endswith("rmsavg.h5"):
@@ -277,7 +310,7 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
                     hfpsd.close()
             
             
-            umsep = sep * 70
+            
             fig, ax = plt.subplots(2, 2, gridspec_kw={'width_ratios': [1, 3]})
             fig.tight_layout()
             fig.set_size_inches(11, 8.5)
@@ -358,31 +391,33 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
                 fig.savefig(os.path.join(main_directory, data_label + '.png'))   # save the figure to file
             
             
-            plt.close('all')
+            plt.close(fig)
             
+            
+
         break
 
-    
+    axcros.set_xlabel('Sphere Index')
+    axcros.set_ylabel('Sphere Index')
+    axcros.set_zlabel('Intersphere Separation (um)')
+    plt.show()
 
-    return x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata
+    return x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xdf, ydf
 
 
 def plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes):
 
-    figa, axa = plt.subplots(1,2)
-    figa.tight_layout()
-    figa.set_size_inches(10,5)
-    figa.set_dpi(600)
+    figa, axa = plt.subplots(1,2, tight_layout=True)
+    #figa.set_size_inches(10,5)
+    #figa.set_dpi(600)
 
-    figb, axb = plt.subplots(1,2)
-    figb.tight_layout()
-    figb.set_size_inches(10,5)
-    figb.set_dpi(600)
+    figb, axb = plt.subplots(1,2, tight_layout=True)
+    #figb.set_size_inches(10,5)
+    #figb.set_dpi(600)
 
-    figc, axc = plt.subplots(1,2)
-    figc.tight_layout()
-    figc.set_size_inches(10,5)
-    figc.set_dpi(600)
+    figc, axc = plt.subplots(1,2, tight_layout=True)
+    #figc.set_size_inches(10,5)
+    #figc.set_dpi(600)
 
     axa[0].set_title('X Correlation vs Separation')
     axa[1].set_title('Y Correlation vs Separation')
@@ -487,7 +522,7 @@ def plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, 
 
     handles, labels = axb[0].get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
-    axb[0].legend(by_label.values(), by_label.keys(), fontsize=12, borderaxespad=1)
+    axb[0].legend(by_label.values(), by_label.keys(), fontsize=12, loc="lower right", borderaxespad=1)
 
     handles, labels = axc[0].get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
@@ -549,9 +584,9 @@ def interpdatafn(freq, data, lb, up, separation_scan, sphrindex, direction, fig,
         amp = f(freqlist)
         normamp = amp / max(amp)
         if counter == 0:
-            interpdata = normamp.reshape(-1,1)
+            interpdata = amp.reshape(-1,1)
         else:
-            interpdata = np.concatenate((interpdata, normamp.reshape(-1,1)), axis=1)
+            interpdata = np.concatenate((interpdata, amp.reshape(-1,1)), axis=1)
         counter += 1
 
     df = pd.DataFrame(data=interpdata, columns = np.round(separation_scan).astype(int))
@@ -559,7 +594,7 @@ def interpdatafn(freq, data, lb, up, separation_scan, sphrindex, direction, fig,
     ylist = freqlist.tolist()
     yticks = np.linspace(0, len(ylist)-1, num_ticks, dtype=int)
     yticklabel = [np.round(ylist[idx]).astype(int) for idx in yticks]
-    sn.heatmap(df, ax=ax[sphrindex], yticklabels=yticklabel, cbar_kws={'label': r'Amplitude ($m/ \sqrt{Hz}$)'})
+    sn.heatmap(df, ax=ax[sphrindex], norm = LogNorm(), yticklabels=yticklabel, cbar_kws={'label': r'Amplitude ($m/ \sqrt{Hz}$)'})
     ax[sphrindex].invert_yaxis()
     ax[sphrindex].set_yticks(yticks)
     ax[sphrindex].set_yticklabels(yticklabel)
@@ -571,18 +606,18 @@ def interpdatafn(freq, data, lb, up, separation_scan, sphrindex, direction, fig,
     return freqlist, interpdata, df, fig, ax
 
 def heatmap_scan_plotter(freqasddata, xasddata, yasddata, anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs):
-    figx, axx = plt.subplots(totalspheres, 1,figsize=(5, totalspheres*5), sharex=True, tight_layout=True)
+    figx, axx = plt.subplots(1, totalspheres, figsize=(totalspheres*5, 5), sharex=False, tight_layout=True)
     figx.set_dpi(800)
-    figy, axy = plt.subplots(totalspheres, 1, figsize=(5, totalspheres*5), sharex=True, tight_layout=True)
+    figy, axy = plt.subplots(1, totalspheres, figsize=(totalspheres*5, 5), sharex=False, tight_layout=True)
     figy.set_dpi(800)
     for i in range(totalspheres):
-        freqlistx, interpdatax, dfx, figx, axx = interpdatafn(freqasddata[i], xasddata[i], anticrossinglbs[i][0], anticrossingubs[i][0], separation_scan, i, " X ", figx, axx)
-        freqlisty, interpdatay, dfy, figy, axy = interpdatafn(freqasddata[i], yasddata[i], anticrossinglbs[i][1], anticrossingubs[i][1], separation_scan, i, " Y ", figy, axy)
+        freqlistx, interpdatax, dfx, figx, axx = interpdatafn(freqasddata[i], xasddata[i], anticrossinglbs, anticrossingubs, separation_scan, i, " X ", figx, axx)
+        freqlisty, interpdatay, dfy, figy, axy = interpdatafn(freqasddata[i], yasddata[i], anticrossinglbs, anticrossingubs, separation_scan, i, " Y ", figy, axy)
     axx[0].set_ylabel('Frequency (Hz)')
     axy[0].set_ylabel('Frequency (Hz)')
     if savefigs:
-        savenamex = "Normalized X fq vs separation stacked"
-        savenamey = "Normalized Y fq vs separation stacked"
+        savenamex = "X fq vs separation"
+        savenamey = "Y fq vs separation"
         figx.savefig(os.path.join(main_directory, savenamex +'.png'))
         figy.savefig(os.path.join(main_directory, savenamey +'.png'))
 
@@ -592,18 +627,18 @@ def heatmap_scan_plotter(freqasddata, xasddata, yasddata, anticrossinglbs, antic
 
 
 
-# main_directory = r"D:\Lab data\20240604"
-# totalspheres = 25
-# saveflag = True
-# savefigs = True
-# anticrossinglbs = [[100, 100],[100, 100]]
-# anticrossingubs = [[300, 300],[300, 300]]
+main_directory = r"D:\Lab data\20240531"
+totalspheres = 2
+saveflag = True
+savefigs = False
+anticrossinglbs = 100
+anticrossingubs = 300
 
-# color_value = np.linspace(0,1,totalspheres)
-# color_value_T = color_value[::-1]
-# color_codes = [(color_value[i],0,color_value_T[i]) for i in range(totalspheres)]
+color_value = np.linspace(0,1,totalspheres)
+color_value_T = color_value[::-1]
+color_codes = [(color_value[i],0,color_value_T[i]) for i in range(totalspheres)]
 
-# x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
-# plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes)
-# plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes)
-# heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
+x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xdf, ydf = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
+plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes)
+plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes)
+heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
