@@ -15,7 +15,7 @@ from scipy.optimize import minimize, curve_fit
 from scipy.stats import chi2, pearsonr
 from scipy.signal import welch
 from scipy.signal.windows import blackman
-from scipy.signal import find_peaks, butter, lfilter
+from scipy.signal import find_peaks, butter, lfilter, csd, coherence
 from matplotlib.pyplot import gca
 import h5py
 import pandas as pd
@@ -58,16 +58,24 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
     xcorrlist = []
     ycorrlist = []
     xycorrlist = []
+    xcross_SD_list = []
+    ycross_SD_list = []
+    fftbinning = 2048
     
     counter = 0
     for i in hdf5_list:
         hf = h5py.File(i, 'r')
         group = hf.get('position')
         fs = group.attrs['framerate (fps)']
+
+        segmentsize = int(round(fs/40)*10)
+        overlap = int(round(segmentsize/40)*10)
     
         xposdata = []
         yposdata = []
-        
+        xfiltdata = []
+        yfiltdata = []
+
         l = 0
         for j in group.items():
             pos = np.array(j[1])
@@ -76,37 +84,56 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
             ypos = pos[:,2].reshape(-1,1)
             yfiltered = butter_bandpass(ypos, 70, fs)
             if l == 0:
-                xposdata = xfiltered[:,0].reshape(-1,1)
-                yposdata = yfiltered[:,0].reshape(-1,1)
-                
+                xfiltdata = xfiltered[:,0].reshape(-1,1)
+                yfiltdata = yfiltered[:,0].reshape(-1,1)
+                xposdata = xpos[:,0].reshape(-1,1)
+                yposdata = ypos[:,0].reshape(-1,1)
+
             else:
-                xposdata = np.concatenate((xposdata, xfiltered[:,0].reshape(-1,1)), axis=1)
-                yposdata = np.concatenate((yposdata, yfiltered[:,0].reshape(-1,1)), axis=1)
-                
+                xfiltdata = np.concatenate((xfiltdata, xfiltered[:,0].reshape(-1,1)), axis=1)
+                yfiltdata = np.concatenate((yfiltdata, yfiltered[:,0].reshape(-1,1)), axis=1)
+                xposdata = np.concatenate((xposdata, xpos[:,0].reshape(-1,1)), axis=1)
+                yposdata = np.concatenate((yposdata, ypos[:,0].reshape(-1,1)), axis=1)
             l+=1
             
         hf.close()
         
-        xdf = pd.DataFrame(xposdata)
-        ydf = pd.DataFrame(yposdata)
+        xdf = pd.DataFrame(xfiltdata)
+        ydf = pd.DataFrame(yfiltdata)
         
         xcorrmatrix = xdf.corr()
         ycorrmatrix = ydf.corr()  
-        xycorrmatrix = corr_cross_calc(xposdata, yposdata)
+        xycorrmatrix = corr_cross_calc(xfiltdata, yfiltdata)
         
+        coherfreq = coherence(xposdata[:,0],xposdata[:,1], fs = fs, window='hann', nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[0]
+
+        xcohermatrix = [ [ coherence(xposdata[:,m],xposdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] for n in range(totalspheres) ] for m in range(totalspheres) ]
+        ycohermatrix = [ [ coherence(yposdata[:,m],yposdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] for n in range(totalspheres) ] for m in range(totalspheres) ]
+
+
         if counter == 0:
             xcorrlist = xcorrmatrix
             ycorrlist = ycorrmatrix
             xycorrlist = xycorrmatrix
+            xcross_SD_list = xcohermatrix
+            ycross_SD_list = ycohermatrix
+
         else:
             xcorrlist = np.dstack((xcorrlist,xcorrmatrix))
             ycorrlist = np.dstack((ycorrlist,ycorrmatrix))
             xycorrlist = np.dstack((xycorrlist, xycorrmatrix))
+            
+            for m in range(totalspheres):
+                for n in range(totalspheres):
+                    xcross_SD_list[m][n] = np.mean(np.stack((xcohermatrix[m][n], coherence(xposdata[:,m], xposdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] )), axis=0)
+                    ycross_SD_list[m][n] = np.mean(np.stack((ycohermatrix[m][n], coherence(yposdata[:,m], yposdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] )), axis=0)
+
         counter += 1
             
     xcorr_averaged = np.mean(xcorrlist, axis=2)
     ycorr_averaged = np.mean(ycorrlist, axis=2)
     xycorr_averaged = np.mean(xycorrlist, axis=2)
+    
     
     if saveflag:
         savename = savename + '.h5'
@@ -119,8 +146,9 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
         hf.create_dataset('X-Y Cross Correlations', data=xycorr_averaged)
 
         hf.close()
+        
     
-    return xcorr_averaged, ycorr_averaged, xycorr_averaged
+    return xcorr_averaged, ycorr_averaged, xycorr_averaged, xcross_SD_list, ycross_SD_list, coherfreq
 
 
 def heatmap(data, row_labels, col_labels, ax=None,
@@ -255,10 +283,10 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
     x_peak_scan = []
     y_peak_scan = []
 
-    figcros = plt.figure()
-    axcros = figcros.add_subplot(111,projection='3d')
-    xcros, ycros = np.arange(1,totalspheres+1)
-    xgrid, ygrid = np.meshgrid(xcros,ycros)
+    # figcros = plt.figure()
+    # axcros = figcros.add_subplot(111,projection='3d')
+    # xcros, ycros = np.arange(1,totalspheres+1)
+    # xgrid, ygrid = np.meshgrid(xcros,ycros)
 
     for path, folders, files in os.walk(main_directory):
        
@@ -279,7 +307,7 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
                 counter += 1
                 
             savename = str(sep) + 'correlationmatrix'
-            xcorr_averaged, ycorr_averaged, xycorr_averaged = hdf5file_correlationprocessing(directory, totalspheres, sep, saveflag, savename)
+            xcorr_averaged, ycorr_averaged, xycorr_averaged, xcross_SD_list, ycross_SD_list, coherfreq = hdf5file_correlationprocessing(directory, totalspheres, sep, saveflag, savename)
 
             if include_in_scan == 'True':
                 
@@ -397,12 +425,12 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
 
         break
 
-    axcros.set_xlabel('Sphere Index')
-    axcros.set_ylabel('Sphere Index')
-    axcros.set_zlabel('Intersphere Separation (um)')
-    plt.show()
+    # axcros.set_xlabel('Sphere Index')
+    # axcros.set_ylabel('Sphere Index')
+    # axcros.set_zlabel('Intersphere Separation (um)')
+    # plt.show()
 
-    return x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xdf, ydf
+    return x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xcross_SD_list, ycross_SD_list, coherfreq
 
 
 def plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes):
@@ -629,7 +657,7 @@ def heatmap_scan_plotter(freqasddata, xasddata, yasddata, anticrossinglbs, antic
 
 main_directory = r"D:\Lab data\20240531"
 totalspheres = 2
-saveflag = True
+saveflag = False
 savefigs = False
 anticrossinglbs = 100
 anticrossingubs = 300
@@ -638,7 +666,7 @@ color_value = np.linspace(0,1,totalspheres)
 color_value_T = color_value[::-1]
 color_codes = [(color_value[i],0,color_value_T[i]) for i in range(totalspheres)]
 
-x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xdf, ydf = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
+x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xcross_SD_list, ycross_SD_list, coherfreq = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
 plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes)
 plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes)
 heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
