@@ -299,10 +299,9 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
     x_peak_scan = []
     y_peak_scan = []
 
-    # figcros = plt.figure()
-    # axcros = figcros.add_subplot(111,projection='3d')
-    # xcros, ycros = np.arange(1,totalspheres+1)
-    # xgrid, ygrid = np.meshgrid(xcros,ycros)
+    figcros = plt.figure()
+    axcros = figcros.add_subplot(111,projection='3d')
+    xcros = ycros = np.arange(1,totalspheres+1)
 
     for path, folders, files in os.walk(main_directory):
        
@@ -348,6 +347,7 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
             handles, labels = axcsd[1].get_legend_handles_labels()
             by_label = dict(zip(labels, handles))
             axcsd[1].legend(by_label.values(), by_label.keys(), fontsize=12, loc="lower right", borderaxespad=1)
+
             
             if include_in_scan == 'True':
                 
@@ -361,9 +361,11 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
             
                 correlation_scan.append((np.vstack((xcorr_offdiags, ycorr_offdiags))).T)
                 
-                #######broken
-                #color_map = mpl.cm.get_cmap('viridis')
-                #axcros.scatter(xgrid,ygrid,umsep, c=xycorr_averaged, cmap=color_map)
+                ######broken
+                xgrid, ygrid = np.meshgrid(xcros, ycros)
+                zgrid = np.full((totalspheres,totalspheres), umsep)
+                color_map = mpl.cm.viridis(np.abs(xycorr_averaged))
+                axcros.plot_surface(xgrid, ygrid, zgrid, rstride=1, cstride=1, facecolors=color_map, linewidth=0, antialiased=False)
 
             for filename in sorted(os.listdir(directory)):
                 if filename.endswith("rmsavg.h5"):
@@ -465,10 +467,10 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
 
         break
 
-    # axcros.set_xlabel('Sphere Index')
-    # axcros.set_ylabel('Sphere Index')
-    # axcros.set_zlabel('Intersphere Separation (um)')
-    # plt.show()
+    axcros.set_xlabel('Sphere Index')
+    axcros.set_ylabel('Sphere Index')
+    axcros.set_zlabel('Intersphere Separation (um)')
+    plt.show()
 
     return x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xcross_SD_list, ycross_SD_list, coherfreq
 
