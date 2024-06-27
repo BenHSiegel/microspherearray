@@ -144,6 +144,22 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
         hf.create_dataset('X_correlations', data=xcorr_averaged)
         hf.create_dataset('Y_correlations', data=ycorr_averaged)
         hf.create_dataset('X-Y Cross Correlations', data=xycorr_averaged)
+        g1 = hf.create_group('X CSDs')
+        g1.attrs.create("Indexing Info", 'Row 0 is the frequency bins, Row n is the CSD of sphere x with sphere n')
+        g2 = hf.create_group('Y CSDs')
+        g2.attrs.create("Indexing Info", 'Row 0 is the frequency bins, Row n is the CSD of sphere x with sphere n')
+        for m in range(totalspheres):
+            for n in range(totalspheres):
+                if n ==0:
+                    xcsdi = xcross_SD_list[m][n]
+                    ycsdi = ycross_SD_list[m][n]
+                else:
+                    xcsdi = np.concatenate((xcsdi, xcross_SD_list[m][n]),axis=0)
+                    ycsdi = np.concatenate((ycsdi, ycross_SD_list[m][n]),axis=0)
+            xcsdm = np.concatenate((coherfreq, xcsdi),axis=0)
+            ycsdm = np.concatenate((coherfreq, ycsdi),axis=0)
+            g1.create_dataset('Sphere '+ str(m+1),data=xcsdm)
+            g2.create_dataset('Sphere '+ str(m+1),data=ycsdm)
 
         hf.close()
         
@@ -309,6 +325,30 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
             savename = str(sep) + 'correlationmatrix'
             xcorr_averaged, ycorr_averaged, xycorr_averaged, xcross_SD_list, ycross_SD_list, coherfreq = hdf5file_correlationprocessing(directory, totalspheres, sep, saveflag, savename)
 
+            figcsd, axcsd = plt.subplots(2)
+            figcsd.suptitle('Cross Spectral Density for ' + str(umsep) + r'$\mu m$ Spacing')
+            axcsd[0].set_title('X CSDs')
+            axcsd[1].set_title('Y CSDs')
+            axcsd[0].set_xlabel('Frequency (Hz)')
+            axcsd[0].set_ylabel(r'CSD (${m}^2/Hz$)')
+            axcsd[1].set_xlabel('Frequency (Hz)')
+            axcsd[1].set_ylabel(r'CSD (${m}^2/Hz$)')
+
+            for m in range(len(xcross_SD_list)):
+                for n in range(len(xcross_SD_list)):
+                    if m!=n:
+                        label = str(m) + '-' + str(n)
+                        axcsd[0].plot(coherfreq, xcross_SD_list[m][n], label=label)
+                        axcsd[1].plot(coherfreq, ycross_SD_list[m][n], label=label)
+
+            handles, labels = axcsd[0].get_legend_handles_labels()
+            by_label = dict(zip(labels, handles))
+            axcsd[0].legend(by_label.values(), by_label.keys(), fontsize=12, loc="lower right", borderaxespad=1)
+
+            handles, labels = axcsd[1].get_legend_handles_labels()
+            by_label = dict(zip(labels, handles))
+            axcsd[1].legend(by_label.values(), by_label.keys(), fontsize=12, loc="lower right", borderaxespad=1)
+            
             if include_in_scan == 'True':
                 
                 xcorr_offdiags = []
