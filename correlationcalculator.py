@@ -301,7 +301,7 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
 
     figcros = plt.figure()
     axcros = figcros.add_subplot(111,projection='3d')
-    xcros = ycros = np.arange(1,totalspheres+1)
+    xcros = ycros = np.arange(0,totalspheres,1)
 
     for path, folders, files in os.walk(main_directory):
        
@@ -348,6 +348,7 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
             by_label = dict(zip(labels, handles))
             axcsd[1].legend(by_label.values(), by_label.keys(), fontsize=12, loc="lower right", borderaxespad=1)
 
+            plt.close(figcsd)
             
             if include_in_scan == 'True':
                 
@@ -361,11 +362,13 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
             
                 correlation_scan.append((np.vstack((xcorr_offdiags, ycorr_offdiags))).T)
                 
-                ######broken
                 xgrid, ygrid = np.meshgrid(xcros, ycros)
                 zgrid = np.full((totalspheres,totalspheres), umsep)
-                color_map = mpl.cm.viridis(np.abs(xycorr_averaged))
-                axcros.plot_surface(xgrid, ygrid, zgrid, rstride=1, cstride=1, facecolors=color_map, linewidth=0, antialiased=False)
+                xycorr_abs = np.abs(xycorr_averaged)
+                c_min, c_max = 0, 0.25
+                norm = mpl.colors.Normalize(vmin=c_min, vmax=c_max)
+                color_map = mpl.cm.viridis
+                axcros.plot_surface(xgrid, ygrid, zgrid, rstride=1, cstride=1, facecolors = color_map(norm(xycorr_abs)), shade=False)
 
             for filename in sorted(os.listdir(directory)):
                 if filename.endswith("rmsavg.h5"):
@@ -470,7 +473,8 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
     axcros.set_xlabel('Sphere Index')
     axcros.set_ylabel('Sphere Index')
     axcros.set_zlabel('Intersphere Separation (um)')
-    plt.show()
+    axcros.set_title('X-Y Correlations at Varying Distances')
+    cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=color_map), ax=axcros, shrink=0.6, label="Correlation")
 
     return x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xcross_SD_list, ycross_SD_list, coherfreq
 
@@ -543,7 +547,6 @@ def plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, 
 
 
 
-
     for i in range(len(separation_scan)):
         for j in range(len(correlation_scan[i][:,0])):
             axa[0].scatter(separation_scan[i], correlation_scan[i][j,0], color=color_codes[j], label=cor_legend[j])
@@ -604,8 +607,8 @@ def plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, 
         figb.savefig(os.path.join(main_directory, 'freqshift.png'))   # save the figure to file
         
         figc.savefig(os.path.join(main_directory, 'amplitudeshift.png'))   # save the figure to file
-    
-    plt.close('all')
+    plt.show()
+    #plt.close('all')
     return
 
 
@@ -639,7 +642,7 @@ def plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, m
         if savefigs:
             figs[i].savefig(os.path.join(main_directory, titlename +'.png'))
 
-    plt.close('all')
+    #plt.close('all')
     return
 
 
@@ -692,13 +695,13 @@ def heatmap_scan_plotter(freqasddata, xasddata, yasddata, anticrossinglbs, antic
         figy.savefig(os.path.join(main_directory, savenamey +'.png'))
 
 
-    plt.close('all')
+    #plt.close('all')
     return
 
 
 
-main_directory = r"D:\Lab data\20240531"
-totalspheres = 2
+main_directory = r"D:\Lab data\20240604"
+totalspheres = 25
 saveflag = False
 savefigs = False
 anticrossinglbs = 100
@@ -708,7 +711,7 @@ color_value = np.linspace(0,1,totalspheres)
 color_value_T = color_value[::-1]
 color_codes = [(color_value[i],0,color_value_T[i]) for i in range(totalspheres)]
 
-x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xcross_SD_list, ycross_SD_list, coherfreq = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
-plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes)
-plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes)
-heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
+#x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xcross_SD_list, ycross_SD_list, coherfreq = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
+#plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes)
+#plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes)
+#heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
