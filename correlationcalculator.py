@@ -80,9 +80,9 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
         for j in group.items():
             pos = np.array(j[1])
             xpos = pos[:,1].reshape(-1,1)
-            xfiltered = butter_bandpass(xpos, 70, fs)
+            xfiltered = butter_bandpass(xpos, 40, fs)
             ypos = pos[:,2].reshape(-1,1)
-            yfiltered = butter_bandpass(ypos, 70, fs)
+            yfiltered = butter_bandpass(ypos, 40, fs)
             if l == 0:
                 xfiltdata = xfiltered[:,0].reshape(-1,1)
                 yfiltdata = yfiltered[:,0].reshape(-1,1)
@@ -338,6 +338,14 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
                     if m!=n:
                         label = str(m) + '-' + str(n)
                         axcsd[0].plot(coherfreq, xcross_SD_list[m][n], label=label)
+                        # x_peak_indices, x_peak_dict = find_peaks(xcross_SD_list[m][n])
+                        
+                        # x_peak_heights = x_peak_dict['peak_heights']
+                        # sortedind = np.argsort(x_peak_heights)[::-1]
+                        # sorted_x_peak_indices = [x_peak_indices[i] for i in sortedind]
+                        # x_peak_freqs = coherfreq[x_peak_indices[sorted_x_peak_indices]]
+
+
                         axcsd[1].plot(coherfreq, ycross_SD_list[m][n], label=label)
 
             handles, labels = axcsd[0].get_legend_handles_labels()
@@ -700,18 +708,18 @@ def heatmap_scan_plotter(freqasddata, xasddata, yasddata, anticrossinglbs, antic
 
 
 
-main_directory = r"D:\Lab data\20240604"
-totalspheres = 25
-saveflag = False
-savefigs = False
-anticrossinglbs = 100
+main_directory = r"D:\Lab data\20240703"
+totalspheres = 2
+saveflag = True
+savefigs = True
+anticrossinglbs = 60
 anticrossingubs = 300
 
 color_value = np.linspace(0,1,totalspheres)
 color_value_T = color_value[::-1]
 color_codes = [(color_value[i],0,color_value_T[i]) for i in range(totalspheres)]
 
-#x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xcross_SD_list, ycross_SD_list, coherfreq = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
+x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xcross_SD_list, ycross_SD_list, coherfreq = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
 #plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes)
 #plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes)
 #heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
