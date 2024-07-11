@@ -4,12 +4,13 @@ BAOAB coupled langevin estimator
 
 import numpy as np
 import matplotlib.pyplot as plt
-import math
-import random
-from tkinter import *
-from array import *
+from scipy.signal import welch
 
 
+def freq_to_k(f):
+    #takes in frequency of motion and gives back k/m
+    k = (f*2*np.pi)**2
+    return k
 
 def motion_eq(x, x_other, k, CC):
     acc = -k*x - CC*(x-x_other)
@@ -82,20 +83,41 @@ def baoab(motion_eq, timespan, dt, fs, gamma, kBT, pos_init1, pos_init2, vel_ini
     
     return save_times, positions1, velocities1, positions2, velocities2 
 
-timespan = 30
-dt = 0.001
-fs = 600
+timespan = 100
+dt = 0.0001
+fs = 1000
 
-pos_ints = [1e-6,-5e-7]
+pos_ints = [3e-7,-2e-7]
 vel_ints = [0,0]
 
-gamma = 
-kBT = 
-k1 = 130
-k2 = 150
-charge_coupling = 
+pressure = 0.4      # in mbar
+temp = 295          # in K
+kBT = 4.073e-21     # for T = 295K (in N m)
+gamma = 9.863e-10 * pressure / np.sqrt(temp)     #Epstein drag using 10um sphere (in kg/s)
+
+f1 = 170            # in Hz
+f2 = 220            # in Hz
+k1 = freq_to_k(f1)  # in N m^-1 kg^-1
+k2 = freq_to_k(f2)  # in N m^-1 kg^-1
+
+sep = 40            # separation in um
+charge = 2000       # number of electrons
+charge_coupling = 230.708 * charge**2 / (sep)**3 # in N m^-1 kg^-1
 
 times, positions1, velocities1, positions2, velocities2  = baoab(motion_eq, timespan, dt, fs, gamma, kBT,\
                                                                     pos_init1=pos_ints[0], pos_init2=pos_ints[1],\
                                                                     vel_init1=vel_ints[0], vel_init2=vel_ints[1],\
                                                                     k1=k1, k2=k2, CC=charge_coupling)
+
+
+segmentsize = round(fs/4)
+
+freq, PSD1 = welch(positions1[20000:], fs, 'hann')
+freq, PSD2 = welch(positions2[20000:], fs, 'hann')
+
+plt.semilogy(freq,PSD1)
+plt.semilogy(freq,PSD2)
+plt.title("Simulated PSD of Coupled Charged Spheres with Gas Interaction")
+plt.xlabel('Frequency (Hz)')
+plt.ylabel(r'PSD ($m^2/Hz$)')
+plt.show()
