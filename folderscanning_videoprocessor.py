@@ -38,7 +38,7 @@ def processmovie(filename, framerate, diameter):
     #invert=true looks for dark spots instead of light spots
     #diameter is the centroid size to look for in the images (in units of pixels)
     #diameter should always be an odd number and greater than the actual sphere size
-    f = tp.batch(spheres[:], diameter, invert=True, minmass=500, processes=1)
+    f = tp.batch(spheres[:], diameter, invert=True, minmass=350, processes=1)
         #to check the mass brightness make this figure
     # fig, ax = plt.subplots()
     # ax.hist(f['mass'], bins=1000)
@@ -120,9 +120,11 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
 
     xposlist = [ xposlist[j] for j in xsortedind ]
     xposlist = [ xposlist[j] for j in ysortedind ]
+    xmeanssorted = [ xsorted[j] for j in ysortedind]
 
     yposlist = [ yposlist[j] for j in xsortedind ]
     yposlist = [ yposlist[j] for j in ysortedind ]
+    ymeanssorted = [ ysorted[j] for j in ysortedind ]
 
     #make an array of the time for each frame in the video
     timeinc = 1/framerate 
@@ -266,6 +268,7 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
             d1 = g1.create_dataset('Sphere ' + str(sphnum), data=sphere_pos_data[sphnum])
             d1.attrs.create('range (m)', [np.ptp(sphere_pos_data[sphnum][:,1]), np.ptp(sphere_pos_data[sphnum][:,2])])
             d1.attrs.create('rms (m)', [np.sqrt(np.mean((sphere_pos_data[sphnum][:,1])**2)), np.sqrt(np.mean((sphere_pos_data[sphnum][:,2])**2))])
+            d1.attrs.create('Camera frame location (m)', [xmeanssorted[sphnum], ymeanssorted[sphnum]])
             g2.create_dataset('Sphere ' + str(sphnum), data=xASDlist[sphnum])
             g3.create_dataset('Sphere ' + str(sphnum), data=yASDlist[sphnum])
         hf.close()
