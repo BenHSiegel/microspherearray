@@ -1,6 +1,11 @@
+from ipyparallel import Client
+client = Client()
+view = client.load_balanced_view()
+
+%%px
 import pims
 import trackpy as tp
-from ipyparallel import Client
+tp.quiet()
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -15,7 +20,6 @@ from scipy.signal.windows import blackman
 from scipy.signal import find_peaks
 from matplotlib.pyplot import gca
 import h5py
-#import cv2 as cv
 
 
 #make a pipeline so that when pims opens a file, it converts each frame to one color
