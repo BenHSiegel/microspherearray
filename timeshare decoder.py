@@ -24,12 +24,12 @@ path = r"C:\Users\bensi\Documents\Research\Moore Lab\timeshare qpd data"
 os.chdir(path)
 
 
-filename = '2sp8_28.csv'
+filename = '1_3sphere.csv'
 
-inc = 2E-7
+inc = 4E-9
 numbeams = 4 #4 beams total
 timeperbeam = 1E-4
-startbeamnum = 2 #beam number indexes from 0
+startbeamnum = 1 #beam number indexes from 0
 totaldelaytime = 4.8E-5
 
 
@@ -135,7 +135,7 @@ df.Time = df.Time*inc
 triglocs = []
 i = 5
 while i < len(df.Time):
-    if df.trig[i] < (df.trig[i-5]-0.03) or (df.trig[i-5]+0.03) < df.trig[i]: #this is for the scope being at 10x setting
+    if df.trig[i] < (df.trig[i-5]-0.1) or (df.trig[i-5]+0.1) < df.trig[i]: #this is for the scope being at 10x setting
         triglocs.append(i)
         i = i+10
     else:
@@ -196,17 +196,17 @@ for i in range(len(triglocs)):
         
         sniplength.append(len(df.CH1[triglocs[i]+indexdelay:triglocs[i+1]]))
         
-        xloopfft = np.array(2 * inc/minsnip * np.abs(fft.rfft(xsniplist[:minsnip])**2))
-        yloopfft = np.array(2 * inc/minsnip * np.abs(fft.rfft(ysniplist[:minsnip])**2))
-        zloopfft = np.array(2 * inc/minsnip * np.abs(fft.rfft(zsniplist[:minsnip])**2))
-        if xsnipfft[j].size == 0:
-            xsnipfft[j] = xloopfft
-            ysnipfft[j] = yloopfft
-            zsnipfft[j] = zloopfft 
-        else:
-            xsnipfft[j] = np.add(xsnipfft[j], xloopfft)
-            ysnipfft[j] = np.add(ysnipfft[j], yloopfft)
-            zsnipfft[j] = np.add(zsnipfft[j], zloopfft)
+        # xloopfft = np.array(2 * inc/minsnip * np.abs(fft.rfft(xsniplist[:minsnip])**2))
+        # yloopfft = np.array(2 * inc/minsnip * np.abs(fft.rfft(ysniplist[:minsnip])**2))
+        # zloopfft = np.array(2 * inc/minsnip * np.abs(fft.rfft(zsniplist[:minsnip])**2))
+        # if xsnipfft[j].size == 0:
+        #     xsnipfft[j] = xloopfft
+        #     ysnipfft[j] = yloopfft
+        #     zsnipfft[j] = zloopfft 
+        # else:
+        #     xsnipfft[j] = np.add(xsnipfft[j], xloopfft)
+        #     ysnipfft[j] = np.add(ysnipfft[j], yloopfft)
+        #     zsnipfft[j] = np.add(zsnipfft[j], zloopfft)
             
         time[j].append(df.Time[triglocs[i]])
         x[j].append(xsnip)
@@ -214,9 +214,9 @@ for i in range(len(triglocs)):
         z[j].append(zsnip)
     
 
-fig, axa = plt.subplots()
-fig, axb = plt.subplots()
-fig, axc = plt.subplots() 
+# fig, axa = plt.subplots()
+# fig, axb = plt.subplots()
+# fig, axc = plt.subplots() 
 
 fig, ax3 = plt.subplots()
 fig, ax4 = plt.subplots()
@@ -230,12 +230,12 @@ for i in range(0,numbeams):
     ax5.plot(time[i],z[i])
     legend_dir.append('Trap '+ str(i+1))
     
-    xsnipfft[i] = xsnipfft[i]/len(time[0])
-    ysnipfft[i] = ysnipfft[i]/len(time[0])
-    zsnipfft[i] = zsnipfft[i]/len(time[0])
-    axa.loglog(snipfreqs, xsnipfft[i])
-    axb.loglog(snipfreqs, ysnipfft[i])
-    axc.loglog(snipfreqs, zsnipfft[i])
+    # xsnipfft[i] = xsnipfft[i]/len(time[0])
+    # ysnipfft[i] = ysnipfft[i]/len(time[0])
+    # zsnipfft[i] = zsnipfft[i]/len(time[0])
+    # axa.loglog(snipfreqs, xsnipfft[i])
+    # axb.loglog(snipfreqs, ysnipfft[i])
+    # axc.loglog(snipfreqs, zsnipfft[i])
     
 ax3.set_xlabel('Time [s]')
 ax3.set_ylabel('Signal X Channel [V]')
@@ -252,20 +252,20 @@ ax5.set_ylabel('Signal SUM Channel [V]')
 ax5.legend(legend_dir)
 
 
-axa.set_xlabel('Frequency [Hz]')
-axa.set_ylabel('PSD X [V^2/Hz]')
-axa.set_title('Average of PSD for beam illumination time')
-axa.legend(legend_dir)
+# axa.set_xlabel('Frequency [Hz]')
+# axa.set_ylabel('PSD X [V^2/Hz]')
+# axa.set_title('Average of PSD for beam illumination time')
+# axa.legend(legend_dir)
 
-axb.set_xlabel('Frequency [Hz]')
-axb.set_ylabel('PSD Y [V^2/Hz]')
-axb.set_title('Average of PSD for beam illumination time')
-axb.legend(legend_dir)
+# axb.set_xlabel('Frequency [Hz]')
+# axb.set_ylabel('PSD Y [V^2/Hz]')
+# axb.set_title('Average of PSD for beam illumination time')
+# axb.legend(legend_dir)
 
-axc.set_xlabel('Frequency [Hz]')
-axc.set_ylabel('PSD Z [V^2/Hz]')
-axc.set_title('Average of PSD for beam illumination time')
-axc.legend(legend_dir)
+# axc.set_xlabel('Frequency [Hz]')
+# axc.set_ylabel('PSD Z [V^2/Hz]')
+# axc.set_title('Average of PSD for beam illumination time')
+# axc.legend(legend_dir)
 
 timeshareinc = timeperbeam*numbeams
 
@@ -320,7 +320,7 @@ ax8.set_xlabel('Frequency [Hz]')
 ax8.set_ylabel('PSD Z[V^2/Hz]')
 ax8.legend(legend_dir)
 
-
+plt.show()
 
 
 # peaks1, _ = find_peaks(beam1fft,threshold=2E-8)
