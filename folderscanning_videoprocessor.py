@@ -38,10 +38,11 @@ def processmovie(filename, framerate, diameter):
     #invert=true looks for dark spots instead of light spots
     #diameter is the centroid size to look for in the images (in units of pixels)
     #diameter should always be an odd number and greater than the actual sphere size
-    f = tp.batch(spheres[:], diameter, invert=True, minmass=350, processes=1)
+    f = tp.batch(spheres[:], diameter, invert=True, minmass=1500, processes=1)
         #to check the mass brightness make this figure
-    # fig, ax = plt.subplots()
-    # ax.hist(f['mass'], bins=1000)
+    fighist, axhist = plt.subplots()
+    axhist.hist(f['mass'], bins=1000)
+    plt.show()
     return [spheres, f]
     
 
@@ -55,7 +56,7 @@ def motiontracer(spheres, f):
     #suppress output so that it runs faster
     tp.quiet()
 
-    t = tp.link(f, 10, memory=50)
+    t = tp.link(f, 60, memory=100)
     
     # fig1, ax00 = plt.subplots()
     # fig1.set_dpi(1200)
@@ -98,33 +99,38 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
         framenumlist[spherenumber[i]].append(framenum[i])
     
     nodrops = max(len(i) for i in xposlist)
+    print(nodrops)
+    print(totalspheres)
+    if totalspheres > 1:
+        #sort the spheres by their position in the frame so it can be consistent across videos
+        xposmeans = [np.average(xposlist[i]) for i in range(len(xposlist))]
+        yposmeans = [np.average(yposlist[i]) for i in range(len(yposlist))]
 
-    #sort the spheres by their position in the frame so it can be consistent across videos
-    xposmeans = [np.average(xposlist[i]) for i in range(len(xposlist))]
-    yposmeans = [np.average(yposlist[i]) for i in range(len(yposlist))]
+        xsortedind = np.argsort(xposmeans)
+        xsorted = [ xposmeans[i] for i in xsortedind ]
+        ysorted = [ yposmeans[i] for i in xsortedind ]
 
-    xsortedind = np.argsort(xposmeans)
-    xsorted = [ xposmeans[i] for i in xsortedind ]
-    ysorted = [ yposmeans[i] for i in xsortedind ]
+        ysortedind = np.empty(0).astype(int)
+        i = rowlen
+        lasti = 0
 
-    ysortedind = np.empty(0).astype(int)
-    i = rowlen
-    lasti = 0
+        while i <= totalspheres:
+            rowsort = np.argsort(ysorted[lasti:i])+lasti
+            rowsort = rowsort.astype(int)
+            ysortedind = np.concatenate((ysortedind, rowsort))
+            lasti = i
+            i = i + rowlen
 
-    while i <= totalspheres:
-        rowsort = np.argsort(ysorted[lasti:i])+lasti
-        rowsort = rowsort.astype(int)
-        ysortedind = np.concatenate((ysortedind, rowsort))
-        lasti = i
-        i = i + rowlen
+        xposlist = [ xposlist[j] for j in xsortedind ]
+        xposlist = [ xposlist[j] for j in ysortedind ]
+        xmeanssorted = [ xsorted[j] for j in ysortedind]
 
-    xposlist = [ xposlist[j] for j in xsortedind ]
-    xposlist = [ xposlist[j] for j in ysortedind ]
-    xmeanssorted = [ xsorted[j] for j in ysortedind]
-
-    yposlist = [ yposlist[j] for j in xsortedind ]
-    yposlist = [ yposlist[j] for j in ysortedind ]
-    ymeanssorted = [ ysorted[j] for j in ysortedind ]
+        yposlist = [ yposlist[j] for j in xsortedind ]
+        yposlist = [ yposlist[j] for j in ysortedind ]
+        ymeanssorted = [ ysorted[j] for j in ysortedind ]
+    else:
+        xmeanssorted = [np.average(xposlist[i]) for i in range(len(xposlist))]
+        ymeanssorted = [np.average(yposlist[i]) for i in range(len(yposlist))]
 
     #make an array of the time for each frame in the video
     timeinc = 1/framerate 
@@ -369,12 +375,9 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
     Legend = []
     
     figc, axc = plt.subplots()
-    figc.set_size_inches(7.6, 4.5)
-    figc.set_dpi(600)
     
     figd, axd = plt.subplots()
-    figd.set_size_inches(7.6, 4.5)
-    figd.set_dpi(600)
+
     for i in range(totalspheres):
         
         xrms_avg_i = np.sqrt(np.mean(xfftmatrix[i]**2, axis=1))
@@ -400,7 +403,7 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
     axd.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
     axd.legend(Legend, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
     axd.set_title('Y motion RMS Avg ASD', fontsize=22)
-    
+    plt.show()
     if saveflag:
         savename = savename + '.h5'
         hf = h5py.File(savename, 'w')
@@ -410,14 +413,16 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
 
         hf.close()
         
-# path = r"C:\Users\bensi\Documents\Research\20240424\charge check"
-# os.chdir(path)
-# framerate = 672
-# pcacheck = False
-# saveposdata = True
-# saveFFTavg = True
-# rowlen = 1
-# fftsave = "expandedposition20240319rmsavg"
+path = r"D:\Lab data\videos for testing\7E-2"
+os.chdir(path)
+diameter = 19
+pixtoum = 10/15
+framerate = 330
+pcacheck = False
+saveposdata = True
+saveFFTavg = False
+rowlen = 1
+fftsave = "expandedposition20240319rmsavg"
 
-# totalspheres = videofolder_dataextractions(path, framerate, diameter, rowlen, pixtoum, pcacheck, saveposdata):
-# #hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)
+totalspheres = videofolder_dataextractions(path, framerate, diameter, rowlen, pixtoum, pcacheck, saveposdata)
+hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)

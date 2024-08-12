@@ -8,7 +8,7 @@ from scipy import fft
 from sklearn.decomposition import PCA ## need this for principle component analysis below
 from matplotlib.mlab import psd
 from scipy.optimize import minimize, curve_fit
-from scipy.stats import chi2
+from scipy.stats import chi2, linregress
 import os
 from scipy.signal import welch
 from scipy.signal.windows import blackman
@@ -30,11 +30,11 @@ def processmovie(filename, framerate):
     #process every frame in the tiff image stack to find the locations of bright spots
     #minmass defines the minimum brightness and processes means no parallelization since that breaks it
     #invert=true looks for dark spots instead of light spots
-    f = tp.batch(spheres[:], 39, invert=False, minmass=1000, processes=1)
+    f = tp.batch(spheres[:], 39, invert=False, minmass=10000, processes=1)
     #to check the mass brightness make this figure
     fig, ax = plt.subplots()
     ax.hist(f['mass'], bins=100)
-
+    plt.show()
     return [spheres, f]
     
 
@@ -45,7 +45,7 @@ def PSDmaker(spheres, f, framerate, rowlen, saveposdata, savename):
     t = tp.link(f, 20, memory=10)
     #suppress output so that it runs faster
     
-    tp.subpx_bias(tp.locate(spheres[0], 39, invert=False, minmass=1000))
+    tp.subpx_bias(tp.locate(spheres[0], 39, invert=False, minmass=10000))
     fig00, ax00 = plt.subplots()
 
     #plot the trajectory of the sphere over the video
@@ -106,12 +106,17 @@ def PSDmaker(spheres, f, framerate, rowlen, saveposdata, savename):
     yposlist = [ yposlist[j] for j in ysortedind ]
     ymeanssorted = [ ysorted[j] for j in ysortedind ]
 
-    figx, axx = plt.subplots()
-    figy, axy = plt.subplots()
+    # figx, axx = plt.subplots()
+    # figy, axy = plt.subplots()
+    # RFtones = [22,23,24,25,26]
+    # for k in rowinds:
+    #     axx.plot(RFtones, xmeanssorted[k[0]:k[1]], '.')
+    #     slope, intercept, r, p, se = linregress(RFtones, xmeanssorted[k[0]:k[1]])
+    #     axx.plot(RFtones, slope*RFtones + intercept, 'r')
 
-    for k in rowinds:
-        
-
+    #     axy.plot(RFtones, ymeanssorted[k[0]:k[1]], '.')
+    #     slope, intercept, r, p, se = linregress(RFtones, ymeanssorted[k[0]:k[1]])
+    #     axy.plot(RFtones, slope*RFtones + intercept, 'r')
 
 
     #make an array of the time for each frame in the video
