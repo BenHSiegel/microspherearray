@@ -106,17 +106,58 @@ def PSDmaker(spheres, f, framerate, rowlen, saveposdata, savename):
     yposlist = [ yposlist[j] for j in ysortedind ]
     ymeanssorted = [ ysorted[j] for j in ysortedind ]
 
-    # figx, axx = plt.subplots()
-    # figy, axy = plt.subplots()
-    # RFtones = [22,23,24,25,26]
-    # for k in rowinds:
-    #     axx.plot(RFtones, xmeanssorted[k[0]:k[1]], '.')
-    #     slope, intercept, r, p, se = linregress(RFtones, xmeanssorted[k[0]:k[1]])
-    #     axx.plot(RFtones, slope*RFtones + intercept, 'r')
+    figx, axx = plt.subplots(1,2)
+    figy, axy = plt.subplots(1,2)
+    RFtones = [22,23,24,25,26]
+    i = 0
+    for k in rowinds:
+        axx[0].plot(RFtones, xmeanssorted[k[0]:k[1]], '.')
+        slope, intercept, r, p, se = linregress(RFtones, xmeanssorted[k[0]:k[1]])
+        linechar = 'Row %d :m= %.2e -> %.2e' %(i, slope, slope/7)
+        linefit = [ slope * n + intercept for n in RFtones]
+        axx[0].plot(RFtones, linefit, 'r', linestyle = '--', alpha = 0.3, label = linechar)
 
-    #     axy.plot(RFtones, ymeanssorted[k[0]:k[1]], '.')
-    #     slope, intercept, r, p, se = linregress(RFtones, ymeanssorted[k[0]:k[1]])
-    #     axy.plot(RFtones, slope*RFtones + intercept, 'r')
+        axx[1].plot(RFtones, ymeanssorted[k[0]:k[1]], '.')
+        slope, intercept, r, p, se = linregress(RFtones, ymeanssorted[k[0]:k[1]])
+        linechar = 'Row %d :m= %.2e -> %.2e' %(i, slope, slope/7)
+        linefit = [ slope * n + intercept for n in RFtones]
+        axx[1].plot(RFtones, linefit, 'r', linestyle = '--', alpha = 0.3, label = linechar)
+        i += 1
+    axx[0].legend()
+    axx[1].legend()
+    axx[0].set_xlabel("Driving Frequencies of Y Crystal (MHz)")
+    axx[1].set_xlabel("Driving Frequencies of Y Crystal (MHz)")
+    axx[0].set_ylabel("X Coordinate on Camera (m)")
+    axx[1].set_ylabel("Y Coordinate on Camera (m)")
+    figx.suptitle("Separation of Array vs Y Driving Frequencies")
+
+    #only works for square arrays right now
+    colind0 = np.arange(0,totalspheres, rowlen)
+    for k in range(rowlen):
+        colinds = colind0 + k
+        print(len(xmeanssorted))
+        print(xmeanssorted)
+        colxdata = [xmeanssorted[n] for n in colinds]
+        axy[0].plot(RFtones, colxdata, '.')
+        slope, intercept, r, p, se = linregress(RFtones, colxdata)
+        linechar = 'Column %d :m= %.2e -> %.2e' %(k, slope, slope/7)
+        linefit = [ slope * n + intercept for n in RFtones]
+        axy[0].plot(RFtones, linefit, 'r', linestyle = '--', alpha = 0.3, label = linechar)
+
+        colydata = [ymeanssorted[n] for n in colinds]
+        axy[1].plot(RFtones, colydata, '.')
+        slope, intercept, r, p, se = linregress(RFtones, colydata)
+        linechar = 'Column %d :m= %.2e -> %.2e' %(k, slope, slope/7)
+        linefit = [ slope * n + intercept for n in RFtones]
+        axy[1].plot(RFtones, linefit, 'r', linestyle = '--', alpha = 0.3, label = linechar)
+    
+    axy[0].legend()
+    axy[1].legend()
+    axy[0].set_xlabel("Driving Frequencies of X Crystal (MHz)")
+    axy[1].set_xlabel("Driving Frequencies of X Crystal (MHz)")
+    axy[0].set_ylabel("X Coordinate on Camera (m)")
+    axy[1].set_ylabel("Y Coordinate on Camera (m)")
+    figy.suptitle("Separation of Array vs X Driving Frequencies")
 
 
     #make an array of the time for each frame in the video
@@ -169,8 +210,8 @@ def PSDmaker(spheres, f, framerate, rowlen, saveposdata, savename):
 
 
     axa.grid()
-    axa.set_xlabel('Frequency [Hz]', fontsize=18)
-    axa.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
+    axa.set_xlabel('Frequency (Hz)', fontsize=18)
+    axa.set_ylabel(r'ASD ($m/ \sqrt{Hz}$)', fontsize=18)
     axa.legend(Legendx, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
     axa.set_title('X motion ASD', fontsize=22)
     axa.tick_params(axis='both', which='major', labelsize=12)
@@ -179,8 +220,8 @@ def PSDmaker(spheres, f, framerate, rowlen, saveposdata, savename):
         axa.spines[location].set_linewidth(1)
 
     axb.grid()
-    axb.set_xlabel('Frequency [Hz]', fontsize=18)
-    axb.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
+    axb.set_xlabel('Frequency (Hz)', fontsize=18)
+    axb.set_ylabel(r'ASD ($m/ \sqrt{Hz}$)', fontsize=18)
     axb.legend(Legendy, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
     axb.set_title('Y motion ASD', fontsize=22)
     axb.tick_params(axis='both', which='major', labelsize=12)
