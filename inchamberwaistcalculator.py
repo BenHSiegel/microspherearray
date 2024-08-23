@@ -11,7 +11,7 @@ from sklearn.metrics import r2_score
 
 # Reading multiple csv files
 
-path = r"D:\Research\20231012\Knive edge inside chamber"
+path = r"D:\Lab data\20240821\Knive Edge Inside Chamber"
 os.chdir(path)
 print(os.getcwd())
 file_name_directory=[]
@@ -32,7 +32,7 @@ def model(x,x0,p_max,w):
     return (1/2)*p_max*(1+special.erf(np.sqrt(2)*(x-x0)/w))
 
 #initial guess for parameters: x0, p_max, w
-pO=[50,230,50] 
+pO=[50,750,50] 
 
 ws=[]
   
@@ -81,7 +81,7 @@ def waist_time(z,z0,w0,a):
     return w0*np.sqrt(1 + (a*(z-z0)/w0**2)**2) 
 
 #NEED TO CHANGE VALUES DEPENDING ON HOW MANY Z's TAKEN
-z = [4,4.5,5,5.2,5.5,5.7,6.0,6.2,6.5,6.7,7.0,7.5,8.0,8.5,9.0,9.5]
+z = [3,4,5,6,7,8,9,10]
 
 
 #initial guess for z0,w0,a
@@ -120,13 +120,13 @@ line_guess = []
 z_guess = np.linspace(min(z),max(z),1000)
 
 for z_val in z_guess:
-    line = waist_time(z_val,z0_fit,w0_fit,a_fit) *1.075 #includes the factor to convert seconds in slow mode to um
+    line = waist_time(z_val,z0_fit,w0_fit,a_fit) *1.75 #includes the factor to convert seconds in slow mode to um
     line_guess.append(line)
 
 
-wum = [x * 1.075 for x in ws]
+wum = [x * 1.769 for x in ws]
 
-print('w0 = %.5f um'% (popt[1]*1.075))
+print('w0 = %.5f um'% (popt[1]*1.75))
 plt.figure()
 plt.plot(z_guess,line_guess, label='Fit')  
 plt.scatter(z,wum, c= '#FF6103', label='From ERFs')
@@ -134,4 +134,5 @@ plt.legend()
 plt.ylabel("Beam Waist [um]")
 plt.xlabel("Distance from the bottom of the stage's motion [s]")
 plt.title('Waist position inside chamber')
+plt.show()
     

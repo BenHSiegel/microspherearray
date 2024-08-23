@@ -38,7 +38,7 @@ def processmovie(filename, framerate, diameter):
     #invert=true looks for dark spots instead of light spots
     #diameter is the centroid size to look for in the images (in units of pixels)
     #diameter should always be an odd number and greater than the actual sphere size
-    f = tp.batch(spheres[:], diameter, invert=True, minmass=1500, processes=1)
+    f = tp.batch(spheres[:], diameter, invert=True, minmass=300, processes=1)
         #to check the mass brightness make this figure
     fighist, axhist = plt.subplots()
     axhist.hist(f['mass'], bins=1000)
@@ -413,11 +413,11 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
 
         hf.close()
         
-path = r"D:\Lab data\videos for testing\7E-2"
+path = r"D:\Lab data\20231121"
 os.chdir(path)
-diameter = 19
-pixtoum = 10/15
-framerate = 330
+diameter = 15
+pixtoum = 10/13
+framerate = 1274
 pcacheck = False
 saveposdata = True
 saveFFTavg = False
@@ -425,4 +425,4 @@ rowlen = 1
 fftsave = "expandedposition20240319rmsavg"
 
 totalspheres = videofolder_dataextractions(path, framerate, diameter, rowlen, pixtoum, pcacheck, saveposdata)
-hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)
+#hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)

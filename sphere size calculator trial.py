@@ -8,25 +8,27 @@ import numpy as np
 import cv2 as cv
 import os
 
-path = r"C:\Users\Ben\Documents\Research\20240604\0-8MHz"
-filename = r"0-8MHz_25grid-lp-1.avi"
+path = r"D:\Lab data\20240604\0-8MHz"
+filename = "pictry.png"
 os.chdir(path)
 
-def average_size_calculator(filename):
+
     
-    vid = cv.VideoCapture(filename)
-    success, img = vid.read()
-    if success:
-        gimg = img[:,:,1]
-        blurredimg = cv.GaussianBlur(gimg, (3,3), 0)
-        circles = cv.HoughCircles(blurredimg, cv.HOUGH_GRADIENT, 1, 25, param1=50, param2=30, minRadius=5, maxRadius=30)
-        for i in circles[0,:]:
-            # draw the outer circle
-            cv.circle(img,(i[0],i[1]),i[2],(0,255,0),2)
-            # draw the center of the circle
-            cv.circle(img,(i[0],i[1]),2,(0,0,255),3)
-        
-        
-        cv.imshow('detected circles',img)
-        cv.waitKey(0)
-        cv.destroyAllWindows()
+
+img = cv.imread(filename)
+
+assert img is not None, "file could not be read, check with os.path.exists()"
+gimg = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
+blurredimg = cv.GaussianBlur(gimg, (3,3), 0)
+circles = cv.HoughCircles(blurredimg, cv.HOUGH_GRADIENT, 1, 25, param1=20, param2=5, minRadius=2, maxRadius=20)
+circlespx = np.uint16(np.around(circles))
+for i in circlespx[0,:]:
+    # draw the outer circle
+    cv.circle(img,(i[0],i[1]),i[2],(0,255,0),3)
+    # draw the center of the circle
+    cv.circle(img,(i[0],i[1]),2,(0,0,255),1)
+    
+    
+cv.imshow('detected circles',img)
+cv.waitKey(0)
+cv.destroyAllWindows()
