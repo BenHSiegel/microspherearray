@@ -26,18 +26,41 @@ from scipy.interpolate import interp1d
 
 
 def butter_bandpass(data, highpassfq, fs, order=3):
+    '''
+    Passes data through a bandpass filter with a variable high pass corner and
+    set low pass corner of 250 Hz
+    Inputs:
+        data = timestream to filter
+        highpassfq = high pass frequency corner
+        fs = sampling frequency
+        order = order of butterworth filter (default 3)
+    Outputs:
+        filtered_data = timestream of data after filtering
+    '''
+    #declare nyquist frequency
     nyq = 0.5 * fs
+    #set high and low pass corners
     highpasscornerfq = highpassfq / nyq
     lowpasscornerfq = 250/nyq
+    #create bandpass butterworth filter
     b, a = butter(order, [highpasscornerfq, lowpasscornerfq], btype='bandpass')
+    #pass data through filter
     filtered_data = lfilter(b, a, data)
+
     return filtered_data
 
     
 def corr_cross_calc(X, Y):
-    #calculates the Pearson correlation coefficient between the columns of two 
-    #arrays for all combinations of the columns
-    
+    '''
+    calculates the Pearson correlation coefficient between the columns of two 
+    arrays for all combinations of the columns
+    Inputs:
+        X = first data array
+        Y = second data array
+    Outputs:
+        cor_matrix = grid of correlation coefficients where the n,m element
+        is the nth column of X crossed with the mth column of Y
+    '''
     cor_matrix = np.zeros((X.shape[1],Y.shape[1]))
     
     for n in range(X.shape[1]):
