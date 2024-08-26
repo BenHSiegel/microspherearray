@@ -12,7 +12,7 @@ import seaborn as sn
 from correlationcalculator import heatmap
 from correlationcalculator import annotate_heatmap
 
-files = [r'C:\Users\bensi\Documents\Research\20240604\0-8MHz\0.8correlationmatrix.h5', r'C:\Users\bensi\Documents\Research\20240604\1MHz\1.0correlationmatrix.h5', r'C:\Users\bensi\Documents\Research\20240604\1-25MHz\1.25correlationmatrix.h5', r'C:\Users\bensi\Documents\Research\20240604\1-5MHz\1.5correlationmatrix.h5']
+files = [r'D:\Lab data\20240604\0-8MHz\0.8correlationmatrix.h5', r'D:\Lab data\20240604\1MHz\1.0correlationmatrix.h5', r'D:\Lab data\20240604\1-25MHz\1.25correlationmatrix.h5', r'D:\Lab data\20240604\1-5MHz\1.5correlationmatrix.h5']
 separations = ['56', '70', '88', '105']
 
 
