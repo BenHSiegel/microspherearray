@@ -12,7 +12,7 @@ import seaborn as sn
 from correlationcalculator import heatmap
 from correlationcalculator import annotate_heatmap
 
-files = [r'D:\Lab data\20240604\0-8MHz\0.8correlationmatrix.h5', r'D:\Lab data\20240604\1MHz\1.0correlationmatrix.h5', r'D:\Lab data\20240604\1-25MHz\1.25correlationmatrix.h5', r'D:\Lab data\20240604\1-5MHz\1.5correlationmatrix.h5']
+files = [r'C:\Users\bensi\Documents\Research\20240604\0-8MHz\0.8correlationmatrix.h5', r'C:\Users\bensi\Documents\Research\20240604\1MHz\1.0correlationmatrix.h5', r'C:\Users\bensi\Documents\Research\20240604\1-25MHz\1.25correlationmatrix.h5', r'C:\Users\bensi\Documents\Research\20240604\1-5MHz\1.5correlationmatrix.h5']
 separations = ['56', '70', '88', '105']
 
 
@@ -50,9 +50,15 @@ for i in range(len(files)):
         plot_cbar = False
         cbar_kws = None
         cbar_ax = None
-        
+    
+    symcor = xcor
+    for a in range(xcor.shape[0]):
+        for b in range(xcor.shape[1]):
+            if a < b:
+                symcor[a][b] = ycor[a][b]
     mask = np.triu(np.ones_like(xcor, dtype=bool))
-    sn.heatmap(xcor, mask=mask, square=True, cmap = 'viridis', vmin=-0.25, vmax=0.1, ax=ax[i], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
+    diagmask = np.identity(xcor.shape[0])
+    sn.heatmap(symcor, mask=diagmask, square=True, cmap = 'viridis', vmin=-0.3, vmax=0.1, ax=ax[i], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
     ax[i].set_xticks(np.arange(xcor.shape[1])+.5, labels=spherenames)
     ax[i].set_yticks(np.arange(xcor.shape[0])+.5, labels=spherenames)
     plt.setp(ax[i].get_xticklabels(), rotation=90)
@@ -60,5 +66,5 @@ for i in range(len(files)):
     ax[i].set_xlabel('Sphere Index')
     ax[i].set_ylabel('Sphere Index')
 
-cax.set_title('Correlation Coefficient')
+cax.set_title('Correlation Coefficients')
 plt.show()
