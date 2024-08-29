@@ -17,12 +17,12 @@ from scipy.signal import find_peaks
 from matplotlib.pyplot import gca
 import h5py
 
-def polygon_under_graph(x, y):
+def polygon_under_graph(x, y,base):
     """
     Construct the vertex list which defines the polygon filling the space under
     the (x, y) line graph. This assumes x is in ascending order.
     """
-    return [(x[0], 0.), *zip(x, y), (x[-1], 0.)]
+    return [(x[0], base), *zip(x, y), (x[-1], base)]
 
 def multisphere3d(path, color_codes):
     hf = h5py.File(path, 'r')
@@ -37,30 +37,51 @@ def multisphere3d(path, color_codes):
     ax = figx.add_subplot(projection="3d")
     figy = pl.figure()
     ay = figy.add_subplot(projection="3d")
-    verts = [polygon_under_graph(freqs[123:410],X_asd[i,123:410]) for i in range(len(X_asd))]
-    poly= PolyCollection(verts, facecolors=color_codes, alpha=0.4)
+    verts = [polygon_under_graph(freqs[123:460],np.log10(X_asd[i,123:460]**2),-17.) for i in range(len(X_asd))]
+    poly= PolyCollection(verts, facecolors=color_codes, alpha=0.3)
+    lines = [ax.plot3D(freqs[123:460],g[123:460]*(i+1),np.log10(X_asd[i,123:460]**2), color=color_codes[i], alpha = 0.8, linewidth = 3) for i in range(len(X_asd))]
     ax.add_collection3d(poly,zs=index,zdir='y')
-    ax.set(xlim=(60, 200), ylim=(0, 26), zlim=(1E-17,1E-14),
-       xlabel='Frequency(Hz)', ylabel='Sphere', zlabel=r'ASD')
-    # for i in range(len(X_asd)):
-    #     ax.plot(freqs[123:410],g[123:410]*(i+1),np.log10(X_asd[i,123:410]))
-    #     ay.plot(freqs[123:310],g[123:310]*(i+1),np.log10(Y_asd[i,123:310]))
-    # ax.set_xlim(60,200)
-    # # ax.set_ylim(0,6.5E-15)
-    # ax.set_xlabel('Frequency (Hz)', fontsize=18)
-    # ax.set_ylabel('Sphere Index', fontsize=18)
-    # spherenames = [str(x+1) for x in range(25)]
-    # #ax.set_yticks(offset, labels=spherenames)
-    # #ax.legend(legendlist, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
-    # ax.set_title('X Motion Spectra', fontsize=22)
+    ax.set(xlim=(60, 225), ylim=(0, 26), zlim=(-17,-14))
+    ax.set_xlabel('Frequency (Hz)', fontsize=14, labelpad=10)
+    ax.set_ylabel('Sphere', fontsize=14, labelpad=10)
     
-    # ay.set_xlim(60,150)
-    # # ay.set_ylim(0,3.2E-14)
-    # ay.set_xlabel('Frequency (Hz)', fontsize=18)
-    # ay.set_ylabel('Sphere Index', fontsize=18)
-    # #ay.set_yticks(offsety, labels=spherenames)
-    # #ay.legend(legendlist, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
-    # ay.set_title('Y Motion Spectra', fontsize=22)
+    ax.grid(False)
+    ax.tick_params(labelsize=12)
+    #ax.tick_params(axis='both', top=False, labeltop = False, bottom = True, labelbottom = True, left = True, right = False, labelleft=True, labelright=False)
+    ax.xaxis.pane.fill = False # Left pane
+    ax.yaxis.pane.fill = False # Right pane
+    ax.zaxis.pane.fill = False # bottom pane
+    ax.set_zticks([])
+    # # Transparent spines
+    # ax.w_xaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
+    # ax.w_yaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
+    ax.zaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
+    # # Transparent panes
+    ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+
+    verts = [polygon_under_graph(freqs[82:310],np.log10(Y_asd[i,82:310]**2),-17.) for i in range(len(X_asd))]
+    poly= PolyCollection(verts, facecolors=color_codes, alpha=0.3)
+    lines = [ay.plot3D(freqs[82:310],g[82:310]*(i+1),np.log10(Y_asd[i,82:310]**2), color=color_codes[i], alpha = 0.8, linewidth = 3) for i in range(len(Y_asd))]
+    ay.add_collection3d(poly,zs=index,zdir='y')
+    ay.set(xlim=(40, 150), ylim=(0, 26), zlim=(-17,-14.5))
+    ay.set_xlabel('Frequency (Hz)', fontsize=14, labelpad=10)
+    ay.set_ylabel('Sphere', fontsize=14, labelpad=10)
+    ay.grid(False)
+    ay.tick_params(labelsize=12)
+    ay.xaxis.pane.fill = False # Left pane
+    ay.yaxis.pane.fill = False # Right pane
+    ay.zaxis.pane.fill = False # bottom pane
+    ay.set_zticks([])
+    # # Transparent spines
+    # ax.w_xaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
+    # ax.w_yaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
+    ay.zaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
+    # # Transparent panes
+    ay.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ay.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ay.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
     plt.show()
 
 
@@ -79,8 +100,8 @@ def offsetwaves(path, color_codes):
     offset = np.linspace(0,10,len(X_asd))
     offsety = np.linspace(0,10,len(X_asd))
     for i in range(len(X_asd)):
-        ax0.plot(freqs, np.log10(X_asd[i,:]**2) + offset[i], color=color_codes[i]) # 
-        ax1.plot(freqs, np.log10(Y_asd[i,:]**2) + offsety[i] , color=color_codes[i]) #
+        ax0.semilogy(freqs, X_asd[i,:]**2 , color=color_codes[i]) # + offset[i]
+        ax1.semilogy(freqs, Y_asd[i,:]**2  , color=color_codes[i]) #+ offsety[i]
 
         legendlist.append('Sphere ' + str(i))
     
@@ -209,8 +230,8 @@ def justpeakplotter(path, color_codes):
     
 totalspheres = 25
 file = r'D:\Lab data\20240604\0-8MHz\0-8MHz_rmsavg.h5'
-color_map = mpl.cm.get_cmap('viridis')
-colorind = np.linspace(0,0.7,totalspheres)
+color_map = mpl.colormaps.get_cmap('CMRmap')
+colorind = np.linspace(0,0.8,totalspheres)
 color_codes = [color_map(colorind[i]) for i in range(totalspheres)]
 
-offsetwaves(file, color_codes)
+multisphere3d(file, color_codes[::-1])

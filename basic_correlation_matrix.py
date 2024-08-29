@@ -14,7 +14,7 @@ from correlationcalculator import annotate_heatmap
 
 files = [r'D:\Lab data\20240604\0-8MHz\0.8correlationmatrix.h5', r'D:\Lab data\20240604\1MHz\1.0correlationmatrix.h5', r'D:\Lab data\20240604\1-25MHz\1.25correlationmatrix.h5', r'D:\Lab data\20240604\1-5MHz\1.5correlationmatrix.h5']
 separations = ['56', '70', '88', '105']
-
+mpl.rcParams.update({'font.size': 14})
 
 fig, ax = plt.subplots(1, len(files))
 cax = fig.add_axes(rect=(0.2,0.2,0.6,0.03))
@@ -46,6 +46,7 @@ for i in range(len(files)):
         cbar_kws = {'shrink' : 0.8,
                     'orientation': 'horizontal'}
         cbar_ax = cax
+        
     else:
         plot_cbar = False
         cbar_kws = None
@@ -59,12 +60,13 @@ for i in range(len(files)):
     mask = np.triu(np.ones_like(xcor, dtype=bool))
     diagmask = np.identity(xcor.shape[0])
     sn.heatmap(symcor, mask=diagmask, square=True, cmap = 'viridis', vmin=-0.3, vmax=0.1, ax=ax[i], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
-    ax[i].set_xticks(np.arange(xcor.shape[1])+.5, labels=spherenames)
-    ax[i].set_yticks(np.arange(xcor.shape[0])+.5, labels=spherenames)
+    
+    ax[i].set_xticks(np.arange(xcor.shape[1])+.5, labels=spherenames,fontsize=13)
+    ax[i].set_yticks(np.arange(xcor.shape[0])+.5, labels=spherenames,fontsize=13)
     plt.setp(ax[i].get_xticklabels(), rotation=90)
-    ax[i].set_title(separations[i] + 'um Spacing')
-    ax[i].set_xlabel('Sphere Index')
-    ax[i].set_ylabel('Sphere Index')
+    ax[i].set_title(separations[i] + r'$\mu$m Spacing', fontsize=23)
+    ax[i].set_xlabel('Sphere Index', fontsize=19, labelpad=8)
+    ax[i].set_ylabel('Sphere Index',fontsize=19,labelpad=8)
 
-cax.set_title('Correlation Coefficients')
+cax.set_title('Correlation Coefficients',fontsize=23)
 plt.show()
