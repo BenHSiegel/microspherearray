@@ -1,9 +1,5 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Oct 15 10:27:38 2023
+# New camera trial analysis
 
-@author: Ben
-"""
 
 import pims
 import trackpy as tp
@@ -26,19 +22,24 @@ import h5py
 #make a pipeline so that when pims opens a file, it converts each frame to one color
 @pims.pipeline
 def gray(image):
-    return image[:, :, 1]  # Take just the green channel (they are all the same for our camera)
+    x_min = 300
+    x_max = 1500
+    y_min = 300
+    y_max = 800
+    return image[y_min:y_max, x_min:x_max,1]  # Take just the green channel (they are all the same for our camera)
 
 
 def processmovie(filename, framerate, diameter):
     #open a avi file with pims and converts to one color
     spheres = gray(pims.open(filename))
+    plt.imshow(spheres[32]);
     tp.quiet()
     #process every frame in the tiff image stack to find the locations of bright spots
     #minmass defines the minimum brightness and processes means no parallelization since that breaks it
     #invert=true looks for dark spots instead of light spots
     #diameter is the centroid size to look for in the images (in units of pixels)
     #diameter should always be an odd number and greater than the actual sphere size
-    f = tp.batch(spheres[:], diameter, invert=True, minmass=300, processes=1)
+    f = tp.batch(spheres[:100], diameter, invert=True, minmass=410, processes=1)
         #to check the mass brightness make this figure
     fighist, axhist = plt.subplots()
     axhist.hist(f['mass'], bins=1000)
@@ -56,27 +57,20 @@ def motiontracer(spheres, f):
     #suppress output so that it runs faster
     tp.quiet()
 
-    t = tp.link(f, 60, memory=100)
+    t = tp.link(f, 20, memory=30)
     
-    # fig1, ax00 = plt.subplots()
-    # fig1.set_dpi(1200)
+    fig1, ax00 = plt.subplots()
 
     #plot the trajectory of the sphere over the video
-    # pixtoum = 10/11
-    # tp.plot_traj(t, ax=ax00, label=False, mpp = pixtoum)
+    pixtoum = 0.566
+    tp.plot_traj(t, ax=ax00, label=False, mpp = pixtoum)
     
-    # ax00.set_xlabel(r'x [$ \mu m$]')
-    # ax00.set_ylabel(r'y [$ \mu m$]')
-    # ax00.set_title("Spheres' Traces")
+    ax00.set_xlabel(r'x [$ \mu m$]')
+    ax00.set_ylabel(r'y [$ \mu m$]')
+    ax00.set_title("Spheres' Traces")
+    plt.show()
     return t
 
-def lorentzian(f, f0, gam, cal_fac):
-  kb = 1.38e-23 # Boltzmann's constant, SI units
-  temp = 293 # Room temp, K
-  m = 1e-12 # Mass kg
-  omega = 2*np.pi*f
-  omega0 = 2*np.pi*f0
-  return 1/(cal_fac)**2 * 2*kb*temp/m * gam/((omega0**2 - omega**2)**2 + omega**2*gam**2)
 
 def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata, savename):
     ypx = t.loc[:,'y']
@@ -281,148 +275,20 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
 
 
     return totalspheres
-    # plt.ylim([1e-8, 4e-6])
-    # #plt.xlim([1,100])
-
-    
-    #sphere1.savefig('spheremovingpsd.png')
-    #sphere2.savefig('sphere2movingpsd.png')
-    #tracks.savefig('tracks.png')
-    
-#     rmsparsevalcheck0 = np.mean(x0centered**2)
-#     psdparsevalcheck0 = 1/(numframes*timeinc) * np.sum(x0PSD)
-#     print(rmsparsevalcheck0)
-#     print(psdparsevalcheck0)
-    
-#     rmsparsevalcheck1 = np.mean(x1centered**2)
-#     psdparsevalcheck1 = 1/(numframes*timeinc) * np.sum(x1PSD)
-#     print(rmsparsevalcheck1)
-#     print(psdparsevalcheck1)
 
 
+path = r"D:\Lab data\20240828\lp\vid3"
+os.chdir(path)
+vid='lp1.mkv'
+diameter = 25
+pixtoum = 0.566
+framerate = 1000
+pcacheck = False
+saveposdata = True
+saveFFTavg = False
+rowlen = 1
+fftsave = "expandedposition20240319rmsavg"
 
-
-
-# def average_size_calculator(filename):
-    
-#     img = 
-#     blurredimg = cv.GaussianBlur(img, (3,3), 0)
-#     circles = cv.HoughCircles(blurredimg, cv.HOUGH_GRADIENT, 1, 25, param1=50, param2=30, minRadius=5, maxRadius=30)
-#     for i in circles[0,:]:
-#      # draw the outer circle
-#      cv.circle(cimg,(i[0],i[1]),i[2],(0,255,0),2)
-#      # draw the center of the circle
-#      cv.circle(cimg,(i[0],i[1]),2,(0,0,255),3)
-     
-#     cv.imshow('detected circles',cimg)
-#     cv.waitKey(0)
-#     cv.destroyAllWindows()
-
-
-
-def videofolder_dataextractions(path, framerate, diameter, rowlen, pixtoum, pcacheck, saveposdata):
-    file_name_directory = []
-    for filename in sorted(os.listdir(path)):
-        if filename.endswith(".avi"):
-            file_name_directory.append(filename)
-         
-    for vid in file_name_directory:
-        [spheres, f] = processmovie(vid, framerate, diameter)
-        t = motiontracer(spheres, f)
-        totalspheres = psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata, vid[:-4])
-
-    return totalspheres
-
-def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
-    hdf5_list = []
-    for filename in sorted(os.listdir(path)):
-        if filename.endswith(".h5"):
-            hdf5_list.append(filename)
-    
-    xfftmatrix = [[] for i in range(totalspheres)]
-    yfftmatrix = [[] for i in range(totalspheres)]
-    counter = 0
-    for i in hdf5_list:
-        hf = h5py.File(i, 'r')
-        xgroup = hf.get('X_psd')
-        ygroup = hf.get('Y_psd')
-        
-        k=0
-        for j in xgroup.items():
-            xfftj = np.array(j[1])
-            if counter == 0:
-                xfftmatrix[k] = xfftj[:,1].reshape(-1,1)
-            else:
-                xfftmatrix[k] = np.concatenate((xfftmatrix[k], xfftj[:,1].reshape(-1,1)), axis=1)
-            k+=1
-            
-        k=0
-        for j in ygroup.items():
-            yfftj = np.array(j[1])
-            if counter == 0:
-                yfftmatrix[k] = yfftj[:,1].reshape(-1,1)
-            else:
-                yfftmatrix[k] = np.concatenate((yfftmatrix[k], yfftj[:,1].reshape(-1,1)), axis=1)
-            freqs = yfftj[:,0]
-            k+=1
-        
-        counter += 1
-        hf.close()
-            
-    xrms_averaged = [[] for i in range(totalspheres)]
-    yrms_averaged = [[] for i in range(totalspheres)]
-    
-    Legend = []
-    
-    figc, axc = plt.subplots()
-    
-    figd, axd = plt.subplots()
-
-    for i in range(totalspheres):
-        
-        xrms_avg_i = np.sqrt(np.mean(xfftmatrix[i]**2, axis=1))
-        yrms_avg_i = np.sqrt(np.mean(yfftmatrix[i]**2, axis=1))
-        
-        xrms_averaged[i] = xrms_avg_i
-        yrms_averaged[i] = yrms_avg_i
-        
-        axc.semilogy(freqs, xrms_avg_i, linewidth=2)
-        axd.semilogy(freqs, yrms_avg_i, linewidth=2)
-        Legend.append('Sphere ' + str(i))
-    
-    axc.grid()
-    #axc.set_xlim(5,180)
-    axc.set_xlabel('Frequency [Hz]', fontsize=18)
-    axc.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
-    axc.legend(Legend, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
-    axc.set_title('X motion RMS Avg ASD', fontsize=22)
-    
-    axd.grid()
-    #axd.set_xlim(5,180)
-    axd.set_xlabel('Frequency [Hz]', fontsize=18)
-    axd.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
-    axd.legend(Legend, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
-    axd.set_title('Y motion RMS Avg ASD', fontsize=22)
-    plt.show()
-    if saveflag:
-        savename = savename + '.h5'
-        hf = h5py.File(savename, 'w')
-        hf.create_dataset('frequencies', data=freqs)
-        hf.create_dataset('XASD RMS Avg', data=xrms_averaged)
-        hf.create_dataset('YASD RMS Avg', data=yrms_averaged)
-
-        hf.close()
-        
-# path = r"D:\Lab data\20231121"
-# os.chdir(path)
-# diameter = 15
-# pixtoum = 10/13
-# framerate = 1274
-# pcacheck = False
-# saveposdata = True
-# saveFFTavg = False
-# rowlen = 1
-# fftsave = "expandedposition20240319rmsavg"
-
-# totalspheres = videofolder_dataextractions(path, framerate, diameter, rowlen, pixtoum, pcacheck, saveposdata)
-# #hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)
+[spheres, f] = processmovie(vid, framerate, diameter)
+t = motiontracer(spheres, f)
+#totalspheres = psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata, vid[:-4])
