@@ -22,10 +22,10 @@ import h5py
 #make a pipeline so that when pims opens a file, it converts each frame to one color
 @pims.pipeline
 def gray(image):
-    x_min = 300
-    x_max = 1500
-    y_min = 300
-    y_max = 800
+    x_min = 980
+    x_max = 1080
+    y_min = 450
+    y_max = 650
     return image[y_min:y_max, x_min:x_max,1]  # Take just the green channel (they are all the same for our camera)
 
 
@@ -39,7 +39,7 @@ def processmovie(filename, framerate, diameter):
     #invert=true looks for dark spots instead of light spots
     #diameter is the centroid size to look for in the images (in units of pixels)
     #diameter should always be an odd number and greater than the actual sphere size
-    f = tp.batch(spheres[:100], diameter, invert=True, minmass=410, processes=1)
+    f = tp.batch(spheres[:], diameter, invert=True, minmass=1000, processes=1)
         #to check the mass brightness make this figure
     fighist, axhist = plt.subplots()
     axhist.hist(f['mass'], bins=1000)
@@ -139,7 +139,7 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
 
     spheredata = [[] for i in range(totalspheres)]
     sphere_pos_data = [[] for i in range(totalspheres)]
-    '''
+
     Legendx = []
     Legendy = []
     figa, axa = plt.subplots()
@@ -150,7 +150,7 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
     figb, axb = plt.subplots()
     figb.set_size_inches(7.6, 4.5)
     figb.set_dpi(1200)
-    '''
+    
     fftbinning = 2048
     figs={}
     axs={}
@@ -165,16 +165,16 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
             xASD = np.sqrt(xPSD)
             xASDlist[i] = np.vstack((xfreq,xASD)).T
             
-            #axa.semilogy(xfreq, xASD, linewidth=2)
-            #Legendx.append('Sphere ' + str(i))
+            axa.semilogy(xfreq, xASD, linewidth=2)
+            Legendx.append('Sphere ' + str(i))
     
             ycentered = yposlist[i] - np.mean(yposlist[i])
             yfreq, yPSD = welch(ycentered, framerate, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
             yASD = np.sqrt(yPSD)
             yASDlist[i] = np.vstack((yfreq,yASD)).T
             
-            #axb.semilogy(yfreq, yASD, linewidth=2)
-            #Legendy.append('Sphere ' + str(i))
+            axb.semilogy(yfreq, yASD, linewidth=2)
+            Legendy.append('Sphere ' + str(i))
             
             spheredata[i] = np.vstack((xcentered, ycentered)).T
             sphere_pos_data[i] = np.vstack((frames, xcentered, ycentered)).T
@@ -229,7 +229,7 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
                 axs[i][1].set_ylabel(r'PSD [$m^2/ Hz$]')
                 axs[i][1].set_title('Y PSD')
 
-    '''
+    
     axa.grid()
     axa.set_xlabel('Frequency [Hz]', fontsize=18)
     axa.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
@@ -249,7 +249,6 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
     #axb.set_xlim(8,167)
     for location in ['left', 'right', 'top', 'bottom']:
         axb.spines[location].set_linewidth(1)
-    '''
     
     if saveposdata:
         savename = savename + '.h5'
@@ -269,6 +268,7 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
             d1.attrs.create('range (m)', [np.ptp(sphere_pos_data[sphnum][:,1]), np.ptp(sphere_pos_data[sphnum][:,2])])
             d1.attrs.create('rms (m)', [np.sqrt(np.mean((sphere_pos_data[sphnum][:,1])**2)), np.sqrt(np.mean((sphere_pos_data[sphnum][:,2])**2))])
             d1.attrs.create('Camera frame location (m)', [xmeanssorted[sphnum], ymeanssorted[sphnum]])
+            d1.attrs.create('Camera pixel location', [np.mean(xpx),np.mean(ypx)])
             g2.create_dataset('Sphere ' + str(sphnum), data=xASDlist[sphnum])
             g3.create_dataset('Sphere ' + str(sphnum), data=yASDlist[sphnum])
         hf.close()
@@ -277,9 +277,9 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
     return totalspheres
 
 
-path = r"D:\Lab data\20240828\lp\vid3"
+path = r"C:\Users\bensi\Documents\Research\Moore Lab"
 os.chdir(path)
-vid='lp1.mkv'
+vid='hp2.mkv'
 diameter = 25
 pixtoum = 0.566
 framerate = 1000
@@ -291,4 +291,4 @@ fftsave = "expandedposition20240319rmsavg"
 
 [spheres, f] = processmovie(vid, framerate, diameter)
 t = motiontracer(spheres, f)
-#totalspheres = psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata, vid[:-4])
+totalspheres = psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata, vid[:-4])
