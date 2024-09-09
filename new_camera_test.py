@@ -22,11 +22,7 @@ import h5py
 #make a pipeline so that when pims opens a file, it converts each frame to one color
 @pims.pipeline
 def gray(image):
-    x_min = 980
-    x_max = 1080
-    y_min = 450
-    y_max = 650
-    return image[y_min:y_max, x_min:x_max,1]  # Take just the green channel (they are all the same for our camera)
+    return image[:, :,1]  # Take just the green channel (they are all the same for our camera)
 
 
 def processmovie(filename, framerate, diameter):
@@ -39,7 +35,7 @@ def processmovie(filename, framerate, diameter):
     #invert=true looks for dark spots instead of light spots
     #diameter is the centroid size to look for in the images (in units of pixels)
     #diameter should always be an odd number and greater than the actual sphere size
-    f = tp.batch(spheres[:], diameter, invert=True, minmass=1000, processes=1)
+    f = tp.batch(spheres[:], diameter, invert=True, minmass=1500, processes=1)
         #to check the mass brightness make this figure
     fighist, axhist = plt.subplots()
     axhist.hist(f['mass'], bins=1000)
@@ -57,7 +53,7 @@ def motiontracer(spheres, f):
     #suppress output so that it runs faster
     tp.quiet()
 
-    t = tp.link(f, 20, memory=30)
+    t = tp.link(f, 20, memory=20)
     
     fig1, ax00 = plt.subplots()
 
@@ -143,14 +139,9 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
     Legendx = []
     Legendy = []
     figa, axa = plt.subplots()
-    
-    figa.set_size_inches(7.6, 4.5)
-    figa.set_dpi(1200)
-    
+
     figb, axb = plt.subplots()
-    figb.set_size_inches(7.6, 4.5)
-    figb.set_dpi(1200)
-    
+
     fftbinning = 2048
     figs={}
     axs={}
@@ -273,13 +264,13 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
             g3.create_dataset('Sphere ' + str(sphnum), data=yASDlist[sphnum])
         hf.close()
 
-
+    plt.show()
     return totalspheres
 
 
-path = r"C:\Users\bensi\Documents\Research\Moore Lab"
+path = r"D:\Lab data\20240905"
 os.chdir(path)
-vid='hp2.mkv'
+vid='lp_highexp.avi'
 diameter = 25
 pixtoum = 0.566
 framerate = 1000
@@ -287,7 +278,7 @@ pcacheck = False
 saveposdata = True
 saveFFTavg = False
 rowlen = 1
-fftsave = "expandedposition20240319rmsavg"
+fftsave = "chargecheck"
 
 [spheres, f] = processmovie(vid, framerate, diameter)
 t = motiontracer(spheres, f)
