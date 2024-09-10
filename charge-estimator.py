@@ -12,8 +12,85 @@ from scipy.signal.windows import blackman
 from scipy.signal import find_peaks
 from matplotlib.pyplot import gca
 import h5py
+from sklearn import decomposition
 
-def hdf5_sphere_data_scraper(filename):
+def filepositionreader(filename):
+    '''
+    Reads a HDF5 file and saves the position data from it for all the spheres
+    as a column stack array
+    
+    Inputs
+    -------
+    filename:       Name of the hdf5 file to read from
+
+    Returns
+    -------
+    pos_stack_x:    The x position data for each sphere (x1, x2, x3, ...)
+    pos_stack_y:    The y position data for each sphere (y1, y2, y3, ...)
+    pos_stack:      A stack of all the position data (x1, y1, x2, y2, ...)
+    '''
+    hf = h5py.File(filename, 'r')
+    group = hf.get('position')
+    framerate = group.attrs['framerate (fps)']
+    
+    pos_stack_x = []
+    pos_stack_y = []
+    pos_stack = []
+    
+    counter = 0
+    for i in group.items():
+        pos_i = np.array(i[1])
+        
+        if counter == 0:
+            pos_stack_x = pos_i[:,1].reshape(-1,1)
+            pos_stack_y = pos_i[:,2].reshape(-1,1)
+            pos_stack = pos_i[:,1].reshape(-1,1)
+            pos_stack = np.concatenate((pos_stack, pos_i[:,2].reshape(-1,1)), axis=1)
+        else:
+            pos_stack_x = np.concatenate((pos_stack_x, pos_i[:,1].reshape(-1,1)), axis=1)
+            pos_stack_y = np.concatenate((pos_stack_y, pos_i[:,2].reshape(-1,1)), axis=1)
+            pos_stack = np.concatenate((pos_stack, pos_i[:,1].reshape(-1,1), pos_i[:,2].reshape(-1,1)), axis=1)
+            
+        counter += 1
+    
+    hf.close()
+    return pos_stack_x, pos_stack_y, pos_stack, framerate
+
+
+def pcafitting(data, framerate):
+    '''
+    
+    Parameters
+    ----------
+    data :      array of position data
+    framerate : (int) camera framerate for the videos
+
+    Returns
+    -------
+    freq:       Vector of the fft frequency bins
+    PSDlist:    List of vectors of the PSDs from the pca transformed data
+
+    '''
+    segmentsize = round(framerate/4)
+    fftbinning = 2048
+    
+    pca = decomposition.PCA() #'mle'
+    pca.fit(data) ## fit our data
+    orig = pca.transform(data) ## reconstruct the original data from the PCA transform
+    print(len(orig))
+    PSDlist = [[] for i in range(orig.shape[1])]
+    print(orig)
+    for i in range(orig.shape[1]):
+    
+        freq, dataPSD_uncor = welch(orig[:,i], framerate, 'hann', segmentsize, segmentsize/4, fftbinning, 'constant', True, 'density', 0,'mean')
+        
+        PSDlist[i] = dataPSD_uncor
+    
+    return freq, PSDlist, orig
+
+
+
+def hdf5_sphere_psd_scraper(filename):
     '''
     Basic hdf5 reader for the sphere data files.
     filename = path to the file you want to read
@@ -40,13 +117,19 @@ def hdf5_sphere_data_scraper(filename):
     return freqs, X_psd, Y_psd
 
 
-def lorentzian(f, f_0, T, gamma): #, cfact
+def lorentzian(f, f_0, T, gamma):
     kb = 1.38e-23 # Boltzmann's constant, SI units
     m = 1e-12 # mass in kg
     omega = 2*np.pi*f
     omega0 = 2*np.pi*f_0
     return kb*T/(np.pi * m) * gamma/((omega0**2 - omega**2)**2 + omega**2 * gamma**2)
-    #return 1/(cfact)**2 * 2*kb*T/(np.pi * m) * gamma/((omega0**2 - omega**2)**2 + omega**2 * gamma**2)
+
+def Efield(f, q):
+    m = 1e-12 # mass in kg
+    E_amp = 20*0.5 
+    omega = 2*np.pi*f
+    omega0 = 2*np.pi*73 #driven with 73 Hz AC field
+
 
 def find_T(ref_psd, freqs):
 
@@ -78,12 +161,23 @@ def find_T(ref_psd, freqs):
 
 
 
+def estimate_charge(charge_psd, freqs, gamma):
+    
+
+
+    return fit_params
+
+
 reference_motion_file = r"D:\Lab data\20240905\hdf5_datafiles\2_0MHz\2_0MHz_rmsavg.h5"
 charge_motion_file = r"D:\Lab data\20240905\hdf5_datafiles\chargecheck\chargecheck_rmsavg.h5"
 
 
 # process the reference files
-freqs, X_psd, Y_psd = hdf5_sphere_data_scraper(reference_motion_file)
+
+
+#uses the already calculated PSDs
+gammas = []
+freqs, X_psd, Y_psd = hdf5_sphere_psd_scraper(reference_motion_file)
 
 figx, axx = plt.subplots()
 for i in range(X_psd.shape[0]):
@@ -110,5 +204,42 @@ for i in range(Y_psd.shape[0]):
     print('For y direction of sphere ' + str(i))
     print(f0)
     print(fit_params)
-
+    gammas.append(fit_params[2])
 plt.show()
+
+
+
+'''
+
+#Tries principle component analysis to get the peaks separated for getting nice shapes
+reference = r"D:\Lab data\20240905\hdf5_datafiles\2_0MHz\lp_highexp.h5"
+charge = r'D:\Lab data\20240905\hdf5_datafiles\chargecheck\chargecheck.h5'
+
+x_stack, y_stack, total_stack, framerate = filepositionreader(reference)
+sphere1 = np.array([x_stack[:,0], y_stack[:,0]]).transpose()
+sphere2 = np.array([x_stack[:,1], y_stack[:,1]]).transpose()
+xfrequency, xPSDlist, orig = pcafitting(sphere1, framerate)
+yfrequency, yPSDlist, orig = pcafitting(sphere2, framerate)
+
+figx, axx = plt.subplots()
+for i in range(len(xPSDlist)):
+    #fit_params, f0 = find_T(X_psd[i,:], freqs)
+    #trial_params = [fit_params[0], fit_params[1], fit_params[2]/2]
+    axx.semilogy(xfrequency, xPSDlist[i], label='Sphere ' + str(i))
+    #axx.plot(frequency, lorentzian(freqs, *fit_params), label='Fit ' + str(i))
+    #axx.plot(frequency, lorentzian(freqs,*trial_params))
+    axx.set_xlabel('Frequency (Hz)')
+    axx.set_ylabel('PSD (m^2/Hz)')
+
+figy, axy = plt.subplots()
+for i in range(len(yPSDlist)):
+    #fit_params, f0 = find_T(Y_psd[i,:], freqs)
+    axy.semilogy(yfrequency, yPSDlist[i], label='Sphere ' + str(i))
+    #axy.plot(freqs, lorentzian(freqs, *fit_params), label='Fit ' + str(i))
+    #axy.set_xlabel('Frequency (Hz)')
+    #axy.set_ylabel('ASD (m^2/Hz)')
+    # print('For y direction of sphere ' + str(i))
+    # print(f0)
+    # print(fit_params)
+
+'''

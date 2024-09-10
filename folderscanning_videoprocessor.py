@@ -23,6 +23,7 @@ from matplotlib.pyplot import gca
 import h5py
 #import cv2 as cv
 
+
 #make a pipeline so that when pims opens a file, it converts each frame to one color
 @pims.pipeline
 def gray(image):
@@ -417,7 +418,7 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
 
         hf.close()
         
-path = r"D:\Lab data\20240905"
+path = r"D:\Lab data\20240909"
 os.chdir(path)
 diameter = 25
 pixtoum = 0.566

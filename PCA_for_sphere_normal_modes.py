@@ -70,7 +70,7 @@ def pcafitting(data, framerate):
     segmentsize = round(framerate/4)
     fftbinning = 2048
     
-    pca = decomposition.PCA('mle')
+    pca = decomposition.PCA() #'mle'
     pca.fit(data) ## fit our data
     orig = pca.transform(data) ## reconstruct the original data from the PCA transform
     print(len(orig))
