@@ -97,7 +97,6 @@ def normalmodedecomp(path):
 
     Returns
     -------
-    None.
 
     '''
     
@@ -149,6 +148,6 @@ def normalmodedecomp(path):
 
 ###############################################################################
   
-path = r"C:\Users\bensi\Documents\Research\20240319\middle"
-os.chdir(path)
-orig, psds = normalmodedecomp(path)
+# path = r"C:\Users\bensi\Documents\Research\20240319\middle"
+# os.chdir(path)
+# orig, psds = normalmodedecomp(path)
