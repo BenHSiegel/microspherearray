@@ -418,16 +418,16 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
 
         hf.close()
         
-path = r"D:\Lab data\20240909"
-os.chdir(path)
-diameter = 25
-pixtoum = 0.566
-framerate = 1000
-pcacheck = False
-saveposdata = True
-saveFFTavg = False
-rowlen = 1
-fftsave = "expandedposition20240319rmsavg"
+# path = r"D:\Lab data\20240909"
+# os.chdir(path)
+# diameter = 25
+# pixtoum = 0.566
+# framerate = 1000
+# pcacheck = False
+# saveposdata = True
+# saveFFTavg = False
+# rowlen = 1
+# fftsave = "expandedposition20240319rmsavg"
 
-totalspheres = videofolder_dataextractions(path, framerate, diameter, rowlen, pixtoum, pcacheck, saveposdata)
-#hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)
+# totalspheres = videofolder_dataextractions(path, framerate, diameter, rowlen, pixtoum, pcacheck, saveposdata)
+# #hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)

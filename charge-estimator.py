@@ -126,9 +126,13 @@ def lorentzian(f, f_0, T, gamma):
 
 def Efield(f, q):
     m = 1e-12 # mass in kg
-    E_amp = 20*0.5 
+    gamma = 90
+    V = 4 #Vpp applied to electrode
+    d = 0.011 #separation of electrode plates in m
+    omega_E = 2 * np.pi * 73 #73 Hz AC drive
     omega = 2*np.pi*f
-    omega0 = 2*np.pi*73 #driven with 73 Hz AC field
+    omega0 = 2*np.pi*f0 #resonant frequency of the sphere
+    return V/d * q /(np.pi * m) * gamma/((omega0**2 - omega**2)**2 + omega**2 * gamma**2)
 
 
 def find_T(ref_psd, freqs):
@@ -161,11 +165,11 @@ def find_T(ref_psd, freqs):
 
 
 
-def estimate_charge(charge_psd, freqs, gamma):
-    
+def estimate_charge(charge_psd, freqs, noisefloor):
+    power = sum(charge_psd[124:184]) - noisefloor * (freqs[184]-freqs[124])
 
 
-    return fit_params
+    return power
 
 
 reference_motion_file = r"D:\Lab data\20240905\hdf5_datafiles\2_0MHz\2_0MHz_rmsavg.h5"
@@ -177,6 +181,7 @@ charge_motion_file = r"D:\Lab data\20240905\hdf5_datafiles\chargecheck\chargeche
 
 #uses the already calculated PSDs
 gammas = []
+noisefloor = [2E-9, 1.7E-9]
 freqs, X_psd, Y_psd = hdf5_sphere_psd_scraper(reference_motion_file)
 
 figx, axx = plt.subplots()
@@ -209,8 +214,12 @@ plt.show()
 
 
 
-'''
 
+
+
+
+'''
+#PCA not working well
 #Tries principle component analysis to get the peaks separated for getting nice shapes
 reference = r"D:\Lab data\20240905\hdf5_datafiles\2_0MHz\lp_highexp.h5"
 charge = r'D:\Lab data\20240905\hdf5_datafiles\chargecheck\chargecheck.h5'

@@ -28,18 +28,18 @@ def gray(image):
 def processmovie(filename, framerate, diameter):
     #open a avi file with pims and converts to one color
     spheres = gray(pims.open(filename))
-    plt.imshow(spheres[32]);
+    #plt.imshow(spheres[32]);
     tp.quiet()
     #process every frame in the tiff image stack to find the locations of bright spots
     #minmass defines the minimum brightness and processes means no parallelization since that breaks it
     #invert=true looks for dark spots instead of light spots
     #diameter is the centroid size to look for in the images (in units of pixels)
     #diameter should always be an odd number and greater than the actual sphere size
-    f = tp.batch(spheres[:700], diameter, invert=True, minmass=1500, processes=1)
+    f = tp.batch(spheres[:], diameter, invert=True, minmass=1500, processes=1)
         #to check the mass brightness make this figure
-    fighist, axhist = plt.subplots()
-    axhist.hist(f['mass'], bins=1000)
-    plt.show()
+    # fighist, axhist = plt.subplots()
+    # axhist.hist(f['mass'], bins=1000)
+    # plt.show()
     return [spheres, f]
     
 
@@ -268,14 +268,14 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
     return totalspheres
 
 
-path = r"D:\Lab data\20240909"
+path = r"D:\Lab data\20240905"
 os.chdir(path)
-vid='1beam_0_399mbar.avi'
+vid='modulation.avi'
 diameter = 25
 pixtoum = 0.566
 framerate = 1000
 pcacheck = False
-saveposdata = False
+saveposdata = True
 saveFFTavg = False
 rowlen = 1
 fftsave = "chargecheck"
