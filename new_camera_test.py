@@ -35,11 +35,11 @@ def processmovie(filename, framerate, diameter):
     #invert=true looks for dark spots instead of light spots
     #diameter is the centroid size to look for in the images (in units of pixels)
     #diameter should always be an odd number and greater than the actual sphere size
-    f = tp.batch(spheres[:], diameter, invert=True, minmass=1500, processes=1)
+    f = tp.batch(spheres[:], diameter, invert=False, minmass=20000, processes=1)
         #to check the mass brightness make this figure
-    # fighist, axhist = plt.subplots()
-    # axhist.hist(f['mass'], bins=1000)
-    # plt.show()
+    fighist, axhist = plt.subplots()
+    axhist.hist(f['mass'], bins=1000)
+    plt.show()
     return [spheres, f]
     
 
@@ -53,7 +53,7 @@ def motiontracer(spheres, f):
     #suppress output so that it runs faster
     tp.quiet()
 
-    t = tp.link(f, 20, memory=20)
+    t = tp.link(f, 50, memory=20)
     
     fig1, ax00 = plt.subplots()
 
@@ -68,7 +68,7 @@ def motiontracer(spheres, f):
     return t
 
 
-def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata, savename):
+def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata, savename, sortlabels = True):
     ypx = t.loc[:,'y']
     xpx = t.loc[:,'x']
     spherenumber = t.loc[:,'particle']
@@ -91,7 +91,7 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
     nodrops = max(len(i) for i in xposlist)
     print(nodrops)
     print(totalspheres)
-    if totalspheres > 1:
+    if totalspheres > 1 and sortlabels == True:
         #sort the spheres by their position in the frame so it can be consistent across videos
         xposmeans = [np.average(xposlist[i]) for i in range(len(xposlist))]
         yposmeans = [np.average(yposlist[i]) for i in range(len(yposlist))]
@@ -268,18 +268,18 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
     return totalspheres
 
 
-path = r"D:\Lab data\20240905"
+path = r"D:\Lab data\20240917\beforechamber"
 os.chdir(path)
-vid='modulation.avi'
-diameter = 25
-pixtoum = 0.566
-framerate = 1000
+vid='modbeams.avi'
+diameter = 85
+pixtoum = 10
+framerate = 1500
 pcacheck = False
 saveposdata = True
 saveFFTavg = False
-rowlen = 1
+rowlen = 3
 fftsave = "chargecheck"
 
 [spheres, f] = processmovie(vid, framerate, diameter)
 t = motiontracer(spheres, f)
-totalspheres = psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata, vid[:-4])
+totalspheres = psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata, vid[:-4], False)

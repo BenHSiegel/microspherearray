@@ -44,6 +44,6 @@ def process_directory(path):
          
     return
 
-path = r'D:\Lab data\20240909'
+path = r'D:\Lab data\20240919'
 os.chdir(path)
 process_directory(path)

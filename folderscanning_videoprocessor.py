@@ -39,7 +39,7 @@ def processmovie(filename, framerate, diameter):
     #invert=true looks for dark spots instead of light spots
     #diameter is the centroid size to look for in the images (in units of pixels)
     #diameter should always be an odd number and greater than the actual sphere size
-    f = tp.batch(spheres[:], diameter, invert=True, minmass=1500, processes=1)
+    f = tp.batch(spheres[:], diameter, invert=True, minmass=1100, processes=1)
         #to check the mass brightness make this figure
     # fighist, axhist = plt.subplots()
     # axhist.hist(f['mass'], bins=1000)
@@ -57,7 +57,7 @@ def motiontracer(spheres, f):
     #suppress output so that it runs faster
     tp.quiet()
 
-    t = tp.link(f, 20, memory=20)
+    t = tp.link(f, 20, memory=40)
     
     # fig1, ax00 = plt.subplots()
     # fig1.set_dpi(1200)
@@ -79,7 +79,7 @@ def lorentzian(f, f0, gam, cal_fac):
   omega0 = 2*np.pi*f0
   return 1/(cal_fac)**2 * 2*kb*temp/m * gam/((omega0**2 - omega**2)**2 + omega**2*gam**2)
 
-def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata, savename):
+def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata, savename, savefigs=False, sortlabels=True):
     ypx = t.loc[:,'y']
     xpx = t.loc[:,'x']
     spherenumber = t.loc[:,'particle']
@@ -102,7 +102,7 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
     nodrops = max(len(i) for i in xposlist)
     print(nodrops)
     print(totalspheres)
-    if totalspheres > 1:
+    if totalspheres > 1 and sortlabels==True:
         #sort the spheres by their position in the frame so it can be consistent across videos
         xposmeans = [np.average(xposlist[i]) for i in range(len(xposlist))]
         yposmeans = [np.average(yposlist[i]) for i in range(len(yposlist))]
@@ -147,16 +147,16 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
     spheredata = [[] for i in range(totalspheres)]
     sphere_pos_data = [[] for i in range(totalspheres)]
     
-    # Legendx = []
-    # Legendy = []
-    # figa, axa = plt.subplots()
+    Legendx = []
+    Legendy = []
+    figa, axa = plt.subplots()
     
-    # figa.set_size_inches(7.6, 4.5)
-    # figa.set_dpi(1200)
+    figa.set_size_inches(7.6, 4.5)
+    figa.set_dpi(1200)
     
-    # figb, axb = plt.subplots()
-    # figb.set_size_inches(7.6, 4.5)
-    # figb.set_dpi(1200)
+    figb, axb = plt.subplots()
+    figb.set_size_inches(7.6, 4.5)
+    figb.set_dpi(1200)
     
     figs={}
     axs={}
@@ -174,16 +174,16 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
             xASD = np.sqrt(xPSD)
             xASDlist[i] = np.vstack((xfreq,xASD)).T
             
-            # axa.semilogy(xfreq, xASD, linewidth=2)
-            # Legendx.append('Sphere ' + str(i))
+            axa.semilogy(xfreq, xASD, linewidth=2)
+            Legendx.append('Sphere ' + str(i))
     
             ycentered = yposlist[i] - np.mean(yposlist[i])
             yfreq, yPSD = welch(ycentered, framerate, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
             yASD = np.sqrt(yPSD)
             yASDlist[i] = np.vstack((yfreq,yASD)).T
             
-            # axb.semilogy(yfreq, yASD, linewidth=2)
-            # Legendy.append('Sphere ' + str(i))
+            axb.semilogy(yfreq, yASD, linewidth=2)
+            Legendy.append('Sphere ' + str(i))
             
             spheredata[i] = np.vstack((xcentered, ycentered)).T
             sphere_pos_data[i] = np.vstack((frames, xcentered, ycentered)).T
@@ -239,27 +239,26 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
                 axs[i][1].set_title('Y PSD')
 
     
-    # axa.grid()
-    # axa.set_xlabel('Frequency [Hz]', fontsize=18)
-    # axa.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
-    # axa.legend(Legendx, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
-    # axa.set_title('X motion ASD', fontsize=22)
-    # axa.tick_params(axis='both', which='major', labelsize=12)
-    # #axa.set_xlim(8,167)
-    # for location in ['left', 'right', 'top', 'bottom']:
-    #     axa.spines[location].set_linewidth(1)
+    axa.grid()
+    axa.set_xlabel('Frequency [Hz]', fontsize=24)
+    axa.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=24)
+    axa.legend(Legendx, fontsize=22, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
+    axa.set_title('X motion ASD', fontsize=28)
+    axa.tick_params(axis='both', which='major', labelsize=20)
+    #axa.set_xlim(8,167)
+    for location in ['left', 'right', 'top', 'bottom']:
+        axa.spines[location].set_linewidth(1)
 
-    # axb.grid()
-    # axb.set_xlabel('Frequency [Hz]', fontsize=18)
-    # axb.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=18)
-    # axb.legend(Legendy, fontsize=12, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
-    # axb.set_title('Y motion ASD', fontsize=22)
-    # axb.tick_params(axis='both', which='major', labelsize=12)
-    # #axb.set_xlim(8,167)
-    # for location in ['left', 'right', 'top', 'bottom']:
-    #     axb.spines[location].set_linewidth(1)
+    axb.grid()
+    axb.set_xlabel('Frequency [Hz]', fontsize=24)
+    axb.set_ylabel(r'ASD [$m/ \sqrt{Hz}$]', fontsize=24)
+    axb.legend(Legendy, fontsize=16, bbox_to_anchor=(1.04, 0), loc="lower left", borderaxespad=0)
+    axb.set_title('Y motion ASD', fontsize=28)
+    axb.tick_params(axis='both', which='major', labelsize=20)
+    #axb.set_xlim(8,167)
+    for location in ['left', 'right', 'top', 'bottom']:
+        axb.spines[location].set_linewidth(1)
     
-    # plt.show()
     
     if saveposdata:
         savename = savename + '.h5'
@@ -284,26 +283,21 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
         hf.close()
 
 
+    if savefigs == True:
+        figa.savefig(savename + '_Xmotion.png')
+        figb.savefig(savename + '_Ymotion.png')
+    
+    # rmsparsevalcheck0 = np.mean(x0centered**2)
+    # psdparsevalcheck0 = 1/(numframes*timeinc) * np.sum(x0PSD)
+    # print(rmsparsevalcheck0)
+    # print(psdparsevalcheck0)
+    
+    # rmsparsevalcheck1 = np.mean(x1centered**2)
+    # psdparsevalcheck1 = 1/(numframes*timeinc) * np.sum(x1PSD)
+    # print(rmsparsevalcheck1)
+    # print(psdparsevalcheck1)
+
     return totalspheres
-    # plt.ylim([1e-8, 4e-6])
-    # #plt.xlim([1,100])
-
-    
-    #sphere1.savefig('spheremovingpsd.png')
-    #sphere2.savefig('sphere2movingpsd.png')
-    #tracks.savefig('tracks.png')
-    
-#     rmsparsevalcheck0 = np.mean(x0centered**2)
-#     psdparsevalcheck0 = 1/(numframes*timeinc) * np.sum(x0PSD)
-#     print(rmsparsevalcheck0)
-#     print(psdparsevalcheck0)
-    
-#     rmsparsevalcheck1 = np.mean(x1centered**2)
-#     psdparsevalcheck1 = 1/(numframes*timeinc) * np.sum(x1PSD)
-#     print(rmsparsevalcheck1)
-#     print(psdparsevalcheck1)
-
-
 
 
 
@@ -324,7 +318,7 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
 
 
 
-def videofolder_dataextractions(path, framerate, diameter, rowlen, pixtoum, pcacheck, saveposdata):
+def videofolder_dataextractions(path, framerate, diameter, rowlen, pixtoum, pcacheck, saveposdata, savefigs=False, sortlabels=True):
     file_name_directory = []
     for filename in sorted(os.listdir(path)):
         if filename.endswith(".avi"):
@@ -334,7 +328,7 @@ def videofolder_dataextractions(path, framerate, diameter, rowlen, pixtoum, pcac
         print(vid)
         [spheres, f] = processmovie(vid, framerate, diameter)
         t = motiontracer(spheres, f)
-        totalspheres = psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata, vid[:-4])
+        totalspheres = psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata, vid[:-4], savefigs, sortlabels)
 
     return totalspheres
 
@@ -418,16 +412,18 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
 
         hf.close()
         
-# path = r"D:\Lab data\20240909"
-# os.chdir(path)
-# diameter = 25
-# pixtoum = 0.566
-# framerate = 1000
-# pcacheck = False
-# saveposdata = True
-# saveFFTavg = False
-# rowlen = 1
-# fftsave = "expandedposition20240319rmsavg"
+path = r"D:\Lab data\20240917"
+os.chdir(path)
+diameter = 25
+pixtoum = 0.566
+framerate = 1500
+pcacheck = False
+saveposdata = True
+saveFFTavg = False
+rowlen = 3
+savefigs = True
+sortlabels = False
+fftsave = "expandedposition20240319rmsavg"
 
-# totalspheres = videofolder_dataextractions(path, framerate, diameter, rowlen, pixtoum, pcacheck, saveposdata)
+totalspheres = videofolder_dataextractions(path, framerate, diameter, rowlen, pixtoum, pcacheck, saveposdata, savefigs, sortlabels)
 # #hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)

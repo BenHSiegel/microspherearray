@@ -10,11 +10,11 @@ from folderscanning_videoprocessor import *
 main_directory = r"D:\Lab data\20240905\New folder"
 pixtoum = 0.566 #diameter of sphere (um) / number of pixels for diameter of sphere
 centroid_diameter = 25 #centroid size to look for in the images in pixels, always odd and overestimating size
-rowlen = 1
+rowlen = 3
 pcacheck = False
 saveposdata = True
 saveFFTavg = True
-totalspheres =2     
+
 for path, folders, files in os.walk(main_directory):
     for folder_name in folders:
         directory = f"{path}/{folder_name}"
@@ -26,7 +26,7 @@ for path, folders, files in os.walk(main_directory):
         
         fftsave = f"{folder_name}_rmsavg"
 
-        #totalspheres = videofolder_dataextractions(directory, framerate, centroid_diameter, rowlen, pixtoum, pcacheck, saveposdata)
-        hdf5file_RMSprocessing(directory, totalspheres, saveFFTavg, fftsave)
+        totalspheres = videofolder_dataextractions(directory, framerate, centroid_diameter, rowlen, pixtoum, pcacheck, saveposdata)
+        #hdf5file_RMSprocessing(directory, totalspheres, saveFFTavg, fftsave)
         
     break

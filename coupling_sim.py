@@ -101,17 +101,17 @@ temp = 295          # in K
 kBT = 4.073e-21     # for T = 295K (in N m)
 gamma = 9.863e-10 * pressure / np.sqrt(temp)     #Epstein drag using 10um sphere (in kg/s)
 
-f1 = 170            # in Hz
-f2 = 220            # in Hz
+f1 = 160            # in Hz
+f2 = 175            # in Hz
 k1 = freq_to_k(f1)  # in N m^-1 kg^-1
 k2 = freq_to_k(f2)  # in N m^-1 kg^-1
 
-sep = [210, 180, 140, 120, 100, 70, 60, 50]          # separation in um
+sep = [210, 180, 140, 120, 100, 70, 60, 50, 40, 30]          # separation in um
 figs = {}
 axs = {}
 i = 0
 for d in sep:
-    charge = 6000       # number of electrons
+    charge = 500       # number of electrons
     charge_const = 2.30708e-16 * charge**2      #Q^2 / (4 pi epsilon_0 * 1ng) in N m^2 / kg
     
     #approx_charge_coupling = 230.708 * charge**2 / (d)**3 # in N m^-1 kg^-1
@@ -122,17 +122,18 @@ for d in sep:
                                                                         k1=k1, k2=k2, CC=charge_const, sep=(d*10**-6))
 
 
-    segmentsize = round(fs/5)
-
-    freq, PSD1 = welch(positions1[20000:], fs, 'hann', nperseg=segmentsize)
-    freq, PSD2 = welch(positions2[20000:], fs, 'hann', nperseg=segmentsize)
+    segmentsize = round(fs/2)
+    fftbinning = 1024
+    freq, PSD1 = welch(positions1[20000:], fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
+    freq, PSD2 = welch(positions2[20000:], fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
     figs[i], axs[i] = plt.subplots()
 
-    axs[i].semilogy(freq,PSD1)
-    axs[i].semilogy(freq,PSD2)
-    axs[i].set_title("Simulated PSD of Coupled Charged Spheres with Gas Interaction \n at %d um Separation and %d e Charge" % (d, charge))
+    axs[i].semilogy(freq,np.sqrt(PSD1))
+    axs[i].semilogy(freq,np.sqrt(PSD2))
+    axs[i].set_xlim(50,250)
+    axs[i].set_title("Simulated Coupling of Charged Spheres with Gas Interaction \n at %d um Separation and %d e Charge" % (d, charge))
     axs[i].set_xlabel('Frequency (Hz)')
-    axs[i].set_ylabel(r'PSD ($m^2/Hz$)')
+    axs[i].set_ylabel(r'ASD ($m/\sqrt{Hz}$)')
 
     i += 1
 
