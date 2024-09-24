@@ -655,8 +655,7 @@ def plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, m
     axs={}
     for i in range(len(freqasddata)):
         figs[i], axs[i] = plt.subplots(2, 1, sharex=True, tight_layout=True)
-        figs[i].set_size_inches(18.5, 10.5)
-        figs[i].set_dpi(800)
+
         
         alpharange = np.linspace(0.1, 1, (freqasddata[1].shape)[1])[::-1]
         for j in range((freqasddata[i].shape)[1]):
@@ -717,12 +716,12 @@ def interpdatafn(freq, data, lb, up, separation_scan, sphrindex, direction, fig,
 
 def heatmap_scan_plotter(freqasddata, xasddata, yasddata, anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs):
     figx, axx = plt.subplots(1, totalspheres, figsize=(totalspheres*5, 5), sharex=False, tight_layout=True)
-    figx.set_dpi(800)
+    #figx.set_dpi(800)
     figy, axy = plt.subplots(1, totalspheres, figsize=(totalspheres*5, 5), sharex=False, tight_layout=True)
-    figy.set_dpi(800)
+    #figy.set_dpi(800)
     for i in range(totalspheres):
-        freqlistx, interpdatax, dfx, figx, axx = interpdatafn(freqasddata[i], xasddata[i], anticrossinglbs, anticrossingubs, separation_scan, i, " X ", figx, axx)
-        freqlisty, interpdatay, dfy, figy, axy = interpdatafn(freqasddata[i], yasddata[i], anticrossinglbs, anticrossingubs, separation_scan, i, " Y ", figy, axy)
+        freqlistx, interpdatax, dfx, figx, axx = interpdatafn(freqasddata[i], xasddata[i], anticrossinglbs[0], anticrossingubs[0], separation_scan, i, " X ", figx, axx)
+        freqlisty, interpdatay, dfy, figy, axy = interpdatafn(freqasddata[i], yasddata[i], anticrossinglbs[1], anticrossingubs[1], separation_scan, i, " Y ", figy, axy)
     axx[0].set_ylabel('Frequency (Hz)')
     axy[0].set_ylabel('Frequency (Hz)')
     if savefigs:
@@ -731,24 +730,24 @@ def heatmap_scan_plotter(freqasddata, xasddata, yasddata, anticrossinglbs, antic
         figx.savefig(os.path.join(main_directory, savenamex +'.png'))
         figy.savefig(os.path.join(main_directory, savenamey +'.png'))
 
-
+    plt.show()
     #plt.close('all')
     return
 
 
 
-main_directory = r"D:\Lab data\20240905\New folder"
+main_directory = r"D:\Lab data\20240905\hdf5_datafiles"
 totalspheres = 2
 saveflag = True
 savefigs = True
-anticrossinglbs = 60
-anticrossingubs = 300
+anticrossinglbs = [150,120]
+anticrossingubs = [225,190]
 
 color_value = np.linspace(0,1,totalspheres)
 color_value_T = color_value[::-1]
 color_codes = [(color_value[i],0,color_value_T[i]) for i in range(totalspheres)]
 
 x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xcross_SD_list, ycross_SD_list, coherfreq = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
-#plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes)
-#plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes)
-#heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
+plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes)
+plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes)
+heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
