@@ -412,15 +412,15 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
 
         hf.close()
         
-path = r"D:\Lab data\20240917"
+path = r"D:\Lab data\20240925"
 os.chdir(path)
 diameter = 25
-pixtoum = 0.566
-framerate = 1500
+pixtoum = 0.55
+framerate = 1000
 pcacheck = False
 saveposdata = True
 saveFFTavg = False
-rowlen = 3
+rowlen = 1
 savefigs = True
 sortlabels = False
 fftsave = "expandedposition20240319rmsavg"
