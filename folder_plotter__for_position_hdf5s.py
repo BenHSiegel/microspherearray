@@ -90,6 +90,8 @@ def h5_position_file_folder_scan(main_directory, totalspheres):
 
 def plot_responcevsfile(x_peak_scan, y_peak_scan, data_names, main_directory, totalspheres, savefigs):
 
+    figa, axa = plt.subplots(1,2, tight_layout=True)
+
     figb, axb = plt.subplots(1,2, tight_layout=True)
     #figb.set_size_inches(10,5)
     #figb.set_dpi(600)
@@ -98,12 +100,19 @@ def plot_responcevsfile(x_peak_scan, y_peak_scan, data_names, main_directory, to
     #figc.set_size_inches(10,5)
     #figc.set_dpi(600)
 
+    axa[0].set_title('X Spring Constant vs Modulation')
+    axa[1].set_title('Y Spring Constant vs Modulation')
+    axa[0].set_xlabel(r'Beam Position Modulation ($\mu m$)')
+    axa[0].set_ylabel('Spring Constant / Unmodulated Spring Constant')
+    axa[1].set_xlabel(r'Beam Position Modulation ($\mu m$)')
+    axa[1].set_ylabel('Spring Constant / Unmodulated Spring Constant')
+
     axb[0].set_title('X Peak vs Modulation')
     axb[1].set_title('Y Peak vs Modulation')
     axb[0].set_xlabel(r'Beam Position Modulation ($\mu m$)')
-    axb[0].set_ylabel('Frequency Drift (Hz)')
+    axb[0].set_ylabel('Resonant Frequency (Hz)')
     axb[1].set_xlabel(r'Beam Position Modulation ($\mu m$)')
-    axb[1].set_ylabel('Frequency Drift (Hz)')
+    axb[1].set_ylabel('Resonant Frequency (Hz)')
 
     axc[0].set_title('X Peak vs Modulation')
     axc[1].set_title('Y Peak vs Modulation')
@@ -115,9 +124,9 @@ def plot_responcevsfile(x_peak_scan, y_peak_scan, data_names, main_directory, to
     xreffreqs = []
     yreffreqs = []
 
-    #get the frequencies of the last file in the folder for comparison
-    for j in range(len(x_peak_scan[-1])):
-        refpeaks = x_peak_scan[-1][j]
+    #get the frequencies of the first file in the folder for comparison
+    for j in range(len(x_peak_scan[0])):
+        refpeaks = x_peak_scan[0][j]
         refpeaksortindices = np.argsort(refpeaks[:,2])[::-1]
         for p in refpeaksortindices:
             
@@ -126,8 +135,8 @@ def plot_responcevsfile(x_peak_scan, y_peak_scan, data_names, main_directory, to
                 break
         xreffreqs.append(refmaxpeak[1])
 
-    for j in range(len(y_peak_scan[-1])):
-        refpeaks = y_peak_scan[-1][j]
+    for j in range(len(y_peak_scan[0])):
+        refpeaks = y_peak_scan[0][j]
         refpeaksortindices = np.argsort(refpeaks[:,2])[::-1]
         for p in refpeaksortindices:
             
@@ -149,9 +158,11 @@ def plot_responcevsfile(x_peak_scan, y_peak_scan, data_names, main_directory, to
                     maxpeak = xpeaks[p,:]
                     break
                 
+            freqratio = np.square(maxpeak[1]/xreffreqs[j]) #ratio of spring constants
+            axa[0].scatter(data_names[i], freqratio, color = 'b', label =('Sphere ' + str(j)))
             
             normpeakfreq = maxpeak[1] - xreffreqs[j]
-            axb[0].scatter(data_names[i], normpeakfreq, color = 'b', label =('Sphere ' + str(j)))
+            axb[0].scatter(data_names[i], maxpeak[1], color = 'b', label =('Sphere ' + str(j)))
             
             axc[0].scatter(data_names[i], maxpeak[2], color = 'b', label =('Sphere ' + str(j)))
             
@@ -165,9 +176,11 @@ def plot_responcevsfile(x_peak_scan, y_peak_scan, data_names, main_directory, to
                     maxpeak = ypeaks[p,:]
                     break
 
-            
+            freqratio = np.square(maxpeak[1]/yreffreqs[j]) #ratio of spring constants
+            axa[1].scatter(data_names[i], freqratio, color = 'b', label =('Sphere ' + str(j)))
+
             normpeakfreq = maxpeak[1] - yreffreqs[j]
-            axb[1].scatter(data_names[i], normpeakfreq, color = 'b', label =('Sphere ' + str(j)))
+            axb[1].scatter(data_names[i], maxpeak[1], color = 'b', label =('Sphere ' + str(j)))
             
             axc[1].scatter(data_names[i], maxpeak[2], color = 'b', label =('Sphere ' + str(j)))
             
