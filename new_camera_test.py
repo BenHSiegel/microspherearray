@@ -35,7 +35,7 @@ def processmovie(filename, framerate, diameter):
     #invert=true looks for dark spots instead of light spots
     #diameter is the centroid size to look for in the images (in units of pixels)
     #diameter should always be an odd number and greater than the actual sphere size
-    f = tp.batch(spheres[:], diameter, invert=False, minmass=20000, processes=1)
+    f = tp.batch(spheres[:], diameter, invert=False, minmass=25000, processes=1)
         #to check the mass brightness make this figure
     fighist, axhist = plt.subplots()
     axhist.hist(f['mass'], bins=1000)
@@ -268,7 +268,7 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
     return totalspheres
 
 
-path = r"D:\Lab data\20240917\beforechamber"
+path = r"C:\Users\Ben\Documents\Research\20240917\beforechamber"
 os.chdir(path)
 vid='modbeams.avi'
 diameter = 85
