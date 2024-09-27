@@ -29,12 +29,12 @@ def lorentzian(f, f_0, T, gamma):
     omega0 = 2*np.pi*f_0
     return kb*T/(np.pi * m) * gamma/((omega0**2 - omega**2)**2 + omega**2 * gamma**2)
 
-path = r'D:\Lab data\20240909'
+path = r'D:\Lab data\20240919'
 os.chdir(path)
 
 file_name_directory = []
 for filename in sorted(os.listdir(path)):
-    if filename.endswith(".h5") and not filename.endswith("avg.h5") and not filename.endswith("matrix.h5"):
+    if filename.endswith(".h5") and not filename.endswith("mod.h5") and not filename.endswith("matrix.h5"):
         file_name_directory.append(filename)
 
 color_map = mpl.colormaps.get_cmap('CMRmap')
@@ -88,8 +88,8 @@ for pressurefile in file_name_directory:
         axa[0].semilogy(frequency_bins, xfftmatrix, color=color_codes[i1], label=pressure)
         axa[1].semilogy(frequency_bins, yfftmatrix, color=color_codes[i1], label=pressure)
         
-        xinit_guess = [200, 295, 100]
-        yinit_guess = [150, 295, 100]
+        xinit_guess = [150, 10000, 700]
+        yinit_guess = [150, 10000, 700]
         #with current binning of 1024 frequencies and sampling rate of 1000
         xfmin = int(150 / 0.488) # 0.488 converts the frequency to the frequency index
         xfmax = int(250 / 0.488)
