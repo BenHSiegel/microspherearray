@@ -9,6 +9,15 @@ import random
 import numba
 import math
 from numba import njit
+import matplotlib as mpl 
+from scipy.optimize import minimize, curve_fit
+from matplotlib.pyplot import gca
+import pandas as pd
+from matplotlib.colors import LogNorm
+import seaborn as sn
+from correlationcalculator import heatmap
+from correlationcalculator import annotate_heatmap
+
 
 def freq_to_k(f):
     #takes in frequency of motion and gives back k/m
@@ -164,7 +173,7 @@ charge = 1000                    # I doubt that we would break even 500 electron
 charge_const = 2.30708e-16      # 1 / (4 pi epsilon_0 * 1ng) in N m^2 / kg
 
 #Resonant frequency range:
-frange = [90,260]               # in Hz
+frange = [90,220]               # in Hz
 
 x = matrix_template
 y = matrix_template
@@ -191,6 +200,11 @@ for i in range(arraysize):
 
 
 sep = [100, 85, 70, 55]          # separation in um
+mpl.rcParams.update({'font.size': 18})
+
+fig, ax = plt.subplots(1, len(sep))
+cax = fig.add_axes(rect=(0.2,0.2,0.6,0.03))
+fig.suptitle('Correlation of Motion of a 5x5 Array of Spheres')
 figs = {}
 axs = {}
 k = 0
@@ -202,19 +216,68 @@ for d in sep:
                                                                     charge_matrix, CC=charge_const, sep=(d*10**-6))
 
 
-    segmentsize = round(fs/2)
-    fftbinning = 1024
-    freq, PSD1 = welch(positions1[20000:], fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
-    freq, PSD2 = welch(positions2[20000:], fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
-    figs[i], axs[i] = plt.subplots()
 
-    axs[i].semilogy(freq,np.sqrt(PSD1))
-    axs[i].semilogy(freq,np.sqrt(PSD2))
-    axs[i].set_xlim(50,250)
-    axs[i].set_title("Simulated Coupling of Charged Spheres with Gas Interaction \n at %d um Separation and %d e Charge" % (d, charge))
-    axs[i].set_xlabel('Frequency (Hz)')
-    axs[i].set_ylabel(r'ASD ($m/\sqrt{Hz}$)')
+    # segmentsize = round(fs/2)
+    # fftbinning = 1024
+    # freq, PSD1 = welch(positions1[20000:], fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
+    # freq, PSD2 = welch(positions2[20000:], fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
+    # figs[i], axs[i] = plt.subplots()
 
-    i += 1
+    # axs[i].semilogy(freq,np.sqrt(PSD1))
+    # axs[i].semilogy(freq,np.sqrt(PSD2))
+    # axs[i].set_xlim(50,250)
+    # axs[i].set_title("Simulated Coupling of Charged Spheres with Gas Interaction \n at %d um Separation and %d e Charge" % (d, charge))
+    # axs[i].set_xlabel('Frequency (Hz)')
+    # axs[i].set_ylabel(r'ASD ($m/\sqrt{Hz}$)')
 
+
+    xdf = pd.DataFrame(xsaves)
+    ydf = pd.DataFrame(ysaves)
+    xcor = xdf.corr()
+    ycor = ydf.corr()
+
+    for l in range(xcor.shape[0]):
+        for m in range(xcor.shape[1]):
+
+            if xcor[l][m] == 1:
+                xcor[l][m] = 0
+
+    print(np.max(xcor))
+    print(np.min(xcor))
+
+
+    spherenames = [str(x+1) for x in range(arraysize**2)]
+    #norm = LogNorm()
+    if k == len(sep) - 1:
+        plot_cbar = True
+        cbar_kws = {'shrink' : 0.8,
+                    'orientation': 'horizontal'}
+        cbar_ax = cax
+        
+    else:
+        plot_cbar = False
+        cbar_kws = None
+        cbar_ax = None
+    
+    symcor = xcor
+    for a in range(xcor.shape[0]):
+        for b in range(xcor.shape[1]):
+            if a < b:
+                symcor[a][b] = ycor[a][b]
+    mask = np.triu(np.ones_like(xcor, dtype=bool))
+    diagmask = np.identity(xcor.shape[0])
+    sn.heatmap(symcor, mask=diagmask, square=True, cmap = 'viridis', vmin=-0.3, vmax=0.1, ax=ax[i], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
+    ax[i].tick_params(axis='both', which='major', labelsize=18)
+    #ax[i].set_xticks(np.arange(xcor.shape[1])+.5, labels=spherenames,fontsize=16)
+    #ax[i].set_yticks(np.arange(xcor.shape[0])+.5, labels=spherenames,fontsize=16)
+    #plt.setp(ax[i].get_xticklabels(), rotation=90)
+    ax[i].set_title(d + r'$ \mu$m Spacing', fontsize=26, pad=15)
+    ax[i].set_xlabel('Sphere Index', fontsize=22, labelpad=5)
+    ax[i].set_ylabel('Sphere Index',fontsize=22,labelpad=5)
+
+    k+=1
+
+    
+fig.tight_layout()
+cax.set_title('Correlation Coefficients',fontsize=26)
 plt.show()
