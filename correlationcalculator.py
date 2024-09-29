@@ -762,32 +762,17 @@ def heatmap_scan_plotter(freqasddata, xasddata, yasddata, anticrossinglbs, antic
 
 
 
-<<<<<<< HEAD
-# main_directory = r"D:\Lab data\20240905\New folder"
-# totalspheres = 2
-# saveflag = True
-# savefigs = True
-# anticrossinglbs = 60
-# anticrossingubs = 300
-=======
 main_directory = r"D:\Lab data\20240905\hdf5_datafiles"
 totalspheres = 2
 saveflag = False
 savefigs = False
 anticrossinglbs = [150,120]
 anticrossingubs = [225,190]
->>>>>>> 70f6100b1190b0d393a73ae5d21eded07fd487aa
 
 # color_value = np.linspace(0,1,totalspheres)
 # color_value_T = color_value[::-1]
 # color_codes = [(color_value[i],0,color_value_T[i]) for i in range(totalspheres)]
 
-<<<<<<< HEAD
-# x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xcross_SD_list, ycross_SD_list, coherfreq = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
-# #plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes)
-# #plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes)
-# #heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
-=======
 jointfig = plt.figure()
 grid = plt.GridSpec(7, 10, wspace=3, hspace=4)
 sph0 = jointfig.add_subplot(grid[:3, :7])
@@ -807,4 +792,3 @@ jointcor = plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation
 heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
 
 plt.show()
->>>>>>> 70f6100b1190b0d393a73ae5d21eded07fd487aa

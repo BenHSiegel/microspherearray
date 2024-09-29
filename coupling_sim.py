@@ -5,7 +5,10 @@ BAOAB coupled langevin estimator
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import welch
-
+import random
+import numba
+import math
+from numba import njit
 
 def freq_to_k(f):
     #takes in frequency of motion and gives back k/m
@@ -23,103 +26,180 @@ def full_motion_eq(x, x_other, k, CC, d):
     acc = -k*x + CC/(d+x_other-x)**2
     return acc
 
-def position_update(x,v,dt):
-    x_new = x + v*dt/2.0
-    return x_new
+@njit
+def force_calc(size,x,y,kx,ky,charge,CC,sep):
+    #calculate the overall x and y components of the force on each sphere
+    ax = np.zeros(size,size)
+    ay = np.zeros(size,size)
+    for i in range(size):
+        for j in range(size):
+            ax[i,j] = ax[i,j] - kx[i,j] * x[i,j]
+            ay[i,j] = ay[i,j] - ky[i,j] * y[i,j]
 
-def velocity_update(v,a,dt):
+            for m in range(size):
+                for n in range(size):
+                    if i != m and j != n:
+                        xdif = abs((m-i)*sep + x[m,n] - x[i,j])
+                        ydif = abs((n-j)*sep + y[m,n] - y[i,j])
+                        dist2 = (xdif)**2 + (ydif)**2
+                        charge_amplitude = CC * charge[m,n] * charge[i,j] / dist2
+                        x_comp = charge_amplitude * xdif / math.sqrt(dist2)
+                        y_comp = charge_amplitude * ydif / math.sqrt(dist2)
+                        if i < m:
+                            x_comp = -1*x_comp
+                        if j < n:
+                            y_comp = -1*y_comp
+                        ax[i,j] = ax[i,j] + x_comp
+                        ay[i,j] = ay[i,j] + y_comp
+
+    return ax, ay
+
+@njit
+def velocity_update(size, vx, vy, ax, ay, dt):
+    for i in range(size):
+        for j in range(size):
+            vx[i,j] = vx[i,j] + ax[i,j] * dt / 2.0
+            vy[i,j] = vy[i,j] + ay[i,j] * dt / 2.0
+    return vx, vy
+
+def old_velocity_update(v,a,dt):
     v_new = v + a*dt/2.0
     return v_new
 
-def random_velocity_update(v,gamma,kBT,dt):
+@njit
+def position_update(size, x, y, vx, vy, dt):
+    for i in range(size):
+        for j in range(size):
+            x[i,j] = x[i,j] + vx[i,j] * dt / 2.0
+            y[i,j] = y[i,j] + vy[i,j] * dt / 2.0
+    return x, y
+
+def old_position_update(x,v,dt):
+    x_new = x + v*dt/2.0
+    return x_new
+
+@njit
+def random_velocity_update(size, vx, vy, gamma, kBT, dt):
+    c1 = np.exp(-gamma*dt)
+    c2 = math.sqrt(1-c1*c1)*math.sqrt(kBT)
+    for i in range(size):
+        for j in range(size):
+            R = np.random.normal()
+            
+            #probably not great but just applying same random
+            #   force to both x and y
+            vx[i,j] = c1*vx[i,j] + R*c2
+            vy[i,j] = c1*vy[i,j] + R*c2
+    return vx, vy
+
+
+def old_random_velocity_update(v,gamma,kBT,dt):
     R = np.random.normal()
     c1 = np.exp(-gamma*dt)
     c2 = np.sqrt(1-c1*c1)*np.sqrt(kBT)
     v_new = c1*v + R*c2
     return v_new
 
-def baoab(motion_eq, timespan, dt, fs, gamma, kBT, pos_init1, pos_init2, vel_init1, vel_init2, k1, k2, CC, sep):
-    
+
+def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_matrix, charge_matrix, CC, sep):
     save_frequency = 1/(dt*fs)
     
-    x1 = pos_init1
-    v1 = vel_init1
-    x2 = pos_init2
-    v2 = vel_init2
     t = 0
     step_number = 0
-    positions1 = []
-    velocities1 = []
-    positions2 = []
-    velocities2 = []
+    xsaves=ysaves=vxsaves=vysaves = [ [ [] for i in range(arraysize)] for j in range(arraysize) ]
     save_times = []
     
     while(t<timespan):
         
         # B
-        force1 = full_motion_eq(x1,x2,k1,-CC, sep)
-        force2 = full_motion_eq(x2,x1,k2,CC, sep)
-        v1 = velocity_update(v1,force1,dt)
-        v2 = velocity_update(v2,force2,dt)
+        ax, ay = force_calc(arraysize,x,y,kx_matrix,ky_matrix,charge_matrix,CC,sep)
+        vx, vy = velocity_update(arraysize, vx, vy, ax, ay, dt)
         #A
-        x1 = position_update(x1,v1,dt)
-        x2 = position_update(x2,v2,dt)
+        x, y = position_update(arraysize, x, y, vx, vy, dt)
         #O
-        v1 = random_velocity_update(v1,gamma,kBT,dt)
-        v2 = random_velocity_update(v2,gamma,kBT,dt)
+        vx, vy = random_velocity_update(arraysize, vx, vy, gamma, kBT, dt)
         #A
-        x1 = position_update(x1,v1,dt)
-        x2 = position_update(x2,v2,dt)
+        x, y = position_update(arraysize, x, y, vx, vy, dt)
         # B
-        force1 = full_motion_eq(x1,x2,k1,-CC, sep)
-        force2 = full_motion_eq(x2,x1,k2,CC, sep)
-        v1 = velocity_update(v1,force1,dt)
-        v2 = velocity_update(v2,force2,dt)
+        ax, ay = force_calc(arraysize,x,y,kx_matrix,ky_matrix,charge_matrix,CC,sep)
+        vx, vy = velocity_update(arraysize, vx, vy, ax, ay, dt)
         
         if step_number%save_frequency == 0 and step_number>0:
 
-            positions1.append(x1)
-            velocities1.append(v1)
-            positions2.append(x2)
-            velocities2.append(v2)
+            for i in range(arraysize):
+                for j in range(arraysize):
+                    xsaves[i][j].append(x[i,j])
+                    ysaves[i][j].append(y[i,j])
+                    vxsaves[i][j].append(vx[i,j])
+                    vysaves[i][j].append(vy[i,j])
             save_times.append(t)
         
         t = t+dt
         step_number = step_number + 1
     
-    return save_times, positions1, velocities1, positions2, velocities2 
+    return save_times, xsaves, ysaves, vxsaves, vysaves
 
-timespan = 100
+timespan = 50
 dt = 0.0001
 fs = 1000
 
-pos_ints = [3e-7,-2e-7]     #starting position in m
-vel_ints = [0,0]
+arraysize = 5 #set how many rows/columns we have
+
+#generate a list of empty lists for storing motion state
+list_template = [ [ [] for i in range(arraysize)] for j in range(arraysize) ]
+
+#numpy matrix template for storing static values
+matrix_template = np.zeros((arraysize,arraysize))
+
+pos_int_bounds = [-1e-6, 1e-6]     #starting position bounds in m
+vel_ints_bounds = [0,0]            #starting velocity bounds in m/s (gonna use 0)
 
 pressure = 0.4      # in mbar
 temp = 295          # in K
 kBT = 4.073e-21     # for T = 295K (in N m)
 gamma = 9.863e-10 * pressure / np.sqrt(temp)     #Epstein drag using 10um sphere (in kg/s)
 
-f1 = 160            # in Hz
-f2 = 175            # in Hz
-k1 = freq_to_k(f1)  # in N m^-1 kg^-1
-k2 = freq_to_k(f2)  # in N m^-1 kg^-1
+#Upper bound of electrons on the spheres:
+charge = 1000                    # I doubt that we would break even 500 electron while loading with plasma       
+charge_const = 2.30708e-16      # 1 / (4 pi epsilon_0 * 1ng) in N m^2 / kg
 
-sep = [210, 180, 140, 120, 100, 70, 60, 50, 40, 30]          # separation in um
+#Resonant frequency range:
+frange = [90,260]               # in Hz
+
+x = matrix_template
+y = matrix_template
+vx = matrix_template
+vy = matrix_template
+charge_matrix = matrix_template
+kx_matrix = matrix_template
+ky_matrix = matrix_template
+
+random.seed(5)
+for i in range(arraysize):
+    for j in range(arraysize):
+        
+        x[i,j] = random.triangular(pos_int_bounds[0], pos_int_bounds[1], 0)
+        y[i,j] = random.triangular(pos_int_bounds[0], pos_int_bounds[1], 0)
+        vx[i,j] = random.triangular(vel_ints_bounds[0], vel_ints_bounds[1], 0)
+        vy[i,j] = random.triangular(vel_ints_bounds[0], vel_ints_bounds[1], 0)
+
+        charge_matrix[i,j] = random.randrange(charge)   #assume all have negative charge
+        #spring constants are actually k/m
+        kx_matrix[i,j] = freq_to_k(random.randrange(frange[0],frange[1]))   # in 1/s^2
+        ky_matrix[i,j] = freq_to_k(random.randrange(frange[0],frange[1]))   # in 1/s^2
+    
+
+
+sep = [100, 85, 70, 55]          # separation in um
 figs = {}
 axs = {}
-i = 0
+k = 0
 for d in sep:
-    charge = 500       # number of electrons
-    charge_const = 2.30708e-16 * charge**2      #Q^2 / (4 pi epsilon_0 * 1ng) in N m^2 / kg
     
-    #approx_charge_coupling = 230.708 * charge**2 / (d)**3 # in N m^-1 kg^-1
 
-    times, positions1, velocities1, positions2, velocities2  = baoab(motion_eq, timespan, dt, fs, gamma, kBT,\
-                                                                        pos_init1=pos_ints[0], pos_init2=pos_ints[1],\
-                                                                        vel_init1=vel_ints[0], vel_init2=vel_ints[1],\
-                                                                        k1=k1, k2=k2, CC=charge_const, sep=(d*10**-6))
+    save_times, xsaves, ysaves, vxsaves, vysaves  = baoab(arraysize, timespan, dt, fs, gamma, kBT,\
+                                                                    x, y, vx, vy, kx_matrix, ky_matrix,\
+                                                                    charge_matrix, CC=charge_const, sep=(d*10**-6))
 
 
     segmentsize = round(fs/2)
