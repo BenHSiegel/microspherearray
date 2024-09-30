@@ -35,6 +35,7 @@ def full_motion_eq(x, x_other, k, CC, d):
     acc = -k*x + CC/(d+x_other-x)**2
     return acc
 
+@njit
 def force_calc(size,x,y,kx,ky,charge,CC,sep):
     #calculate the overall x and y components of the force on each sphere
     ax = np.zeros((size,size))
@@ -71,6 +72,7 @@ def force_calc(size,x,y,kx,ky,charge,CC,sep):
 
     return ax, ay
 
+@njit
 def velocity_update(size, vx, vy, ax, ay, dt):
     #Updates the velocities of the spheres using given accelerations
     for i in range(size):
@@ -83,6 +85,7 @@ def old_velocity_update(v,a,dt):
     v_new = v + a*dt/2.0
     return v_new
 
+@njit
 def position_update(size, x, y, vx, vy, dt):
     #updates the position of the spheres using given velocities
     for i in range(size):
@@ -95,19 +98,18 @@ def old_position_update(x,v,dt):
     x_new = x + v*dt/2.0
     return x_new
 
+@njit
 def random_velocity_update(size, vx, vy, gamma, kBT, dt):
     #calculates the gas effects on the velocity for all the spheres
     c1 = np.exp(-gamma*dt)
     c2 = math.sqrt(1-c1*c1)*math.sqrt(kBT)
     for i in range(size):
         for j in range(size):
-            R = np.random.normal()
-            
-            #probably not great but just applying same random
-            #   force to both x and y for now
-            #   (but all spheres get different R)
-            vx[i,j] = c1*vx[i,j] + R*c2
-            vy[i,j] = c1*vy[i,j] + R*c2
+            R1 = np.random.normal()
+            R2 = np.random.normal()
+
+            vx[i,j] = c1*vx[i,j] + R1*c2
+            vy[i,j] = c1*vy[i,j] + R2*c2
     return vx, vy
 
 
@@ -158,16 +160,14 @@ def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_m
     print(y)
     print(vx)
     print(vy)
-    print(charge_matrix)
-    print(kx_matrix)
-    print(ky_matrix)
+
     return save_times, xsaves, ysaves, vxsaves, vysaves
 
-timespan = 50
+timespan = 100
 dt = 0.0001
 fs = 1000
 #don't record the motion until t>=startrec to let the system evolve a bit
-startrec = 15
+startrec = 20
 
 arraysize = 5 #set how many rows/columns we have
 
@@ -180,13 +180,16 @@ matrix_template = np.zeros((arraysize,arraysize))
 pos_int_bounds = [-1E-6, 1E-6]     #starting position bounds in m
 vel_ints_bounds = [0,0]            #starting velocity bounds in m/s (gonna use 0)
 
+pos_gauss = [0,1e-6]
+vel_gauss = [0,0]
+
 pressure = 0.4      # in mbar
 temp = 295          # in K
 kBT = 4.073e-21     # for T = 295K (in N m)
 gamma = 9.863e-10 * pressure / np.sqrt(temp)     #Epstein drag using 10um sphere (in kg/s)
 
-#Upper bound of electrons on the spheres:
-charge = 1000                    # I doubt that we would break even 500 electron while loading with plasma       
+#Bounds of electrons on the spheres:
+charge = [500,2000]      
 charge_const = 2.30708e-16      # 1 / (4 pi epsilon_0 * 1ng) in N m^2 / kg
 
 #Resonant frequency range:
@@ -201,34 +204,50 @@ kx_matrix = matrix_template
 ky_matrix = matrix_template
 
 #generate random initial values for positions, velocity, spring constants and charge
-for i in range(arraysize):
-    for j in range(arraysize):
-        
-        #use random triangular to get distribution weighted around 0 but without as much
-        #computation intensity needed as gaussian
-        x[i,j] = random.triangular(pos_int_bounds[0], pos_int_bounds[1], 0)
-        y[i,j] = random.triangular(pos_int_bounds[0], pos_int_bounds[1], 0)
-        vx[i,j] = random.triangular(vel_ints_bounds[0], vel_ints_bounds[1], 0)
-        vy[i,j] = random.triangular(vel_ints_bounds[0], vel_ints_bounds[1], 0)
+rng = np.random.default_rng()
 
-        #Don't know the distributions of charge and k, so just doing uniform generation
-        charge_matrix[i,j] = random.randrange(0,charge)   #assume all have negative charge
-        #spring constants are actually k/m
-        kx_matrix[i,j] = freq_to_k(random.randrange(frange[0],frange[1]))   # in 1/s^2
-        ky_matrix[i,j] = freq_to_k(random.randrange(frange[0],frange[1]))   # in 1/s^2
+x = rng.normal(pos_gauss[0], pos_gauss[1], size = (arraysize,arraysize))
+y = rng.normal(pos_gauss[0], pos_gauss[1], size = (arraysize,arraysize))
+vx = rng.normal(vel_gauss[0], vel_gauss[1], size = (arraysize,arraysize))
+vy = rng.normal(vel_gauss[0], vel_gauss[1], size = (arraysize,arraysize))
+
+#Don't know the distributions of charge and k, so just doing uniform generation
+charge_matrix = rng.integers(charge[0],charge[1],size = (arraysize,arraysize))   #assume all have negative charge
+
+fx_matrix = rng.integers(frange[0],frange[1],size = (arraysize,arraysize))
+fy_matrix = rng.integers(frange[0],frange[1],size = (arraysize,arraysize))
+#spring constants are actually k/m
+kx_matrix = freq_to_k(fx_matrix)    # in 1/s^2
+ky_matrix = freq_to_k(fy_matrix)    # in 1/s^2
+
+# for i in range(arraysize):
+#     for j in range(arraysize):
+        
+#         #DOES NOT WORK
+#         #use random triangular to get distribution weighted around 0 
+#         # x[i,j] = random.triangular(pos_int_bounds[0], 0, pos_int_bounds[1])
+#         # y[i,j] = random.triangular(pos_int_bounds[0], 0, pos_int_bounds[1])
+#         # vx[i,j] = random.triangular(vel_ints_bounds[0], 0, vel_ints_bounds[1])
+#         # vy[i,j] = random.triangular(vel_ints_bounds[0], 0, vel_ints_bounds[1])
+
+#         #Don't know the distributions of charge and k, so just doing uniform generation
+#         charge_matrix[i,j] = rng.integers(0,charge)   #assume all have negative charge
+#         #spring constants are actually k/m
+#         kx_matrix[i,j] = freq_to_k(rng.integers(frange[0],frange[1]))   # in 1/s^2
+#         ky_matrix[i,j] = freq_to_k(rng.integers(frange[0],frange[1]))   # in 1/s^2
     
 
-print(charge)
-print(kx_matrix)
+print(charge_matrix)
+print(fx_matrix)
 print(x)
 print(vy)
 
-sep = [100, 85, 70, 55]          # separation in um
+sep = [55,70,85,100]          # separation in um
 mpl.rcParams.update({'font.size': 18})
 
 figa, axa = plt.subplots(1, len(sep))
 cax = figa.add_axes(rect=(0.2,0.2,0.6,0.03))
-figa.suptitle('Correlation of Motion of a 5x5 Array of Spheres')
+#figa.suptitle('Correlation of Motion of a 5x5 Array of Spheres')
 figs = {}
 axs = {}
 k = 0
@@ -258,16 +277,16 @@ for d in sep:
     for i in range(arraysize):
         for j in range(arraysize):
             if first == True:
-                xarray = x[i][j].reshape(-1,1)
-                yarray = y[i][j].reshape(-1,1)
-                vxarray = vx[i][j].reshape(-1,1)
-                vyarray = vy[i][j].reshape(-1,1)
+                xarray = np.array(xsaves[i][j]).reshape(-1,1)
+                yarray = np.array(ysaves[i][j]).reshape(-1,1)
+                vxarray = np.array(vxsaves[i][j]).reshape(-1,1)
+                vyarray = np.array(vysaves[i][j]).reshape(-1,1)
                 first = False
             else:
-                xarray = np.concatenate((xarray, x[i][j].reshape(-1,1)),axis=1)
-                yarray = np.concatenate((yarray, y[i][j].reshape(-1,1)),axis=1)
-                vxarray = np.concatenate((vxarray, vx[i][j].reshape(-1,1)),axis=1)
-                vyarray = np.concatenate((vyarray, vy[i][j].reshape(-1,1)),axis=1)  
+                xarray = np.concatenate((xarray, np.array(xsaves[i][j]).reshape(-1,1)),axis=1)
+                yarray = np.concatenate((yarray, np.array(ysaves[i][j]).reshape(-1,1)),axis=1)
+                vxarray = np.concatenate((vxarray, np.array(vxsaves[i][j]).reshape(-1,1)),axis=1)
+                vyarray = np.concatenate((vyarray, np.array(vysaves[i][j]).reshape(-1,1)),axis=1)  
 
     xdf = pd.DataFrame(xarray)
     ydf = pd.DataFrame(yarray)
@@ -288,7 +307,7 @@ for d in sep:
 
 
     spherenames = [str(x+1) for x in range(arraysize**2)]
-    #norm = LogNorm()
+    norm = LogNorm()
     if k == len(sep) - 1:
         plot_cbar = True
         cbar_kws = {'shrink' : 0.8,
@@ -307,12 +326,12 @@ for d in sep:
                 symcor[a][b] = ycorrmatrix[a][b]
     mask = np.triu(np.ones_like(xcorrmatrix, dtype=bool))
     diagmask = np.identity(xcorrmatrix.shape[0])
-    sn.heatmap(symcor, mask=diagmask, square=True, cmap = 'viridis', vmin=-0.3, vmax=0.1, ax=axa[i], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
+    sn.heatmap(symcor, mask=diagmask, square=True, cmap = 'viridis', vmin=-0.25, vmax=0.25, ax=axa[k], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
     axa[k].tick_params(axis='both', which='major', labelsize=18)
     #ax[i].set_xticks(np.arange(xcor.shape[1])+.5, labels=spherenames,fontsize=16)
     #ax[i].set_yticks(np.arange(xcor.shape[0])+.5, labels=spherenames,fontsize=16)
     #plt.setp(ax[i].get_xticklabels(), rotation=90)
-    axa[k].set_title(d + r'$ \mu$m Spacing', fontsize=26, pad=15)
+    axa[k].set_title(str(int(d)) + r'$~\mu$m Spacing', fontsize=26, pad=15)
     axa[k].set_xlabel('Sphere Index', fontsize=22, labelpad=5)
     axa[k].set_ylabel('Sphere Index',fontsize=22,labelpad=5)
 
