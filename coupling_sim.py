@@ -38,8 +38,8 @@ def full_motion_eq(x, x_other, k, CC, d):
 @njit
 def force_calc(size,x,y,kx,ky,charge,CC,sep):
     #calculate the overall x and y components of the force on each sphere
-    ax = np.zeros(size,size)
-    ay = np.zeros(size,size)
+    ax = np.zeros((size,size))
+    ay = np.zeros((size,size))
     for i in range(size):
         for j in range(size):
             ax[i,j] = ax[i,j] - kx[i,j] * x[i,j]
@@ -47,7 +47,7 @@ def force_calc(size,x,y,kx,ky,charge,CC,sep):
 
             for m in range(size):
                 for n in range(size):
-                    if i != m and j != n:
+                    if (i != m) and (j != n):
                         xdif = abs((m-i)*sep + x[m,n] - x[i,j])
                         ydif = abs((n-j)*sep + y[m,n] - y[i,j])
                         dist2 = (xdif)**2 + (ydif)**2
@@ -110,7 +110,7 @@ def old_random_velocity_update(v,gamma,kBT,dt):
     return v_new
 
 
-def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_matrix, charge_matrix, CC, sep):
+def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_matrix, charge_matrix, CC, sep,startrec):
     save_frequency = 1/(dt*fs)
     
     t = 0
@@ -119,7 +119,6 @@ def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_m
     save_times = []
     
     while(t<timespan):
-        
         # B
         ax, ay = force_calc(arraysize,x,y,kx_matrix,ky_matrix,charge_matrix,CC,sep)
         vx, vy = velocity_update(arraysize, vx, vy, ax, ay, dt)
@@ -133,7 +132,7 @@ def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_m
         ax, ay = force_calc(arraysize,x,y,kx_matrix,ky_matrix,charge_matrix,CC,sep)
         vx, vy = velocity_update(arraysize, vx, vy, ax, ay, dt)
         
-        if step_number%save_frequency == 0 and step_number>0:
+        if step_number%save_frequency == 0 and t>startrec:
 
             for i in range(arraysize):
                 for j in range(arraysize):
@@ -146,11 +145,19 @@ def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_m
         t = t+dt
         step_number = step_number + 1
     
+    print(x)
+    print(y)
+    print(vx)
+    print(vy)
+    print(charge_matrix)
+    print(kx_matrix)
+    print(ky_matrix)
     return save_times, xsaves, ysaves, vxsaves, vysaves
 
 timespan = 50
 dt = 0.0001
 fs = 1000
+startrec = 15
 
 arraysize = 5 #set how many rows/columns we have
 
@@ -183,7 +190,6 @@ charge_matrix = matrix_template
 kx_matrix = matrix_template
 ky_matrix = matrix_template
 
-random.seed(5)
 for i in range(arraysize):
     for j in range(arraysize):
         
@@ -192,19 +198,23 @@ for i in range(arraysize):
         vx[i,j] = random.triangular(vel_ints_bounds[0], vel_ints_bounds[1], 0)
         vy[i,j] = random.triangular(vel_ints_bounds[0], vel_ints_bounds[1], 0)
 
-        charge_matrix[i,j] = random.randrange(charge)   #assume all have negative charge
+        charge_matrix[i,j] = random.randrange(0,charge)   #assume all have negative charge
         #spring constants are actually k/m
         kx_matrix[i,j] = freq_to_k(random.randrange(frange[0],frange[1]))   # in 1/s^2
         ky_matrix[i,j] = freq_to_k(random.randrange(frange[0],frange[1]))   # in 1/s^2
     
 
+print(charge)
+print(kx_matrix)
+print(x)
+print(vy)
 
 sep = [100, 85, 70, 55]          # separation in um
 mpl.rcParams.update({'font.size': 18})
 
-fig, ax = plt.subplots(1, len(sep))
-cax = fig.add_axes(rect=(0.2,0.2,0.6,0.03))
-fig.suptitle('Correlation of Motion of a 5x5 Array of Spheres')
+figa, axa = plt.subplots(1, len(sep))
+cax = figa.add_axes(rect=(0.2,0.2,0.6,0.03))
+figa.suptitle('Correlation of Motion of a 5x5 Array of Spheres')
 figs = {}
 axs = {}
 k = 0
@@ -213,7 +223,7 @@ for d in sep:
 
     save_times, xsaves, ysaves, vxsaves, vysaves  = baoab(arraysize, timespan, dt, fs, gamma, kBT,\
                                                                     x, y, vx, vy, kx_matrix, ky_matrix,\
-                                                                    charge_matrix, CC=charge_const, sep=(d*10**-6))
+                                                                    charge_matrix, charge_const, d*10**-6, startrec)
 
 
 
@@ -230,20 +240,37 @@ for d in sep:
     # axs[i].set_xlabel('Frequency (Hz)')
     # axs[i].set_ylabel(r'ASD ($m/\sqrt{Hz}$)')
 
+    first = True
+    for i in range(arraysize):
+        for j in range(arraysize):
+            if first == True:
+                xarray = x[i][j].reshape(-1,1)
+                yarray = y[i][j].reshape(-1,1)
+                vxarray = vx[i][j].reshape(-1,1)
+                vyarray = vy[i][j].reshape(-1,1)
+                first = False
+            else:
+                xarray = np.concatenate((xarray, x[i][j].reshape(-1,1)),axis=1)
+                yarray = np.concatenate((yarray, y[i][j].reshape(-1,1)),axis=1)
+                vxarray = np.concatenate((vxarray, vx[i][j].reshape(-1,1)),axis=1)
+                vyarray = np.concatenate((vyarray, vy[i][j].reshape(-1,1)),axis=1)  
 
-    xdf = pd.DataFrame(xsaves)
-    ydf = pd.DataFrame(ysaves)
-    xcor = xdf.corr()
-    ycor = ydf.corr()
+    xdf = pd.DataFrame(xarray)
+    ydf = pd.DataFrame(yarray)
+        
+    xcorrmatrix = xdf.corr()
+    ycorrmatrix = ydf.corr() 
 
-    for l in range(xcor.shape[0]):
-        for m in range(xcor.shape[1]):
+    for l in range(xcorrmatrix.shape[0]):
+        for m in range(xcorrmatrix.shape[1]):
 
-            if xcor[l][m] == 1:
-                xcor[l][m] = 0
+            if xcorrmatrix[l][m] == 1:
+                xcorrmatrix[l][m] = 0
+            if ycorrmatrix[l][m] == 1:
+                ycorrmatrix[l][m] = 0
 
-    print(np.max(xcor))
-    print(np.min(xcor))
+    print(np.max(xcorrmatrix))
+    print(np.min(xcorrmatrix))
 
 
     spherenames = [str(x+1) for x in range(arraysize**2)]
@@ -259,25 +286,25 @@ for d in sep:
         cbar_kws = None
         cbar_ax = None
     
-    symcor = xcor
-    for a in range(xcor.shape[0]):
-        for b in range(xcor.shape[1]):
+    symcor = xcorrmatrix
+    for a in range(xcorrmatrix.shape[0]):
+        for b in range(xcorrmatrix.shape[1]):
             if a < b:
-                symcor[a][b] = ycor[a][b]
-    mask = np.triu(np.ones_like(xcor, dtype=bool))
-    diagmask = np.identity(xcor.shape[0])
-    sn.heatmap(symcor, mask=diagmask, square=True, cmap = 'viridis', vmin=-0.3, vmax=0.1, ax=ax[i], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
-    ax[i].tick_params(axis='both', which='major', labelsize=18)
+                symcor[a][b] = ycorrmatrix[a][b]
+    mask = np.triu(np.ones_like(xcorrmatrix, dtype=bool))
+    diagmask = np.identity(xcorrmatrix.shape[0])
+    sn.heatmap(symcor, mask=diagmask, square=True, cmap = 'viridis', vmin=-0.3, vmax=0.1, ax=axa[i], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
+    axa[k].tick_params(axis='both', which='major', labelsize=18)
     #ax[i].set_xticks(np.arange(xcor.shape[1])+.5, labels=spherenames,fontsize=16)
     #ax[i].set_yticks(np.arange(xcor.shape[0])+.5, labels=spherenames,fontsize=16)
     #plt.setp(ax[i].get_xticklabels(), rotation=90)
-    ax[i].set_title(d + r'$ \mu$m Spacing', fontsize=26, pad=15)
-    ax[i].set_xlabel('Sphere Index', fontsize=22, labelpad=5)
-    ax[i].set_ylabel('Sphere Index',fontsize=22,labelpad=5)
+    axa[k].set_title(d + r'$ \mu$m Spacing', fontsize=26, pad=15)
+    axa[k].set_xlabel('Sphere Index', fontsize=22, labelpad=5)
+    axa[k].set_ylabel('Sphere Index',fontsize=22,labelpad=5)
 
     k+=1
 
     
-fig.tight_layout()
+figa.tight_layout()
 cax.set_title('Correlation Coefficients',fontsize=26)
 plt.show()
