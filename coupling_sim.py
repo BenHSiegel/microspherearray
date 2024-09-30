@@ -38,19 +38,19 @@ def full_motion_eq(x, x_other, k, CC, d):
 @njit
 def force_calc(size,x,y,kx,ky,charge,CC,sep):
     #calculate the overall x and y components of the force on each sphere
-    ax = np.zeros((size,size))
-    ay = np.zeros((size,size))
+    ax = np.zeros((size[0],size[1]))
+    ay = np.zeros((size[0],size[1]))
     
     #iterate through all the spheres
-    for i in range(size):
-        for j in range(size):
+    for i in range(size[0]):
+        for j in range(size[1]):
             #update with trap's force
             ax[i,j] = ax[i,j] - kx[i,j] * x[i,j]
             ay[i,j] = ay[i,j] - ky[i,j] * y[i,j]
 
             #iterate through them all again to find force of sphere(m,n) on sphere(i,j)
-            for m in range(size):
-                for n in range(size):
+            for m in range(size[0]):
+                for n in range(size[1]):
                     #make sure not self interaction
                     if (i != m) and (j != n):
                         xdif = abs((m-i)*sep + x[m,n] - x[i,j])
@@ -75,8 +75,8 @@ def force_calc(size,x,y,kx,ky,charge,CC,sep):
 @njit
 def velocity_update(size, vx, vy, ax, ay, dt):
     #Updates the velocities of the spheres using given accelerations
-    for i in range(size):
-        for j in range(size):
+    for i in range(size[0]):
+        for j in range(size[1]):
             vx[i,j] = vx[i,j] + ax[i,j] * dt / 2.0
             vy[i,j] = vy[i,j] + ay[i,j] * dt / 2.0
     return vx, vy
@@ -88,8 +88,8 @@ def old_velocity_update(v,a,dt):
 @njit
 def position_update(size, x, y, vx, vy, dt):
     #updates the position of the spheres using given velocities
-    for i in range(size):
-        for j in range(size):
+    for i in range(size[0]):
+        for j in range(size[1]):
             x[i,j] = x[i,j] + vx[i,j] * dt / 2.0
             y[i,j] = y[i,j] + vy[i,j] * dt / 2.0
     return x, y
@@ -103,8 +103,8 @@ def random_velocity_update(size, vx, vy, gamma, kBT, dt):
     #calculates the gas effects on the velocity for all the spheres
     c1 = np.exp(-gamma*dt)
     c2 = math.sqrt(1-c1*c1)*math.sqrt(kBT)
-    for i in range(size):
-        for j in range(size):
+    for i in range(size[0]):
+        for j in range(size[1]):
             R1 = np.random.normal()
             R2 = np.random.normal()
 
@@ -126,7 +126,7 @@ def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_m
     
     t = 0
     step_number = 0
-    xsaves=ysaves=vxsaves=vysaves = [ [ [] for i in range(arraysize)] for j in range(arraysize) ]
+    xsaves=ysaves=vxsaves=vysaves = [ [ [] for i in range(arraysize[0])] for j in range(arraysize[1]) ]
     save_times = []
     
     while(t<timespan):
@@ -145,8 +145,8 @@ def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_m
         
         if step_number%save_frequency == 0 and t>startrec:
 
-            for i in range(arraysize):
-                for j in range(arraysize):
+            for i in range(arraysize[0]):
+                for j in range(arraysize[1]):
                     xsaves[i][j].append(x[i,j])
                     ysaves[i][j].append(y[i,j])
                     vxsaves[i][j].append(vx[i,j])
@@ -169,13 +169,13 @@ fs = 1000
 #don't record the motion until t>=startrec to let the system evolve a bit
 startrec = 20
 
-arraysize = 5 #set how many rows/columns we have
+arraysize = [2,1] #set how many rows/columns we have
 
 #generate a list of empty lists for storing motion state
-list_template = [ [ [] for i in range(arraysize)] for j in range(arraysize) ]
+list_template = [ [ [] for i in range(arraysize[0])] for j in range(arraysize[1]) ]
 
 #numpy matrix template for storing static values
-matrix_template = np.zeros((arraysize,arraysize))
+matrix_template = np.zeros((arraysize[0],arraysize[1]))
 
 pos_int_bounds = [-1E-6, 1E-6]     #starting position bounds in m
 vel_ints_bounds = [0,0]            #starting velocity bounds in m/s (gonna use 0)
@@ -206,16 +206,16 @@ ky_matrix = matrix_template
 #generate random initial values for positions, velocity, spring constants and charge
 rng = np.random.default_rng()
 
-x = rng.normal(pos_gauss[0], pos_gauss[1], size = (arraysize,arraysize))
-y = rng.normal(pos_gauss[0], pos_gauss[1], size = (arraysize,arraysize))
-vx = rng.normal(vel_gauss[0], vel_gauss[1], size = (arraysize,arraysize))
-vy = rng.normal(vel_gauss[0], vel_gauss[1], size = (arraysize,arraysize))
+x = rng.normal(pos_gauss[0], pos_gauss[1], size = (arraysize[0],arraysize[1]))
+y = rng.normal(pos_gauss[0], pos_gauss[1], size = (arraysize[0],arraysize[1]))
+vx = rng.normal(vel_gauss[0], vel_gauss[1], size = (arraysize[0],arraysize[1]))
+vy = rng.normal(vel_gauss[0], vel_gauss[1], size = (arraysize[0],arraysize[1]))
 
 #Don't know the distributions of charge and k, so just doing uniform generation
-charge_matrix = rng.integers(charge[0],charge[1],size = (arraysize,arraysize))   #assume all have negative charge
+charge_matrix = rng.integers(charge[0],charge[1],size = (arraysize[0],arraysize[1]))   #assume all have negative charge
 
-fx_matrix = rng.integers(frange[0],frange[1],size = (arraysize,arraysize))
-fy_matrix = rng.integers(frange[0],frange[1],size = (arraysize,arraysize))
+fx_matrix = rng.integers(frange[0],frange[1],size = (arraysize[0],arraysize[1]))
+fy_matrix = rng.integers(frange[0],frange[1],size = (arraysize[0],arraysize[1]))
 #spring constants are actually k/m
 kx_matrix = freq_to_k(fx_matrix)    # in 1/s^2
 ky_matrix = freq_to_k(fy_matrix)    # in 1/s^2
@@ -274,8 +274,8 @@ for d in sep:
     # axs[i].set_ylabel(r'ASD ($m/\sqrt{Hz}$)')
 
     first = True
-    for i in range(arraysize):
-        for j in range(arraysize):
+    for i in range(arraysize[0]):
+        for j in range(arraysize[1]):
             if first == True:
                 xarray = np.array(xsaves[i][j]).reshape(-1,1)
                 yarray = np.array(ysaves[i][j]).reshape(-1,1)
@@ -306,7 +306,7 @@ for d in sep:
     print(np.min(xcorrmatrix))
 
 
-    spherenames = [str(x+1) for x in range(arraysize**2)]
+    spherenames = [str(x+1) for x in range(arraysize[0]*arraysize[1])]
     norm = LogNorm()
     if k == len(sep) - 1:
         plot_cbar = True
