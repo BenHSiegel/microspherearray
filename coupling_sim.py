@@ -35,36 +35,44 @@ def full_motion_eq(x, x_other, k, CC, d):
     acc = -k*x + CC/(d+x_other-x)**2
     return acc
 
-@njit
 def force_calc(size,x,y,kx,ky,charge,CC,sep):
     #calculate the overall x and y components of the force on each sphere
     ax = np.zeros((size,size))
     ay = np.zeros((size,size))
+    
+    #iterate through all the spheres
     for i in range(size):
         for j in range(size):
+            #update with trap's force
             ax[i,j] = ax[i,j] - kx[i,j] * x[i,j]
             ay[i,j] = ay[i,j] - ky[i,j] * y[i,j]
 
+            #iterate through them all again to find force of sphere(m,n) on sphere(i,j)
             for m in range(size):
                 for n in range(size):
+                    #make sure not self interaction
                     if (i != m) and (j != n):
                         xdif = abs((m-i)*sep + x[m,n] - x[i,j])
                         ydif = abs((n-j)*sep + y[m,n] - y[i,j])
                         dist2 = (xdif)**2 + (ydif)**2
                         charge_amplitude = CC * charge[m,n] * charge[i,j] / dist2
+                        
+                        #get x, y components to find projections of the force
                         x_comp = charge_amplitude * xdif / math.sqrt(dist2)
                         y_comp = charge_amplitude * ydif / math.sqrt(dist2)
+                        #determine sign (assume charge always -)
                         if i < m:
                             x_comp = -1*x_comp
                         if j < n:
                             y_comp = -1*y_comp
+                        
                         ax[i,j] = ax[i,j] + x_comp
                         ay[i,j] = ay[i,j] + y_comp
 
     return ax, ay
 
-@njit
 def velocity_update(size, vx, vy, ax, ay, dt):
+    #Updates the velocities of the spheres using given accelerations
     for i in range(size):
         for j in range(size):
             vx[i,j] = vx[i,j] + ax[i,j] * dt / 2.0
@@ -75,8 +83,8 @@ def old_velocity_update(v,a,dt):
     v_new = v + a*dt/2.0
     return v_new
 
-@njit
 def position_update(size, x, y, vx, vy, dt):
+    #updates the position of the spheres using given velocities
     for i in range(size):
         for j in range(size):
             x[i,j] = x[i,j] + vx[i,j] * dt / 2.0
@@ -87,8 +95,8 @@ def old_position_update(x,v,dt):
     x_new = x + v*dt/2.0
     return x_new
 
-@njit
 def random_velocity_update(size, vx, vy, gamma, kBT, dt):
+    #calculates the gas effects on the velocity for all the spheres
     c1 = np.exp(-gamma*dt)
     c2 = math.sqrt(1-c1*c1)*math.sqrt(kBT)
     for i in range(size):
@@ -96,7 +104,8 @@ def random_velocity_update(size, vx, vy, gamma, kBT, dt):
             R = np.random.normal()
             
             #probably not great but just applying same random
-            #   force to both x and y
+            #   force to both x and y for now
+            #   (but all spheres get different R)
             vx[i,j] = c1*vx[i,j] + R*c2
             vy[i,j] = c1*vy[i,j] + R*c2
     return vx, vy
@@ -157,6 +166,7 @@ def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_m
 timespan = 50
 dt = 0.0001
 fs = 1000
+#don't record the motion until t>=startrec to let the system evolve a bit
 startrec = 15
 
 arraysize = 5 #set how many rows/columns we have
@@ -167,7 +177,7 @@ list_template = [ [ [] for i in range(arraysize)] for j in range(arraysize) ]
 #numpy matrix template for storing static values
 matrix_template = np.zeros((arraysize,arraysize))
 
-pos_int_bounds = [-1e-6, 1e-6]     #starting position bounds in m
+pos_int_bounds = [-1E-6, 1E-6]     #starting position bounds in m
 vel_ints_bounds = [0,0]            #starting velocity bounds in m/s (gonna use 0)
 
 pressure = 0.4      # in mbar
@@ -190,14 +200,18 @@ charge_matrix = matrix_template
 kx_matrix = matrix_template
 ky_matrix = matrix_template
 
+#generate random initial values for positions, velocity, spring constants and charge
 for i in range(arraysize):
     for j in range(arraysize):
         
+        #use random triangular to get distribution weighted around 0 but without as much
+        #computation intensity needed as gaussian
         x[i,j] = random.triangular(pos_int_bounds[0], pos_int_bounds[1], 0)
         y[i,j] = random.triangular(pos_int_bounds[0], pos_int_bounds[1], 0)
         vx[i,j] = random.triangular(vel_ints_bounds[0], vel_ints_bounds[1], 0)
         vy[i,j] = random.triangular(vel_ints_bounds[0], vel_ints_bounds[1], 0)
 
+        #Don't know the distributions of charge and k, so just doing uniform generation
         charge_matrix[i,j] = random.randrange(0,charge)   #assume all have negative charge
         #spring constants are actually k/m
         kx_matrix[i,j] = freq_to_k(random.randrange(frange[0],frange[1]))   # in 1/s^2
