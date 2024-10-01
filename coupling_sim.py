@@ -147,10 +147,10 @@ def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_m
 
             for i in range(arraysize[0]):
                 for j in range(arraysize[1]):
-                    xsaves[i][j].append(x[i,j])
-                    ysaves[i][j].append(y[i,j])
-                    vxsaves[i][j].append(vx[i,j])
-                    vysaves[i][j].append(vy[i,j])
+                    xsaves[j][i].append(x[i,j])
+                    ysaves[j][i].append(y[i,j])
+                    vxsaves[j][i].append(vx[i,j])
+                    vysaves[j][i].append(vy[i,j])
             save_times.append(t)
         
         t = t+dt
@@ -212,13 +212,21 @@ vx = rng.normal(vel_gauss[0], vel_gauss[1], size = (arraysize[0],arraysize[1]))
 vy = rng.normal(vel_gauss[0], vel_gauss[1], size = (arraysize[0],arraysize[1]))
 
 #Don't know the distributions of charge and k, so just doing uniform generation
-charge_matrix = rng.integers(charge[0],charge[1],size = (arraysize[0],arraysize[1]))   #assume all have negative charge
-
 fx_matrix = rng.integers(frange[0],frange[1],size = (arraysize[0],arraysize[1]))
 fy_matrix = rng.integers(frange[0],frange[1],size = (arraysize[0],arraysize[1]))
 #spring constants are actually k/m
 kx_matrix = freq_to_k(fx_matrix)    # in 1/s^2
 ky_matrix = freq_to_k(fy_matrix)    # in 1/s^2
+
+charge_matrix = rng.integers(charge[0],charge[1],size = (arraysize[0],arraysize[1]))   #assume all have negative charge
+#ALTERNATIVE: Set the charges by hand
+#list of charges so you don't have to make sure the matrix is the right shape
+#set_charge_list = [30, 50]
+#k = 0
+#for i in range(arraysize[0]):
+#   for j in range(arraysize[1]):        
+#       charge_matrix[i,j] = set_charge_list[k]
+#       k += 1
 
 # for i in range(arraysize):
 #     for j in range(arraysize):
@@ -242,7 +250,7 @@ print(fx_matrix)
 print(x)
 print(vy)
 
-sep = [55,70,85,100]          # separation in um
+sep = [30,40,50,60,70,85,100,140]          # separation in um
 mpl.rcParams.update({'font.size': 18})
 
 figa, axa = plt.subplots(1, len(sep))
@@ -277,16 +285,16 @@ for d in sep:
     for i in range(arraysize[0]):
         for j in range(arraysize[1]):
             if first == True:
-                xarray = np.array(xsaves[i][j]).reshape(-1,1)
-                yarray = np.array(ysaves[i][j]).reshape(-1,1)
-                vxarray = np.array(vxsaves[i][j]).reshape(-1,1)
-                vyarray = np.array(vysaves[i][j]).reshape(-1,1)
+                xarray = np.array(xsaves[j][i]).reshape(-1,1)
+                yarray = np.array(ysaves[j][i]).reshape(-1,1)
+                vxarray = np.array(vxsaves[j][i]).reshape(-1,1)
+                vyarray = np.array(vysaves[j][i]).reshape(-1,1)
                 first = False
             else:
-                xarray = np.concatenate((xarray, np.array(xsaves[i][j]).reshape(-1,1)),axis=1)
-                yarray = np.concatenate((yarray, np.array(ysaves[i][j]).reshape(-1,1)),axis=1)
-                vxarray = np.concatenate((vxarray, np.array(vxsaves[i][j]).reshape(-1,1)),axis=1)
-                vyarray = np.concatenate((vyarray, np.array(vysaves[i][j]).reshape(-1,1)),axis=1)  
+                xarray = np.concatenate((xarray, np.array(xsaves[j][i]).reshape(-1,1)),axis=1)
+                yarray = np.concatenate((yarray, np.array(ysaves[j][i]).reshape(-1,1)),axis=1)
+                vxarray = np.concatenate((vxarray, np.array(vxsaves[j][i]).reshape(-1,1)),axis=1)
+                vyarray = np.concatenate((vyarray, np.array(vysaves[j][i]).reshape(-1,1)),axis=1)  
 
     xdf = pd.DataFrame(xarray)
     ydf = pd.DataFrame(yarray)
@@ -294,46 +302,50 @@ for d in sep:
     xcorrmatrix = xdf.corr()
     ycorrmatrix = ydf.corr() 
 
-    for l in range(xcorrmatrix.shape[0]):
-        for m in range(xcorrmatrix.shape[1]):
-
-            if xcorrmatrix[l][m] == 1:
-                xcorrmatrix[l][m] = 0
-            if ycorrmatrix[l][m] == 1:
-                ycorrmatrix[l][m] = 0
-
-    print(np.max(xcorrmatrix))
-    print(np.min(xcorrmatrix))
 
 
-    spherenames = [str(x+1) for x in range(arraysize[0]*arraysize[1])]
-    norm = LogNorm()
-    if k == len(sep) - 1:
-        plot_cbar = True
-        cbar_kws = {'shrink' : 0.8,
-                    'orientation': 'horizontal'}
-        cbar_ax = cax
+    if arraysize[0] + arraysize[1] > 3:
+
+        for l in range(xcorrmatrix.shape[0]):
+            for m in range(xcorrmatrix.shape[1]):
+
+                if xcorrmatrix[m][l] == 1:
+                    xcorrmatrix[m][l] = 0
+                if ycorrmatrix[m][l] == 1:
+                    ycorrmatrix[m][l] = 0
+
+        print(np.max(xcorrmatrix))
+        print(np.min(xcorrmatrix))
+
+
+        spherenames = [str(x+1) for x in range(arraysize[0]*arraysize[1])]
+        norm = LogNorm()
+        if k == len(sep) - 1:
+            plot_cbar = True
+            cbar_kws = {'shrink' : 0.8,
+                        'orientation': 'horizontal'}
+            cbar_ax = cax
+            
+        else:
+            plot_cbar = False
+            cbar_kws = None
+            cbar_ax = None
         
-    else:
-        plot_cbar = False
-        cbar_kws = None
-        cbar_ax = None
-    
-    symcor = xcorrmatrix
-    for a in range(xcorrmatrix.shape[0]):
-        for b in range(xcorrmatrix.shape[1]):
-            if a < b:
-                symcor[a][b] = ycorrmatrix[a][b]
-    mask = np.triu(np.ones_like(xcorrmatrix, dtype=bool))
-    diagmask = np.identity(xcorrmatrix.shape[0])
-    sn.heatmap(symcor, mask=diagmask, square=True, cmap = 'viridis', vmin=-0.25, vmax=0.25, ax=axa[k], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
-    axa[k].tick_params(axis='both', which='major', labelsize=18)
-    #ax[i].set_xticks(np.arange(xcor.shape[1])+.5, labels=spherenames,fontsize=16)
-    #ax[i].set_yticks(np.arange(xcor.shape[0])+.5, labels=spherenames,fontsize=16)
-    #plt.setp(ax[i].get_xticklabels(), rotation=90)
-    axa[k].set_title(str(int(d)) + r'$~\mu$m Spacing', fontsize=26, pad=15)
-    axa[k].set_xlabel('Sphere Index', fontsize=22, labelpad=5)
-    axa[k].set_ylabel('Sphere Index',fontsize=22,labelpad=5)
+        symcor = xcorrmatrix
+        for a in range(xcorrmatrix.shape[0]):
+            for b in range(xcorrmatrix.shape[1]):
+                if a < b:
+                    symcor[a][b] = ycorrmatrix[a][b]
+        mask = np.triu(np.ones_like(xcorrmatrix, dtype=bool))
+        diagmask = np.identity(xcorrmatrix.shape[0])
+        sn.heatmap(symcor, mask=diagmask, square=True, cmap = 'viridis', vmin=-0.25, vmax=0.25, ax=axa[k], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
+        axa[k].tick_params(axis='both', which='major', labelsize=18)
+        #ax[i].set_xticks(np.arange(xcor.shape[1])+.5, labels=spherenames,fontsize=16)
+        #ax[i].set_yticks(np.arange(xcor.shape[0])+.5, labels=spherenames,fontsize=16)
+        #plt.setp(ax[i].get_xticklabels(), rotation=90)
+        axa[k].set_title(str(int(d)) + r'$~\mu$m Spacing', fontsize=26, pad=15)
+        axa[k].set_xlabel('Sphere Index', fontsize=22, labelpad=5)
+        axa[k].set_ylabel('Sphere Index',fontsize=22,labelpad=5)
 
     k+=1
 

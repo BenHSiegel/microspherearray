@@ -67,10 +67,12 @@ for filename in filenamelist:
     counter +=1
 
 
-Time = (np.arange(len(df.Time))) * sampleT *1e6 #converted to us)
+Time = (np.arange(len(df.Time))) * sampleT *1e3 #converted to ms)
 fig1, ax = plt.subplots(1,3)
-ax[0].tick_params(axis='both', which='major', labelsize=14)
-ax[2].tick_params(axis='both', which='major', labelsize=14)
+fig1.set_size_inches(7,3)
+fig1.tight_layout()
+ax[0].tick_params(axis='both', which='major', labelsize=12)
+ax[2].tick_params(axis='both', which='major', labelsize=12)
 ax[0].plot(Time,df.CH0)
 ax[0].plot(Time,df.CH1)
 ax[0].plot(Time,df.CH2)
@@ -80,30 +82,29 @@ ax[0].plot(Time,df.CH2)
 # ax2.set_axes_locator(ip)
 # mark_inset(ax[0], ax2, loc1=1, loc2=3, fc="none", ec='0.5')
 
-#convert seconds to us
 ax[1].set_ylim(-0.65,0.25)
-ax[1].tick_params(axis='both', which='major', labelsize=14)
-ax[1].set_xlim(df.Time[9000],df.Time[13000])
-ax[1].plot(df.Time[9000:13000],df.CH0[9000:13000], linewidth=2.5)
-ax[1].plot(df.Time[9000:13000],df.CH1[9000:13000], linewidth=2.5)
-ax[1].plot(df.Time[9000:13000],df.CH2[9000:13000], linewidth=2.5)
+ax[1].tick_params(axis='both', which='major', labelsize=10)
+ax[1].set_xlim(Time[9000],Time[13000])
+ax[1].plot(Time[9000:13000],df.CH0[9000:13000], linewidth=2.5)
+ax[1].plot(Time[9000:13000],df.CH1[9000:13000], linewidth=2.5)
+ax[1].plot(Time[9000:13000],df.CH2[9000:13000], linewidth=2.5)
 #ax2.plot(df.Time*1E6,df.trig)
 y = np.arange(-1,1,0.001)
 for i in range(len(triglocs)-1):
     
     if 8000<triglocs[i]<13500:
-        ax[1].vlines(df.Time[triglocs[i]],-1, 1, colors = 'r', linestyles = 'dashed', linewidths = 1)
-        ax[1].fill_betweenx(y, df.Time[triglocs[i]] + 60, df.Time[triglocs[i+1]]-0.1, facecolor='#aaf0a1',alpha=0.3)
-ax[0].legend(['X','Y', 'Sum'],loc = 'lower right', ncols=3, fontsize=14,  bbox_to_anchor=(1, 1.02), borderaxespad=0.1, columnspacing=0.5, markerscale=0.5)
-ax[0].set_xlabel(r'Time ($\mu$s)',fontsize=22)
-ax[0].set_ylabel('QPD Response (V)',fontsize=22)
-ax[0].set_xlim(Time[0],Time[3*len(CH0)])
+        ax[1].vlines(Time[triglocs[i]],-1, 1, colors = 'r', linestyles = 'dashed', linewidths = 1)
+        ax[1].fill_betweenx(y, Time[triglocs[i]] + 0.065, Time[triglocs[i+1]] - 0.001, facecolor='#aaf0a1',alpha=0.3)
+ax[0].legend(['X','Y', 'Sum'],loc = 'lower right', ncols=3, fontsize=12,  bbox_to_anchor=(1, 1.02), borderaxespad=0.1, columnspacing=0.5, markerscale=0.5)
+ax[0].set_xlabel(r'Time (ms)',fontsize=16)
+ax[0].set_ylabel('QPD Response (V)',fontsize=16)
+ax[0].set_xlim(Time[0],Time[len(CH0)])
 ax[0].set_ylim(-0.7,0.3)
 #ax[0,0].set_title('Signal from Quadrant Photodiode',fontsize=22)
 
-ax[1].legend(['X','Y', 'Sum'],loc = 'lower right', ncols=3, fontsize=14,  bbox_to_anchor=(1, 1.02), borderaxespad=0.1, columnspacing=0.5, markerscale=0.5)
-ax[1].set_xlabel(r'Time ($\mu$s)',fontsize=22)
-ax[1].set_ylabel('QPD Response (V)',fontsize=22)
+ax[1].legend(['X','Y', 'Sum'],loc = 'lower right', ncols=3, fontsize=12,  bbox_to_anchor=(1, 1.02), borderaxespad=0.1, columnspacing=0.5, markerscale=0.5)
+ax[1].set_xlabel(r'Time (ms)',fontsize=16)
+ax[1].set_ylabel('QPD Response (V)',fontsize=16)
 #ax2.set_title('Timestream of Quadrant Photodiode for 4 Spheres',fontsize=28,pad=15)
 
 
@@ -130,9 +131,9 @@ ax[2].plot(time,sphere3, label = 'Sphere 3')
 
 handles, labels = ax[2].get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
-ax[2].legend(by_label.values(), by_label.keys(), loc = 'lower right', ncols=len(labels), fontsize=14,  bbox_to_anchor=(1, 1.02), borderaxespad=0.1, columnspacing=0.5, markerscale=0.5)
-ax[2].set_xlabel(r'Time (s)',fontsize=22)
-ax[2].set_ylabel('QPD Response (V)',fontsize=22)
+ax[2].legend(by_label.values(), by_label.keys(), loc = 'lower right', ncols=len(labels)/2, fontsize=12,  bbox_to_anchor=(1, 1.02), borderaxespad=0.1, columnspacing=0.5, markerscale=0.5)
+ax[2].set_xlabel(r'Time (s)',fontsize=16)
+ax[2].set_ylabel('QPD Response (V)',fontsize=16)
 ax[2].set_xlim(time[0],time[-1])
 #ax[2].set_title('X Signal Sorted by Sphere',fontsize=22)
 
