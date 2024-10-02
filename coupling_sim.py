@@ -247,8 +247,8 @@ charge_matrix = rng.integers(charge[0],charge[1],size = (arraysize[0],arraysize[
 
 print(charge_matrix)
 print(fx_matrix)
-print(x)
-print(vy)
+print(fy_matrix)
+
 
 sep = [30,40,50,60,70,85,100,140]          # separation in um
 mpl.rcParams.update({'font.size': 18})
@@ -256,6 +256,27 @@ mpl.rcParams.update({'font.size': 18})
 figa, axa = plt.subplots(1, len(sep))
 cax = figa.add_axes(rect=(0.2,0.2,0.6,0.03))
 #figa.suptitle('Correlation of Motion of a 5x5 Array of Spheres')
+
+jointfig = plt.figure()
+grid = plt.GridSpec(7, 10, wspace=3, hspace=4)
+sph0 = jointfig.add_subplot(grid[:3, :7])
+sph1 = jointfig.add_subplot(grid[3:6, :7])
+sphraxes = [sph0, sph1]
+jointcor = jointfig.add_subplot(grid[:, 7:])
+
+jointcor.tick_params(labelsize=14)
+sph0.tick_params(labelsize=14)
+sph1.tick_params(labelsize=14)
+jointcor.set_title('Correlation vs Separation',fontsize = 26)
+jointcor.set_xlabel(r'Separation ($\mu m$)',fontsize=20)
+jointcor.set_ylabel('Pearson Correlation Coefficient',fontsize=20)
+
+colorvalue1 = np.linspace(0,0.8,len(sep))
+colorvalue2 = np.linspace(0.4,1,len(sep))
+colorvalue1T = colorvalue1[::-1]
+colorvalue2T = colorvalue2[::-1]
+colorcodes1 = [(colorvalue1[i],0,colorvalue1T[i]) for i in range(len(sep))]
+colorcodes2 = [(colorvalue2[i],0,colorvalue2T[i]) for i in range(len(sep))]
 figs = {}
 axs = {}
 k = 0
@@ -266,21 +287,8 @@ for d in sep:
                                                                     x, y, vx, vy, kx_matrix, ky_matrix,\
                                                                     charge_matrix, charge_const, d*10**-6, startrec)
 
-
-
-    # segmentsize = round(fs/2)
-    # fftbinning = 1024
-    # freq, PSD1 = welch(positions1[20000:], fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
-    # freq, PSD2 = welch(positions2[20000:], fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
-    # figs[i], axs[i] = plt.subplots()
-
-    # axs[i].semilogy(freq,np.sqrt(PSD1))
-    # axs[i].semilogy(freq,np.sqrt(PSD2))
-    # axs[i].set_xlim(50,250)
-    # axs[i].set_title("Simulated Coupling of Charged Spheres with Gas Interaction \n at %d um Separation and %d e Charge" % (d, charge))
-    # axs[i].set_xlabel('Frequency (Hz)')
-    # axs[i].set_ylabel(r'ASD ($m/\sqrt{Hz}$)')
-
+    segmentsize = round(fs/2)
+    fftbinning = 1024
     first = True
     for i in range(arraysize[0]):
         for j in range(arraysize[1]):
@@ -289,10 +297,25 @@ for d in sep:
                 yarray = np.array(ysaves[j][i]).reshape(-1,1)
                 vxarray = np.array(vxsaves[j][i]).reshape(-1,1)
                 vyarray = np.array(vysaves[j][i]).reshape(-1,1)
+                
+                freq, PSDx = welch(xarray, fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
+                _, PSDy = welch(yarray, fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
+
+                xPSDarray = PSDx
+                yPSDarray = PSDy
                 first = False
             else:
-                xarray = np.concatenate((xarray, np.array(xsaves[j][i]).reshape(-1,1)),axis=1)
-                yarray = np.concatenate((yarray, np.array(ysaves[j][i]).reshape(-1,1)),axis=1)
+                addedx = np.array(xsaves[j][i]).reshape(-1,1)
+                addedy = np.array(ysaves[j][i]).reshape(-1,1)
+
+                _, PSDx = welch(xarray, fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
+                _, PSDy = welch(yarray, fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
+
+                xPSDarray = np.concatenate((xPSDarray, PSDx),axis=1)
+                yPSDarray = np.concatenate((yPSDarray, PSDy),axis=1)
+
+                xarray = np.concatenate((xarray, addedx),axis=1)
+                yarray = np.concatenate((yarray, addedy),axis=1)
                 vxarray = np.concatenate((vxarray, np.array(vxsaves[j][i]).reshape(-1,1)),axis=1)
                 vyarray = np.concatenate((vyarray, np.array(vysaves[j][i]).reshape(-1,1)),axis=1)  
 
@@ -304,7 +327,7 @@ for d in sep:
 
 
 
-    if arraysize[0] + arraysize[1] > 3:
+    if arraysize[0] * arraysize[1] > 2:
 
         for l in range(xcorrmatrix.shape[0]):
             for m in range(xcorrmatrix.shape[1]):
@@ -314,8 +337,6 @@ for d in sep:
                 if ycorrmatrix[m][l] == 1:
                     ycorrmatrix[m][l] = 0
 
-        print(np.max(xcorrmatrix))
-        print(np.min(xcorrmatrix))
 
 
         spherenames = [str(x+1) for x in range(arraysize[0]*arraysize[1])]
@@ -346,6 +367,34 @@ for d in sep:
         axa[k].set_title(str(int(d)) + r'$~\mu$m Spacing', fontsize=26, pad=15)
         axa[k].set_xlabel('Sphere Index', fontsize=22, labelpad=5)
         axa[k].set_ylabel('Sphere Index',fontsize=22,labelpad=5)
+
+    else:
+        jointcor.scatter(d, xcorrmatrix[0,1], marker='s' ,color = '#1E88E5', label='X Motion')
+        jointcor.scatter(d, ycorrmatrix[0,1], color = '#004D40', label='Y Motion')
+        for j in range(xPSDarray.shape[1]):
+            label_name = str(int(d)) + r' $\mu$m'
+
+            sph0.plot(freq, np.sqrt(xPSDarray[:,j]), color = colorcodes1[k], label=label_name)
+            sph1.plot(freq, np.sqrt(yPSDarray[:,j]), color = colorcodes2[k], label=label_name)
+        sph0.set_xlim([5,250])
+        sph0.set_xlabel('Frequency (Hz)', fontsize = 20)
+        sph0.set_ylabel(r'ASD ($m/ \sqrt{Hz}$)', fontsize = 20)
+        sph0.set_title('Sphere 0', fontsize = 26)
+
+        sph1.set_xlim([5,250])
+        sph1.set_xlabel('Frequency (Hz)', fontsize = 20)
+        sph1.set_ylabel(r'ASD ($m/ \sqrt{Hz}$)', fontsize = 20)
+        sph1.set_title('Sphere 1', fontsize = 26)
+
+        h, l = sph1.get_legend_handles_labels()
+        by_label = dict(zip(l, h))
+        ph = [plt.plot([],marker="", ls="")[0]]*2
+        handles = ph + h
+        labels = ['X Data:', "Y Data:"] + l
+        leg = sph1.legend(handles, labels, fontsize=12, ncols=len(labels)/2, loc="upper left", bbox_to_anchor=(-0.1, -0.3), borderaxespad=0.1)
+        for vpack in leg._legend_handle_box.get_children()[:1]:
+            for hpack in vpack.get_children():
+                hpack.get_children()[0].set_width(0)
 
     k+=1
 
