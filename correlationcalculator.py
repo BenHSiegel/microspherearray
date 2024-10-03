@@ -591,8 +591,8 @@ def plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, 
             axa[0].scatter(separation_scan[i], correlation_scan[i][j,0], color=color_codes[j], label=cor_legend[j])
             axa[1].scatter(separation_scan[i], correlation_scan[i][j,1], color=color_codes[j], label=cor_legend[j])
 
-            jointax.scatter(separation_scan[i], correlation_scan[i][j,0], marker='s' ,color = '#1E88E5', label='X Motion')
-            jointax.scatter(separation_scan[i], correlation_scan[i][j,1], color = '#004D40', label='Y Motion')
+            jointax.scatter(separation_scan[i], correlation_scan[i][j,0], marker='s' ,s = 20*3.5,color = '#1E88E5', label='X Motion')
+            jointax.scatter(separation_scan[i], correlation_scan[i][j,1], color = '#004D40',s = 20*3.5, label='Y Motion')
         
         for j in range(len(x_peak_scan[i])):
             xpeaks = x_peak_scan[i][j]
@@ -634,7 +634,7 @@ def plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, 
 
     handles, labels = jointax.get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
-    jointax.legend(by_label.values(), by_label.keys(), fontsize=12, loc="lower right", borderaxespad=1)
+    jointax.legend(by_label.values(), by_label.keys(), fontsize=16, loc="lower right", borderaxespad=1)
 
     handles, labels = axb[0].get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
@@ -655,7 +655,7 @@ def plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, 
     return jointax
 
 
-def plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes, sphraxes):
+def plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, colormap1, colormap2, sphraxes):
 
     figs={}
     axs={}
@@ -666,10 +666,11 @@ def plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, m
         alpharange = np.linspace(0.15, 1, (freqasddata[1].shape)[1])[::-1]
         for j in range((freqasddata[i].shape)[1]):
             label_name = str(int(separation_scan[j])) + r' $\mu$m'
-            axs[i][0].semilogy(freqasddata[i][:,j], xasddata[i][:,j], color = color_codes[i], alpha = alpharange[j], label=label_name)
-            axs[i][1].semilogy(freqasddata[i][:,j], yasddata[i][:,j], color = color_codes[i], alpha = alpharange[j], label=label_name)
-            sphraxes[i].plot(freqasddata[i][:,j], xasddata[i][:,j], color = '#1E88E5', alpha = alpharange[j], label=label_name)
-            sphraxes[i].plot(freqasddata[i][:,j], yasddata[i][:,j], color = '#004D40', alpha = alpharange[j], label=label_name)
+            axs[i][0].semilogy(freqasddata[i][:,j], xasddata[i][:,j], color = colormap1[j], label=label_name)
+            axs[i][1].semilogy(freqasddata[i][:,j], yasddata[i][:,j], color = colormap1[j], label=label_name)
+            if j%2 ==0:
+                sphraxes[i].plot(freqasddata[i][:,j], xasddata[i][:,j], color = colormap1[j], label=label_name)
+                sphraxes[i].plot(freqasddata[i][:,j], yasddata[i][:,j], color = colormap2[j], label=label_name)
 
         sphraxes[i].set_xlim([5,250])
         axs[i][0].set_xlim([5,350])
@@ -694,7 +695,7 @@ def plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, m
             ph = [plt.plot([],marker="", ls="")[0]]*2
             handles = ph + h
             labels = ['X Data:', "Y Data:"] + l
-            leg = sphraxes[i].legend(handles, labels, fontsize=12, ncols=len(labels)/2, loc="upper left", bbox_to_anchor=(-0.1, -0.3), borderaxespad=0.1)
+            leg = sphraxes[i].legend(handles, labels, fontsize=18, ncols=len(labels)/2, loc="upper left", bbox_to_anchor=(-0.05, -0.35), borderaxespad=0.1)
             for vpack in leg._legend_handle_box.get_children()[:1]:
                 for hpack in vpack.get_children():
                     hpack.get_children()[0].set_width(0)

@@ -119,6 +119,7 @@ handles, labels = gca().get_legend_handles_labels()
 by_label = dict(zip(labels, handles))
 ax[1].legend(by_label.values(), by_label.keys(), fontsize=12, bbox_to_anchor=(1.01, 0), loc="lower left", borderaxespad=0)
 
+print(peakx[1])
 print(peakx[1]/peakx[0])
 print(peaky[1]/peaky[0])
 plt.show()

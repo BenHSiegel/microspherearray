@@ -156,10 +156,6 @@ def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_m
         t = t+dt
         step_number = step_number + 1
     
-    print(x)
-    print(y)
-    print(vx)
-    print(vy)
 
     return save_times, xsaves, ysaves, vxsaves, vysaves
 
@@ -193,7 +189,7 @@ charge = [500,2000]
 charge_const = 2.30708e-16      # 1 / (4 pi epsilon_0 * 1ng) in N m^2 / kg
 
 #Resonant frequency range:
-frange = [90,220]               # in Hz
+frange = [90,250]               # in Hz
 
 x = matrix_template
 y = matrix_template
@@ -258,12 +254,11 @@ cax = figa.add_axes(rect=(0.2,0.2,0.6,0.03))
 #figa.suptitle('Correlation of Motion of a 5x5 Array of Spheres')
 
 jointfig = plt.figure()
-grid = plt.GridSpec(7, 10, wspace=3, hspace=4)
-sph0 = jointfig.add_subplot(grid[:3, :7])
-sph1 = jointfig.add_subplot(grid[3:6, :7])
-sphraxes = [sph0, sph1]
+grid = plt.GridSpec(11, 10, wspace=3.5, hspace=4)
+sph0 = jointfig.add_subplot(grid[:4, :7])
+sph1 = jointfig.add_subplot(grid[5:9, :7])
 jointcor = jointfig.add_subplot(grid[:, 7:])
-
+sphraxes = [sph0, sph1]
 jointcor.tick_params(labelsize=14)
 sph0.tick_params(labelsize=14)
 sph1.tick_params(labelsize=14)
@@ -273,12 +268,13 @@ jointcor.set_ylabel('Pearson Correlation Coefficient',fontsize=20)
 
 colorvalue1 = np.linspace(0,0.8,len(sep))
 colorvalue2 = np.linspace(0.4,1,len(sep))
-colorvalue1T = colorvalue1[::-1]
-colorvalue2T = colorvalue2[::-1]
-colorcodes1 = [(colorvalue1[i],0,colorvalue1T[i]) for i in range(len(sep))]
-colorcodes2 = [(colorvalue2[i],0,colorvalue2T[i]) for i in range(len(sep))]
+viridis = mpl.colormaps['viridis'].resampled(20)
+inferno = mpl.colormaps['inferno'].resampled(20)
+colorcodes1 = [viridis(colorvalue1[i]) for i in range(len(sep))]
+colorcodes2 = [inferno(colorvalue2[i]) for i in range(len(sep))]
 figs = {}
 axs = {}
+
 k = 0
 for d in sep:
     
@@ -298,8 +294,8 @@ for d in sep:
                 vxarray = np.array(vxsaves[j][i]).reshape(-1,1)
                 vyarray = np.array(vysaves[j][i]).reshape(-1,1)
                 
-                freq, PSDx = welch(xarray, fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
-                _, PSDy = welch(yarray, fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
+                freqx, PSDx = welch(xarray, fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
+                freqy, PSDy = welch(yarray, fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
 
                 xPSDarray = PSDx
                 yPSDarray = PSDy
@@ -308,8 +304,8 @@ for d in sep:
                 addedx = np.array(xsaves[j][i]).reshape(-1,1)
                 addedy = np.array(ysaves[j][i]).reshape(-1,1)
 
-                _, PSDx = welch(xarray, fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
-                _, PSDy = welch(yarray, fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
+                freqx, PSDx = welch(addedx, fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
+                freqy, PSDy = welch(addedy, fs, 'hann', segmentsize, segmentsize/2, fftbinning, 'constant', True, 'density', 0,'mean')
 
                 xPSDarray = np.concatenate((xPSDarray, PSDx),axis=1)
                 yPSDarray = np.concatenate((yPSDarray, PSDy),axis=1)
@@ -325,7 +321,8 @@ for d in sep:
     xcorrmatrix = xdf.corr()
     ycorrmatrix = ydf.corr() 
 
-
+    print(xcorrmatrix)
+    print(ycorrmatrix)
 
     if arraysize[0] * arraysize[1] > 2:
 
@@ -346,6 +343,7 @@ for d in sep:
             cbar_kws = {'shrink' : 0.8,
                         'orientation': 'horizontal'}
             cbar_ax = cax
+            cax.set_title('Correlation Coefficients',fontsize=26)
             
         else:
             plot_cbar = False
@@ -369,13 +367,13 @@ for d in sep:
         axa[k].set_ylabel('Sphere Index',fontsize=22,labelpad=5)
 
     else:
-        jointcor.scatter(d, xcorrmatrix[0,1], marker='s' ,color = '#1E88E5', label='X Motion')
-        jointcor.scatter(d, ycorrmatrix[0,1], color = '#004D40', label='Y Motion')
+        jointcor.scatter(d, xcorrmatrix[0][1], marker='s' ,color = '#1E88E5', label='X Motion')
+        jointcor.scatter(d, ycorrmatrix[0][1], color = '#004D40', label='Y Motion')
         for j in range(xPSDarray.shape[1]):
             label_name = str(int(d)) + r' $\mu$m'
 
-            sph0.plot(freq, np.sqrt(xPSDarray[:,j]), color = colorcodes1[k], label=label_name)
-            sph1.plot(freq, np.sqrt(yPSDarray[:,j]), color = colorcodes2[k], label=label_name)
+            sphraxes[j].plot(freqx, np.sqrt(xPSDarray[:,j]), color = colorcodes1[k], label=label_name)
+            sphraxes[j].plot(freqy, np.sqrt(yPSDarray[:,j]), color = colorcodes2[k], label=label_name)
         sph0.set_xlim([5,250])
         sph0.set_xlabel('Frequency (Hz)', fontsize = 20)
         sph0.set_ylabel(r'ASD ($m/ \sqrt{Hz}$)', fontsize = 20)
@@ -387,7 +385,6 @@ for d in sep:
         sph1.set_title('Sphere 1', fontsize = 26)
 
         h, l = sph1.get_legend_handles_labels()
-        by_label = dict(zip(l, h))
         ph = [plt.plot([],marker="", ls="")[0]]*2
         handles = ph + h
         labels = ['X Data:', "Y Data:"] + l
@@ -399,7 +396,6 @@ for d in sep:
     k+=1
 
     
-figa.tight_layout()
-cax.set_title('Correlation Coefficients',fontsize=26)
+
 
 plt.show()
