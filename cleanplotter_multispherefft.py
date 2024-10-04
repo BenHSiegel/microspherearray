@@ -42,11 +42,11 @@ def multisphere3d(path, color_codes):
     lines = [ax.plot3D(freqs[123:460],g[123:460]*(i+1),np.log10(X_asd[i,123:460]**2), color=color_codes[i], alpha = 0.8, linewidth = 3) for i in range(len(X_asd))]
     ax.add_collection3d(poly,zs=index,zdir='y')
     ax.set(xlim=(60, 225), ylim=(0, 26), zlim=(-17,-14))
-    ax.set_xlabel('Frequency (Hz)', fontsize=14, labelpad=10)
-    ax.set_ylabel('Sphere', fontsize=14, labelpad=10)
+    ax.set_xlabel('Frequency (Hz)', fontsize=26, labelpad=20)
+    ax.set_ylabel('Sphere', fontsize=26, labelpad=20)
     
     ax.grid(False)
-    ax.tick_params(labelsize=12)
+    ax.tick_params(labelsize=18)
     #ax.tick_params(axis='both', top=False, labeltop = False, bottom = True, labelbottom = True, left = True, right = False, labelleft=True, labelright=False)
     ax.xaxis.pane.fill = False # Left pane
     ax.yaxis.pane.fill = False # Right pane
@@ -60,16 +60,19 @@ def multisphere3d(path, color_codes):
     ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
     ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
     ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.view_init(elev=72, azim=-90.1)
 
     verts = [polygon_under_graph(freqs[82:310],np.log10(Y_asd[i,82:310]**2),-17.) for i in range(len(X_asd))]
     poly= PolyCollection(verts, facecolors=color_codes, alpha=0.3)
     lines = [ay.plot3D(freqs[82:310],g[82:310]*(i+1),np.log10(Y_asd[i,82:310]**2), color=color_codes[i], alpha = 0.8, linewidth = 3) for i in range(len(Y_asd))]
     ay.add_collection3d(poly,zs=index,zdir='y')
     ay.set(xlim=(40, 150), ylim=(0, 26), zlim=(-17,-14.5))
-    ay.set_xlabel('Frequency (Hz)', fontsize=14, labelpad=10)
-    ay.set_ylabel('Sphere', fontsize=14, labelpad=10)
+    ay.set_xlabel('Frequency (Hz)', fontsize=26, labelpad=20)
+    ay.set_ylabel('Sphere', fontsize=26, labelpad=20)
     ay.grid(False)
-    ay.tick_params(labelsize=12)
+    ay.tick_params(labelsize=18)
+    ay.view_init(elev=75, azim=-90.1)
+
     ay.xaxis.pane.fill = False # Left pane
     ay.yaxis.pane.fill = False # Right pane
     ay.zaxis.pane.fill = False # bottom pane
@@ -229,7 +232,7 @@ def justpeakplotter(path, color_codes):
 ###############################################################################
     
 totalspheres = 25
-file = r'D:\Lab data\20240604\0-8MHz\0-8MHz_rmsavg.h5'
+file = r'E:\Lab data\20240604\0-8MHz\0-8MHz_rmsavg.h5'
 color_map = mpl.colormaps.get_cmap('CMRmap')
 colorind = np.linspace(0,0.8,totalspheres)
 color_codes = [color_map(colorind[i]) for i in range(totalspheres)]
