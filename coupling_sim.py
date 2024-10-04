@@ -246,7 +246,7 @@ print(fx_matrix)
 print(fy_matrix)
 
 
-sep = [30,40,50,60,70,85,100,140]          # separation in um
+sep = [30,40,50]          # separation in um ,60,70,85,100,140
 mpl.rcParams.update({'font.size': 18})
 
 figa, axa = plt.subplots(1, len(sep))
@@ -315,12 +315,11 @@ for d in sep:
                 vxarray = np.concatenate((vxarray, np.array(vxsaves[j][i]).reshape(-1,1)),axis=1)
                 vyarray = np.concatenate((vyarray, np.array(vysaves[j][i]).reshape(-1,1)),axis=1)  
 
-    xdf = pd.DataFrame(xarray)
-    ydf = pd.DataFrame(yarray)
-        
-    xcorrmatrix = xdf.corr()
-    ycorrmatrix = ydf.corr() 
-
+    print(xarray)
+    print(yarray)
+    print(xarray.shape)
+    xcorrmatrix = np.corrcoef(xarray,rowvar=False)
+    ycorrmatrix = np.corrcoef(yarray,rowvar=False)
     print(xcorrmatrix)
     print(ycorrmatrix)
 
@@ -367,8 +366,8 @@ for d in sep:
         axa[k].set_ylabel('Sphere Index',fontsize=22,labelpad=5)
 
     else:
-        jointcor.scatter(d, xcorrmatrix[0][1], marker='s' ,color = '#1E88E5', label='X Motion')
-        jointcor.scatter(d, ycorrmatrix[0][1], color = '#004D40', label='Y Motion')
+        jointcor.scatter(d, xcorrmatrix[0,1], marker='s' ,color = '#1E88E5', label='X Motion')
+        jointcor.scatter(d, ycorrmatrix[0,1], color = '#004D40', label='Y Motion')
         for j in range(xPSDarray.shape[1]):
             label_name = str(int(d)) + r' $\mu$m'
 

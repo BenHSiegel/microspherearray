@@ -85,7 +85,7 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
     xycorrlist = []
     xcross_SD_list = []
     ycross_SD_list = []
-    fftbinning = 2048
+    fftbinning = 1024
     
 
     counter = 0

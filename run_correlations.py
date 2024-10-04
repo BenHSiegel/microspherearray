@@ -49,7 +49,7 @@ grid = plt.GridSpec(11, 10, wspace=3.5, hspace=4)
 sph0 = jointfig.add_subplot(grid[:4, :7])
 sph1 = jointfig.add_subplot(grid[5:9, :7])
 jointcor = jointfig.add_subplot(grid[:, 7:])
-
+sph1.set_ylim(0,0.7*1E-7)
 jointcor.tick_params(labelsize=16)
 sph0.tick_params(labelsize=16)
 sph1.tick_params(labelsize=16)
