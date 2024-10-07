@@ -6,6 +6,7 @@ Created on Tue Mar 26 11:43:57 2024
 """
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
+import os
 import seaborn as sns
 import pandas as pd
 import matplotlib as mpl
@@ -34,8 +35,12 @@ def multisphere3d(path, color_codes):
     g = np.ones(np.size(X_asd,1))
 
     figx = plt.figure()
+    figx.set_size_inches(12,12)
+    figx.tight_layout()
     ax = figx.add_subplot(projection="3d")
     figy = pl.figure()
+    figy.set_size_inches(12,12)
+    figy.tight_layout()
     ay = figy.add_subplot(projection="3d")
     verts = [polygon_under_graph(freqs[123:460],np.log10(X_asd[i,123:460]**2),-17.) for i in range(len(X_asd))]
     poly= PolyCollection(verts, facecolors=color_codes, alpha=0.3)
@@ -43,10 +48,11 @@ def multisphere3d(path, color_codes):
     ax.add_collection3d(poly,zs=index,zdir='y')
     ax.set(xlim=(60, 225), ylim=(0, 26), zlim=(-17,-14))
     ax.set_xlabel('Frequency (Hz)', fontsize=26, labelpad=20)
-    ax.set_ylabel('Sphere', fontsize=26, labelpad=20)
+    ax.set_ylabel('Sphere', fontsize=26, labelpad=38)
     
     ax.grid(False)
     ax.tick_params(labelsize=18)
+    ax.tick_params('y',pad = 18)
     #ax.tick_params(axis='both', top=False, labeltop = False, bottom = True, labelbottom = True, left = True, right = False, labelleft=True, labelright=False)
     ax.xaxis.pane.fill = False # Left pane
     ax.yaxis.pane.fill = False # Right pane
@@ -68,9 +74,10 @@ def multisphere3d(path, color_codes):
     ay.add_collection3d(poly,zs=index,zdir='y')
     ay.set(xlim=(40, 150), ylim=(0, 26), zlim=(-17,-14.5))
     ay.set_xlabel('Frequency (Hz)', fontsize=26, labelpad=20)
-    ay.set_ylabel('Sphere', fontsize=26, labelpad=20)
+    ay.set_ylabel('Sphere', fontsize=26, labelpad=38)
     ay.grid(False)
     ay.tick_params(labelsize=18)
+    ay.tick_params('y',pad = 18)
     ay.view_init(elev=75, azim=-90.1)
 
     ay.xaxis.pane.fill = False # Left pane
@@ -85,6 +92,10 @@ def multisphere3d(path, color_codes):
     ay.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
     ay.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
     ay.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+
+    figx.savefig('Xwave.svg',format='svg', dpi=600)
+    figy.savefig('Ywave.svg',format='svg', dpi=600)
+
     plt.show()
 
 
@@ -232,6 +243,8 @@ def justpeakplotter(path, color_codes):
 ###############################################################################
     
 totalspheres = 25
+path = r'C:\Users\Ben\Documents\Research\Moore Lab\figures'
+os.chdir(path)
 file = r'E:\Lab data\20240604\0-8MHz\0-8MHz_rmsavg.h5'
 color_map = mpl.colormaps.get_cmap('CMRmap')
 colorind = np.linspace(0,0.8,totalspheres)

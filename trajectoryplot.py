@@ -54,22 +54,24 @@ def motiontracer(spheres, f):
     t = tp.link(f, 10, memory=50)
     
     fig1, ax00 = plt.subplots()
-    # fig1.set_dpi(1200)
-
+    fig1.set_size_inches(6,6)
     #plot the trajectory of the sphere over the video
-    # pixtoum = 10/11
-    tp.plot_traj(t, ax=ax00, label=True)
+    pixtoum = 10/8
+    tp.plot_traj(t, ax=ax00, label=False, superimpose=spheres[100])
     
-    # ax00.set_xlabel(r'x [$ \mu m$]')
-    # ax00.set_ylabel(r'y [$ \mu m$]')
-    # ax00.set_title("Spheres' Traces")
+    ax00.set_xlabel(r'X (px)',fontsize = 18)
+    ax00.set_ylabel(r'Y (px)',fontsize = 18)
+    ax00.set_title("Traces of Motion from Video",fontsize = 22)
+    ax00.tick_params(labelsize=14)
+    plt.savefig('trace_1.svg',format='svg', dpi=600)
     plt.show()
     return t
 
-
-vid = r'D:\Lab data\20240604\0-8MHz\0-8MHz_25grid-lp-2.avi'
+path = r'C:\Users\Ben\Documents\Research\Moore Lab\figures'
+os.chdir(path)
+vid = r'E:\Lab data\20240604\0-8MHz\0-8MHz_25grid-lp-2.avi'
 framerate = 1000.25
-diameter=13
+diameter=15
 [spheres, f] = processmovie(vid, framerate, diameter)
 t = motiontracer(spheres, f)
 
