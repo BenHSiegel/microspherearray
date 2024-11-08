@@ -30,7 +30,7 @@ def processmovie(filename, framerate):
     #process every frame in the tiff image stack to find the locations of bright spots
     #minmass defines the minimum brightness and processes means no parallelization since that breaks it
     #invert=true looks for dark spots instead of light spots
-    f = tp.batch(spheres[:], 39, invert=False, minmass=10000, processes=1)
+    f = tp.batch(spheres[:2000], 25, invert=False, minmass=10000, processes=1)
     #to check the mass brightness make this figure
     fig, ax = plt.subplots()
     ax.hist(f['mass'], bins=100)
@@ -45,7 +45,7 @@ def PSDmaker(spheres, f, framerate, rowlen, saveposdata, savename):
     t = tp.link(f, 20, memory=10)
     #suppress output so that it runs faster
     
-    tp.subpx_bias(tp.locate(spheres[0], 39, invert=False, minmass=10000))
+    tp.subpx_bias(tp.locate(spheres[0], 25, invert=False, minmass=10000))
     fig00, ax00 = plt.subplots()
 
     #plot the trajectory of the sphere over the video
@@ -56,6 +56,7 @@ def PSDmaker(spheres, f, framerate, rowlen, saveposdata, savename):
     ax00.set_ylabel(r'y [$ \mu m$]')
     ax00.set_title("Spheres' Traces")
 
+    plt.show()
 
 
     ypx = t.loc[:,'y']
@@ -267,13 +268,13 @@ def PSDmaker(spheres, f, framerate, rowlen, saveposdata, savename):
 #     print(psdparsevalcheck1)
 
 
-path = r"D:\Lab data\20240806"
+path = r"D:\Lab data\20241010\before chamber videos"
 os.chdir(path)
-framerate = 319.5
-saveposdata = True
-rowlen = 5
+framerate = 1000
+saveposdata = False
+rowlen = 1
 savename = "beamjittercheck_8-6-24"
-filename = '5x5beamjitter.avi'
+filename = 'before-53Hz-200k.avi'
 
 [spheres, f] = processmovie(filename, framerate)
 

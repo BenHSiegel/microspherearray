@@ -39,7 +39,7 @@ def processmovie(filename, framerate, diameter):
     #invert=true looks for dark spots instead of light spots
     #diameter is the centroid size to look for in the images (in units of pixels)
     #diameter should always be an odd number and greater than the actual sphere size
-    f = tp.batch(spheres[:], diameter, invert=True, minmass=1100, processes=1)
+    f = tp.batch(spheres[:], diameter, invert=False, minmass=10000, processes=1)
         #to check the mass brightness make this figure
     # fighist, axhist = plt.subplots()
     # axhist.hist(f['mass'], bins=1000)
@@ -57,7 +57,7 @@ def motiontracer(spheres, f):
     #suppress output so that it runs faster
     tp.quiet()
 
-    t = tp.link(f, 20, memory=40)
+    t = tp.link(f, 50, memory=20)
     
     # fig1, ax00 = plt.subplots()
     # fig1.set_dpi(1200)
@@ -412,11 +412,11 @@ def hdf5file_RMSprocessing(path, totalspheres, saveflag, savename):
 
         hf.close()
         
-path = r"D:\Lab data\20240925"
+path = r"D:\Lab data\20241010\before chamber videos"
 os.chdir(path)
 diameter = 25
-pixtoum = 0.55
-framerate = 1000
+pixtoum = 4.8
+framerate = 999.74
 pcacheck = False
 saveposdata = True
 saveFFTavg = False
