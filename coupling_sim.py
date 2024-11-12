@@ -173,19 +173,19 @@ list_template = [ [ [] for i in range(arraysize[0])] for j in range(arraysize[1]
 #numpy matrix template for storing static values
 matrix_template = np.zeros((arraysize[0],arraysize[1]))
 
-pos_int_bounds = [-1E-6, 1E-6]     #starting position bounds in m
+pos_int_bounds = [-3E-6, 3E-6]     #starting position bounds in m
 vel_ints_bounds = [0,0]            #starting velocity bounds in m/s (gonna use 0)
 
-pos_gauss = [0,1e-6]
+pos_gauss = [0,5e-6]
 vel_gauss = [0,0]
 
 pressure = 0.4      # in mbar
 temp = 295          # in K
-kBT = 4.073e-21     # for T = 295K (in N m)
+kBT = 4.073e-21     # 1.381e-19 for T=10000K ||4.073e-21 for T = 295K (in N m)
 gamma = 85 #Hz                     #9.863e-10 * pressure / np.sqrt(temp)     #Epstein drag using 10um sphere (in kg/s)
 
 #Bounds of electrons on the spheres:
-charge = [500,2000]      
+charge = [100,1000]      
 charge_const = 2.30708e-16      # 1 / (4 pi epsilon_0 * 1ng) in N m^2 / kg
 
 #Resonant frequency range:
@@ -247,34 +247,38 @@ print(fx_matrix)
 print(fy_matrix)
 
 
-sep = [40,60,70,85,100,140]          # separation in um
+sep = [40,60,70,85]          # separation in um
 mpl.rcParams.update({'font.size': 18})
 
-figa, axa = plt.subplots(1, len(sep))
-cax = figa.add_axes(rect=(0.2,0.2,0.6,0.03))
-#figa.suptitle('Correlation of Motion of a 5x5 Array of Spheres')
+if arraysize[0] * arraysize[1] > 2:
+    figa, axa = plt.subplots(1, len(sep))
+    cax = figa.add_axes(rect=(0.2,0.2,0.6,0.03))
+    #figa.suptitle('Correlation of Motion of a 5x5 Array of Spheres')
+    
+    #figb, axb = plt.subplots(2,1, sharex=True)
 
-jointfig = plt.figure()
-grid = plt.GridSpec(11, 10, wspace=3.5, hspace=4)
-sph0 = jointfig.add_subplot(grid[:4, :7])
-sph1 = jointfig.add_subplot(grid[5:9, :7])
-jointcor = jointfig.add_subplot(grid[:, 7:])
-sphraxes = [sph0, sph1]
-jointcor.tick_params(labelsize=14)
-sph0.tick_params(labelsize=14)
-sph1.tick_params(labelsize=14)
-jointcor.set_title('Correlation vs Separation',fontsize = 26)
-jointcor.set_xlabel(r'Separation ($\mu m$)',fontsize=20)
-jointcor.set_ylabel('Pearson Correlation Coefficient',fontsize=20)
-
-colorvalue1 = np.linspace(0,0.8,len(sep))
-colorvalue2 = np.linspace(0.4,1,len(sep))
-viridis = mpl.colormaps['viridis'].resampled(20)
-inferno = mpl.colormaps['inferno'].resampled(20)
-colorcodes1 = [viridis(colorvalue1[i]) for i in range(len(sep))]
-colorcodes2 = [inferno(colorvalue2[i]) for i in range(len(sep))]
-figs = {}
-axs = {}
+else:
+    jointfig = plt.figure()
+    grid = plt.GridSpec(11, 10, wspace=3.5, hspace=4)
+    sph0 = jointfig.add_subplot(grid[:4, :7])
+    sph1 = jointfig.add_subplot(grid[5:9, :7])
+    jointcor = jointfig.add_subplot(grid[:, 7:])
+    sphraxes = [sph0, sph1]
+    jointcor.tick_params(labelsize=14)
+    sph0.tick_params(labelsize=14)
+    sph1.tick_params(labelsize=14)
+    jointcor.set_title('Correlation vs Separation',fontsize = 26)
+    jointcor.set_xlabel(r'Separation ($\mu m$)',fontsize=20)
+    jointcor.set_ylabel('Pearson Correlation Coefficient',fontsize=20)
+    
+    colorvalue1 = np.linspace(0,0.8,len(sep))
+    colorvalue2 = np.linspace(0.4,1,len(sep))
+    viridis = mpl.colormaps['viridis'].resampled(20)
+    inferno = mpl.colormaps['inferno'].resampled(20)
+    colorcodes1 = [viridis(colorvalue1[i]) for i in range(len(sep))]
+    colorcodes2 = [inferno(colorvalue2[i]) for i in range(len(sep))]
+    figs = {}
+    axs = {}
 
 k = 0
 for d in sep:
@@ -316,8 +320,7 @@ for d in sep:
                 vxarray = np.concatenate((vxarray, np.array(vxsaves[j][i]).reshape(-1,1)),axis=1)
                 vyarray = np.concatenate((vyarray, np.array(vysaves[j][i]).reshape(-1,1)),axis=1)  
 
-    print(xarray)
-    print(yarray)
+
     print(xarray.shape)
     xcorrmatrix = np.corrcoef(xarray,rowvar=False)
     ycorrmatrix = np.corrcoef(yarray,rowvar=False)
@@ -357,7 +360,7 @@ for d in sep:
                     symcor[a][b] = ycorrmatrix[a][b]
         mask = np.triu(np.ones_like(xcorrmatrix, dtype=bool))
         diagmask = np.identity(xcorrmatrix.shape[0])
-        sn.heatmap(symcor, mask=diagmask, square=True, cmap = 'viridis', vmin=-0.25, vmax=0.25, ax=axa[k], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
+        sn.heatmap(symcor, mask=diagmask, square=True, cmap = 'viridis', vmin=-1, vmax=1, ax=axa[k], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
         axa[k].tick_params(axis='both', which='major', labelsize=18)
         #ax[i].set_xticks(np.arange(xcor.shape[1])+.5, labels=spherenames,fontsize=16)
         #ax[i].set_yticks(np.arange(xcor.shape[0])+.5, labels=spherenames,fontsize=16)
