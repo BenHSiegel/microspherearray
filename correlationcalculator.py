@@ -357,12 +357,12 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
 
             figcsd, axcsd = plt.subplots(2)
             figcsd.suptitle('Cross Spectral Density for ' + str(umsep) + r'$\mu m$ Spacing')
-            axcsd[0].set_title('X CSDs')
-            axcsd[1].set_title('Y CSDs')
+            axcsd[0].set_title('X Coherence')
+            axcsd[1].set_title('Y Coherence')
             axcsd[0].set_xlabel('Frequency (Hz)')
-            axcsd[0].set_ylabel(r'CSD (${m}^2/Hz$)')
+            axcsd[0].set_ylabel('Coherence')
             axcsd[1].set_xlabel('Frequency (Hz)')
-            axcsd[1].set_ylabel(r'CSD (${m}^2/Hz$)')
+            axcsd[1].set_ylabel('Coherence')
 
             for m in range(len(xcross_SD_list)):
                 for n in range(len(xcross_SD_list)):
@@ -387,7 +387,7 @@ def folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savef
             by_label = dict(zip(labels, handles))
             axcsd[1].legend(by_label.values(), by_label.keys(), fontsize=12, loc="lower right", borderaxespad=1)
 
-            plt.close(figcsd)
+            #plt.close(figcsd)
             
             if include_in_scan == 'True':
                 
@@ -650,12 +650,12 @@ def plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, 
         figb.savefig(os.path.join(main_directory, 'freqshift.png'))   # save the figure to file
         
         figc.savefig(os.path.join(main_directory, 'amplitudeshift.png'))   # save the figure to file
-    #plt.show()
+    plt.show()
     #plt.close('all')
     return jointax
 
 
-def plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, colormap1, colormap2, sphraxes):
+def plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, colormap1, sphraxes):
 
     figs={}
     axs={}
@@ -666,11 +666,11 @@ def plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, m
         alpharange = np.linspace(0.15, 1, (freqasddata[1].shape)[1])[::-1]
         for j in range((freqasddata[i].shape)[1]):
             label_name = str(int(separation_scan[j])) + r' $\mu$m'
-            axs[i][0].semilogy(freqasddata[i][:,j], xasddata[i][:,j], color = colormap1[j], label=label_name)
-            axs[i][1].semilogy(freqasddata[i][:,j], yasddata[i][:,j], color = colormap1[j], label=label_name)
+            axs[i][0].semilogy(freqasddata[i][:,j], xasddata[i][:,j], alpha = alpharange[j], label=label_name)
+            axs[i][1].semilogy(freqasddata[i][:,j], yasddata[i][:,j], alpha = alpharange[j], label=label_name)
             if j%2 ==0:
-                sphraxes[i].plot(freqasddata[i][:,j], xasddata[i][:,j], color = colormap1[j], label=label_name)
-                sphraxes[i].plot(freqasddata[i][:,j], yasddata[i][:,j], color = colormap2[j], label=label_name)
+                sphraxes[i].plot(freqasddata[i][:,j], xasddata[i][:,j], alpha = alpharange[j], label=label_name)
+                sphraxes[i].plot(freqasddata[i][:,j], yasddata[i][:,j], alpha = alpharange[j], label=label_name)
 
         sphraxes[i].set_xlim([5,250])
         axs[i][0].set_xlim([5,350])
@@ -763,33 +763,33 @@ def heatmap_scan_plotter(freqasddata, xasddata, yasddata, anticrossinglbs, antic
 
 
 
-# main_directory = r"D:\Lab data\20240905\hdf5_datafiles"
-# totalspheres = 2
-# saveflag = False
-# savefigs = False
-# anticrossinglbs = [150,120]
-# anticrossingubs = [225,190]
+main_directory = r"D:\Lab data\20240905\hdf5_datafiles"
+totalspheres = 2
+saveflag = False
+savefigs = False
+anticrossinglbs = [150,120]
+anticrossingubs = [225,190]
 
-# color_value = np.linspace(0,1,totalspheres)
-# color_value_T = color_value[::-1]
-# color_codes = [(color_value[i],0,color_value_T[i]) for i in range(totalspheres)]
+color_value = np.linspace(0,1,totalspheres)
+color_value_T = color_value[::-1]
+color_codes = [(color_value[i],0,color_value_T[i]) for i in range(totalspheres)]
+print(color_codes)
+jointfig = plt.figure()
+grid = plt.GridSpec(7, 10, wspace=3, hspace=4)
+sph0 = jointfig.add_subplot(grid[:3, :7])
+sph1 = jointfig.add_subplot(grid[3:6, :7])
+jointcor = jointfig.add_subplot(grid[:, 7:])
 
-# jointfig = plt.figure()
-# grid = plt.GridSpec(7, 10, wspace=3, hspace=4)
-# sph0 = jointfig.add_subplot(grid[:3, :7])
-# sph1 = jointfig.add_subplot(grid[3:6, :7])
-# jointcor = jointfig.add_subplot(grid[:, 7:])
+jointcor.tick_params(labelsize=14)
+sph0.tick_params(labelsize=14)
+sph1.tick_params(labelsize=14)
+jointcor.set_title('Correlation vs Separation',fontsize = 26)
+jointcor.set_xlabel(r'Separation ($\mu m$)',fontsize=20)
+jointcor.set_ylabel('Pearson Correlation Coefficient',fontsize=20)
 
-# jointcor.tick_params(labelsize=14)
-# sph0.tick_params(labelsize=14)
-# sph1.tick_params(labelsize=14)
-# jointcor.set_title('Correlation vs Separation',fontsize = 26)
-# jointcor.set_xlabel(r'Separation ($\mu m$)',fontsize=20)
-# jointcor.set_ylabel('Pearson Correlation Coefficient',fontsize=20)
+x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xcross_SD_list, ycross_SD_list, coherfreq = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
+jointcor = plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes, jointcor)
+[sph0, sph1] =plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes, [sph0, sph1])
+heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
 
-# x_peak_scan, y_peak_scan, separation_scan, correlation_scan, freqasddata, xasddata, yasddata, xcross_SD_list, ycross_SD_list, coherfreq = folder_walker_correlation_calc(main_directory, totalspheres, saveflag, savefigs)
-# jointcor = plot_correlations_vs_separations(x_peak_scan, y_peak_scan, separation_scan, correlation_scan, main_directory, totalspheres, savefigs, color_codes, jointcor)
-# [sph0, sph1] =plot_separation_ASD_scan(freqasddata, xasddata, yasddata, separation_scan, main_directory, savefigs, color_codes, [sph0, sph1])
-# heatmap_scan_plotter(freqasddata, xasddata, yasddata,  anticrossinglbs, anticrossingubs, separation_scan, main_directory, totalspheres, savefigs)
-
-# plt.show()
+plt.show()
