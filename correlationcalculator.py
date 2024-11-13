@@ -131,10 +131,10 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
         ycorrmatrix = ydf.corr()  
         xycorrmatrix = corr_cross_calc(xfiltdata, yfiltdata)
         
-        coherfreq = coherence(xposdata[:,0],xposdata[:,1], fs = fs, window='hann', nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[0]
+        coherfreq = coherence(xfiltdata[:,0],xfiltdata[:,1], fs = fs, window='hann', nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[0]
 
-        xcohermatrix = [ [ coherence(xposdata[:,m],xposdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] for n in range(totalspheres) ] for m in range(totalspheres) ]
-        ycohermatrix = [ [ coherence(yposdata[:,m],yposdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] for n in range(totalspheres) ] for m in range(totalspheres) ]
+        xcohermatrix = [ [ coherence(xfiltdata[:,m],xfiltdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] for n in range(totalspheres) ] for m in range(totalspheres) ]
+        ycohermatrix = [ [ coherence(yfiltdata[:,m],yfiltdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] for n in range(totalspheres) ] for m in range(totalspheres) ]
 
 
         if counter == 0:
@@ -151,8 +151,8 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
             
             for m in range(totalspheres):
                 for n in range(totalspheres):
-                    xcross_SD_list[m][n] = np.mean(np.stack((xcohermatrix[m][n], coherence(xposdata[:,m], xposdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] )), axis=0)
-                    ycross_SD_list[m][n] = np.mean(np.stack((ycohermatrix[m][n], coherence(yposdata[:,m], yposdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] )), axis=0)
+                    xcross_SD_list[m][n] = np.mean(np.stack((xcohermatrix[m][n], coherence(xfiltdata[:,m], xfiltdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] )), axis=0)
+                    ycross_SD_list[m][n] = np.mean(np.stack((ycohermatrix[m][n], coherence(yfiltdata[:,m], yfiltdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] )), axis=0)
 
         counter += 1
 
