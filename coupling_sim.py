@@ -24,18 +24,18 @@ def freq_to_k(f):
     k = (f*2*np.pi)**2
     return k
 
-def motion_eq(x, x_other, k, CC):
-    #Harmonic oscillator approximation ignoring the constant repulsive force
-    acc = -k*x - CC*(x-x_other)
-    return acc
+# def motion_eq(x, x_other, k, CC):
+#     #Harmonic oscillator approximation ignoring the constant repulsive force
+#     acc = -k*x - CC*(x-x_other)
+#     return acc
 
-def full_motion_eq(x, x_other, k, CC, d):
-    #Non approximated force equation for two negatively charged spheres
-    #direction is included in the CC term
-    acc = -k*x + CC/(d+x_other-x)**2
-    return acc
+# def full_motion_eq(x, x_other, k, CC, d):
+#     #Non approximated force equation for two negatively charged spheres
+#     #direction is included in the CC term
+#     acc = -k*x + CC/(d+x_other-x)**2
+#     return acc
 
-@njit
+
 def force_calc(size,x,y,kx,ky,charge,CC,sep):
     #calculate the overall x and y components of the force on each sphere
     ax = np.zeros((size[0],size[1]))
@@ -72,7 +72,7 @@ def force_calc(size,x,y,kx,ky,charge,CC,sep):
 
     return ax, ay
 
-@njit
+
 def velocity_update(size, vx, vy, ax, ay, dt):
     #Updates the velocities of the spheres using given accelerations
     for i in range(size[0]):
@@ -81,11 +81,11 @@ def velocity_update(size, vx, vy, ax, ay, dt):
             vy[i,j] = vy[i,j] + ay[i,j] * dt / 2.0
     return vx, vy
 
-def old_velocity_update(v,a,dt):
-    v_new = v + a*dt/2.0
-    return v_new
+# def old_velocity_update(v,a,dt):
+#     v_new = v + a*dt/2.0
+#     return v_new
 
-@njit
+
 def position_update(size, x, y, vx, vy, dt):
     #updates the position of the spheres using given velocities
     for i in range(size[0]):
@@ -94,11 +94,11 @@ def position_update(size, x, y, vx, vy, dt):
             y[i,j] = y[i,j] + vy[i,j] * dt / 2.0
     return x, y
 
-def old_position_update(x,v,dt):
-    x_new = x + v*dt/2.0
-    return x_new
+# def old_position_update(x,v,dt):
+#     x_new = x + v*dt/2.0
+#     return x_new
 
-@njit
+
 def random_velocity_update(size, vx, vy, gamma, kBT, dt):
     #calculates the gas effects on the velocity for all the spheres
     c1 = np.exp(-gamma*dt)
@@ -113,12 +113,12 @@ def random_velocity_update(size, vx, vy, gamma, kBT, dt):
     return vx, vy
 
 
-def old_random_velocity_update(v,gamma,kBT,dt):
-    R = np.random.normal()
-    c1 = np.exp(-gamma*dt)
-    c2 = np.sqrt(1-c1*c1)*np.sqrt(kBT)
-    v_new = c1*v + R*c2
-    return v_new
+# def old_random_velocity_update(v,gamma,kBT,dt):
+#     R = np.random.normal()
+#     c1 = np.exp(-gamma*dt)
+#     c2 = np.sqrt(1-c1*c1)*np.sqrt(kBT)
+#     v_new = c1*v + R*c2
+#     return v_new
 
 
 def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_matrix, charge_matrix, CC, sep,startrec):
@@ -159,13 +159,13 @@ def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_m
 
     return save_times, xsaves, ysaves, vxsaves, vysaves
 
-timespan = 100
+timespan = 50
 dt = 0.0001
 fs = 1000
 #don't record the motion until t>=startrec to let the system evolve a bit
 startrec = 20
 
-arraysize = [5,5] #set how many rows/columns we have
+arraysize = [2,1] #set how many rows/columns we have
 
 #generate a list of empty lists for storing motion state
 list_template = [ [ [] for i in range(arraysize[0])] for j in range(arraysize[1]) ]
@@ -182,14 +182,14 @@ vel_gauss = [0,0]
 pressure = 0.4      # in mbar
 temp = 295          # in K
 kBT = 4.073e-21     # 1.381e-19 for T=10000K ||4.073e-21 for T = 295K (in N m)
-gamma = 85 #Hz                     #9.863e-10 * pressure / np.sqrt(temp)     #Epstein drag using 10um sphere (in kg/s)
+gamma = 9.863e-10 * pressure / np.sqrt(temp)                #9.863e-10 * pressure / np.sqrt(temp)     #Epstein drag using 10um sphere (in kg/s)
 
 #Bounds of electrons on the spheres:
-charge = [100,1000]      
+charge = [500,5000]      
 charge_const = 2.30708e-16      # 1 / (4 pi epsilon_0 * 1ng) in N m^2 / kg
 
 #Resonant frequency range:
-frange = [90,250]               # in Hz
+frange = [100,200]               # in Hz
 
 x = matrix_template
 y = matrix_template
@@ -225,15 +225,15 @@ charge_matrix = rng.integers(charge[0],charge[1],size = (arraysize[0],arraysize[
 #       k += 1
 
 #old way of setting initial values
-# for i in range(arraysize):
-#     for j in range(arraysize):
+# for i in range(arraysize[0]):
+#     for j in range(arraysize[1]):
         
 #         #DOES NOT WORK
 #         #use random triangular to get distribution weighted around 0 
-#         # x[i,j] = random.triangular(pos_int_bounds[0], 0, pos_int_bounds[1])
-#         # y[i,j] = random.triangular(pos_int_bounds[0], 0, pos_int_bounds[1])
-#         # vx[i,j] = random.triangular(vel_ints_bounds[0], 0, vel_ints_bounds[1])
-#         # vy[i,j] = random.triangular(vel_ints_bounds[0], 0, vel_ints_bounds[1])
+        # x[i,j] = random.triangular(pos_int_bounds[0], 0, pos_int_bounds[1])
+        # y[i,j] = random.triangular(pos_int_bounds[0], 0, pos_int_bounds[1])
+        # vx[i,j] = random.triangular(vel_ints_bounds[0], 0, vel_ints_bounds[1])
+        # vy[i,j] = random.triangular(vel_ints_bounds[0], 0, vel_ints_bounds[1])
 
 #         #Don't know the distributions of charge and k, so just doing uniform generation
 #         charge_matrix[i,j] = rng.integers(0,charge)   #assume all have negative charge
@@ -241,7 +241,8 @@ charge_matrix = rng.integers(charge[0],charge[1],size = (arraysize[0],arraysize[
 #         kx_matrix[i,j] = freq_to_k(rng.integers(frange[0],frange[1]))   # in 1/s^2
 #         ky_matrix[i,j] = freq_to_k(rng.integers(frange[0],frange[1]))   # in 1/s^2
     
-
+print(x)
+print(vx)
 print(charge_matrix)
 print(fx_matrix)
 print(fy_matrix)
@@ -283,12 +284,12 @@ else:
 k = 0
 for d in sep:
     
-
+    #xsaves, etc. do not have the right number of samples in them
     save_times, xsaves, ysaves, vxsaves, vysaves  = baoab(arraysize, timespan, dt, fs, gamma, kBT,\
                                                                     x, y, vx, vy, kx_matrix, ky_matrix,\
                                                                     charge_matrix, charge_const, d*10**-6, startrec)
 
-    segmentsize = round(fs/2)
+    segmentsize = round(fs/5)
     fftbinning = 1024
     first = True
     for i in range(arraysize[0]):
@@ -326,7 +327,7 @@ for d in sep:
     ycorrmatrix = np.corrcoef(yarray,rowvar=False)
     print(xcorrmatrix)
     print(ycorrmatrix)
-
+    plt.plot(save_times,addedx)
     if arraysize[0] * arraysize[1] > 2:
 
         for l in range(xcorrmatrix.shape[0]):
