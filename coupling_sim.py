@@ -14,10 +14,17 @@ from scipy.optimize import minimize, curve_fit
 from matplotlib.pyplot import gca
 import pandas as pd
 from matplotlib.colors import LogNorm
+from scipy.signal import find_peaks, butter, lfilter, csd, coherence
 import seaborn as sn
 from correlationcalculator import heatmap
 from correlationcalculator import annotate_heatmap
 
+def lorentzian(f, f_0, T, gamma):
+    kb = 1.38e-23 # Boltzmann's constant, SI units
+    m = 1e-12 # mass in kg
+    omega = 2*np.pi*f
+    omega0 = 2*np.pi*f_0
+    return kb*T/(np.pi * m) * gamma/((omega0**2 - omega**2)**2 + omega**2 * gamma**2)
 
 def freq_to_k(f):
     #takes in frequency of motion and gives back k/m
@@ -155,6 +162,7 @@ def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_m
                     vysaves[j][i].append(vy[i,j])
             save_times.append(t)
             if len(xsaves[0][1]) != len(save_times):
+                print('Mismatch')
                 break
                   
         
@@ -187,10 +195,10 @@ vel_gauss = [0,0]
 pressure = 0.4      # in mbar
 temp = 295          # in K
 kBT = 4.073e-21    # 1.381e-19 for T=10000K ||4.073e-21 for T = 295K (in N m)
-gamma = 80              #9.863e-10 * pressure / np.sqrt(temp)     #Epstein drag using 10um sphere (in kg/s)
+gamma = 9.863e-10 * pressure / np.sqrt(temp) / 1e-12             #9.863e-10 * pressure / np.sqrt(temp)     #Epstein drag using 10um sphere (in 1/s)
 
 #Bounds of electrons on the spheres:
-charge = [500,5000]      
+charge = [1000,5000]      
 charge_const = 2.30708e-16      # 1 / (4 pi epsilon_0 * 1ng) in N m^2 / kg
 
 #Resonant frequency range:
@@ -375,8 +383,29 @@ for d in sep:
         axa[k].set_ylabel('Sphere Index',fontsize=22,labelpad=5)
 
     else:
-        jointcor.scatter(d, abs(xcorrmatrix[0,1]), marker='s' ,color = '#1E88E5', label='X Motion')
-        jointcor.scatter(d, abs(ycorrmatrix[0,1]), color = '#004D40', label='Y Motion')
+
+        coherfreq = coherence(xarray[:,0],xarray[:,1], fs = fs, window='hann', nperseg=segmentsize, nfft=fftbinning)[0]
+        xcohermatrix = coherence(xarray[:,0],xarray[:,1], fs, nperseg=segmentsize, nfft=fftbinning)[1]
+        ycohermatrix = coherence(yarray[:,0],yarray[:,1], fs, nperseg=segmentsize, nfft=fftbinning)[1]
+
+        xcorrvalue = 0
+        for z in range(len(coherfreq)):
+            if coherfreq[z] > 80:
+                xcorrvalue = xcorrvalue + xcohermatrix[z]
+        
+        ycorrvalue = 0
+        for z in range(len(coherfreq)):
+            if coherfreq[z] > 80:
+                ycorrvalue = ycorrvalue + ycohermatrix[z]
+
+        figs[k], axs[k] = plt.subplots()
+        axs[k].semilogy(coherfreq, xcohermatrix, label = 'X')
+        axs[k].semilogy(coherfreq, ycohermatrix, label = 'Y')
+        axs[k].legend()
+        axs[k].set_title('%d separation Coherence' % d)
+
+        jointcor.scatter(d, abs(xcorrvalue), marker='s' ,color = '#1E88E5', label='X Motion')
+        jointcor.scatter(d, abs(ycorrvalue), color = '#004D40', label='Y Motion')
         for j in range(xPSDarray.shape[1]):
             label_name = str(int(d)) + r' $\mu$m'
 
