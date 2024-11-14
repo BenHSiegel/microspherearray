@@ -35,7 +35,7 @@ def freq_to_k(f):
 #     acc = -k*x + CC/(d+x_other-x)**2
 #     return acc
 
-
+@njit
 def force_calc(size,x,y,kx,ky,charge,CC,sep):
     #calculate the overall x and y components of the force on each sphere
     ax = np.zeros((size[0],size[1]))
@@ -72,7 +72,7 @@ def force_calc(size,x,y,kx,ky,charge,CC,sep):
 
     return ax, ay
 
-
+@njit
 def velocity_update(size, vx, vy, ax, ay, dt):
     #Updates the velocities of the spheres using given accelerations
     for i in range(size[0]):
@@ -85,7 +85,7 @@ def velocity_update(size, vx, vy, ax, ay, dt):
 #     v_new = v + a*dt/2.0
 #     return v_new
 
-
+@njit
 def position_update(size, x, y, vx, vy, dt):
     #updates the position of the spheres using given velocities
     for i in range(size[0]):
@@ -98,7 +98,7 @@ def position_update(size, x, y, vx, vy, dt):
 #     x_new = x + v*dt/2.0
 #     return x_new
 
-
+@njit
 def random_velocity_update(size, vx, vy, gamma, kBT, dt):
     #calculates the gas effects on the velocity for all the spheres
     c1 = np.exp(-gamma*dt)
@@ -120,16 +120,18 @@ def random_velocity_update(size, vx, vy, gamma, kBT, dt):
 #     v_new = c1*v + R*c2
 #     return v_new
 
-
 def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_matrix, charge_matrix, CC, sep,startrec):
     save_frequency = 1/(dt*fs)
     
     t = 0
     step_number = 0
-    xsaves=ysaves=vxsaves=vysaves = [ [ [] for i in range(arraysize[0])] for j in range(arraysize[1]) ]
+    xsaves = [ [ [] for i in range(arraysize[0])] for j in range(arraysize[1]) ]
+    ysaves = [ [ [] for i in range(arraysize[0])] for j in range(arraysize[1]) ]
+    vxsaves = [ [ [] for i in range(arraysize[0])] for j in range(arraysize[1]) ]
+    vysaves = [ [ [] for i in range(arraysize[0])] for j in range(arraysize[1]) ]
     save_times = []
     
-    while(t<timespan):
+    while(t<=timespan):
         # B
         ax, ay = force_calc(arraysize,x,y,kx_matrix,ky_matrix,charge_matrix,CC,sep)
         vx, vy = velocity_update(arraysize, vx, vy, ax, ay, dt)
@@ -143,7 +145,7 @@ def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_m
         ax, ay = force_calc(arraysize,x,y,kx_matrix,ky_matrix,charge_matrix,CC,sep)
         vx, vy = velocity_update(arraysize, vx, vy, ax, ay, dt)
         
-        if step_number%save_frequency == 0 and t>startrec:
+        if step_number%save_frequency == 0 and t>=startrec:
 
             for i in range(arraysize[0]):
                 for j in range(arraysize[1]):
@@ -152,6 +154,9 @@ def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_m
                     vxsaves[j][i].append(vx[i,j])
                     vysaves[j][i].append(vy[i,j])
             save_times.append(t)
+            if len(xsaves[0][1]) != len(save_times):
+                break
+                  
         
         t = t+dt
         step_number = step_number + 1
@@ -159,13 +164,13 @@ def baoab(arraysize, timespan, dt, fs, gamma, kBT, x, y, vx, vy, kx_matrix, ky_m
 
     return save_times, xsaves, ysaves, vxsaves, vysaves
 
-timespan = 50
+timespan = 50.0
 dt = 0.0001
 fs = 1000
 #don't record the motion until t>=startrec to let the system evolve a bit
-startrec = 20
+startrec = 20.0
 
-arraysize = [2,1] #set how many rows/columns we have
+arraysize = [5,5] #set how many rows/columns we have
 
 #generate a list of empty lists for storing motion state
 list_template = [ [ [] for i in range(arraysize[0])] for j in range(arraysize[1]) ]
@@ -181,8 +186,8 @@ vel_gauss = [0,0]
 
 pressure = 0.4      # in mbar
 temp = 295          # in K
-kBT = 4.073e-21     # 1.381e-19 for T=10000K ||4.073e-21 for T = 295K (in N m)
-gamma = 9.863e-10 * pressure / np.sqrt(temp)                #9.863e-10 * pressure / np.sqrt(temp)     #Epstein drag using 10um sphere (in kg/s)
+kBT = 4.073e-21    # 1.381e-19 for T=10000K ||4.073e-21 for T = 295K (in N m)
+gamma = 9.863e-10 * pressure / np.sqrt(temp)              #9.863e-10 * pressure / np.sqrt(temp)     #Epstein drag using 10um sphere (in kg/s)
 
 #Bounds of electrons on the spheres:
 charge = [500,5000]      
@@ -248,7 +253,7 @@ print(fx_matrix)
 print(fy_matrix)
 
 
-sep = [40,60,70,85]          # separation in um
+sep = [100,85,70,55]          # separation in um
 mpl.rcParams.update({'font.size': 18})
 
 if arraysize[0] * arraysize[1] > 2:
@@ -288,7 +293,6 @@ for d in sep:
     save_times, xsaves, ysaves, vxsaves, vysaves  = baoab(arraysize, timespan, dt, fs, gamma, kBT,\
                                                                     x, y, vx, vy, kx_matrix, ky_matrix,\
                                                                     charge_matrix, charge_const, d*10**-6, startrec)
-
     segmentsize = round(fs/5)
     fftbinning = 1024
     first = True
@@ -327,7 +331,7 @@ for d in sep:
     ycorrmatrix = np.corrcoef(yarray,rowvar=False)
     print(xcorrmatrix)
     print(ycorrmatrix)
-    plt.plot(save_times,addedx)
+
     if arraysize[0] * arraysize[1] > 2:
 
         for l in range(xcorrmatrix.shape[0]):
@@ -361,7 +365,7 @@ for d in sep:
                     symcor[a][b] = ycorrmatrix[a][b]
         mask = np.triu(np.ones_like(xcorrmatrix, dtype=bool))
         diagmask = np.identity(xcorrmatrix.shape[0])
-        sn.heatmap(symcor, mask=diagmask, square=True, cmap = 'viridis', vmin=-1, vmax=1, ax=axa[k], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
+        sn.heatmap(symcor, mask=diagmask, square=True, cmap = 'viridis', vmin=-0.2, vmax=0.2, ax=axa[k], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
         axa[k].tick_params(axis='both', which='major', labelsize=18)
         #ax[i].set_xticks(np.arange(xcor.shape[1])+.5, labels=spherenames,fontsize=16)
         #ax[i].set_yticks(np.arange(xcor.shape[0])+.5, labels=spherenames,fontsize=16)
@@ -371,8 +375,8 @@ for d in sep:
         axa[k].set_ylabel('Sphere Index',fontsize=22,labelpad=5)
 
     else:
-        jointcor.scatter(d, xcorrmatrix[0,1], marker='s' ,color = '#1E88E5', label='X Motion')
-        jointcor.scatter(d, ycorrmatrix[0,1], color = '#004D40', label='Y Motion')
+        jointcor.scatter(d, abs(xcorrmatrix[0,1]), marker='s' ,color = '#1E88E5', label='X Motion')
+        jointcor.scatter(d, abs(ycorrmatrix[0,1]), color = '#004D40', label='Y Motion')
         for j in range(xPSDarray.shape[1]):
             label_name = str(int(d)) + r' $\mu$m'
 
