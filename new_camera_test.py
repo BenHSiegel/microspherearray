@@ -35,7 +35,7 @@ def processmovie(filename, framerate, diameter):
     #invert=true looks for dark spots instead of light spots
     #diameter is the centroid size to look for in the images (in units of pixels)
     #diameter should always be an odd number and greater than the actual sphere size
-    f = tp.batch(spheres[:1000], diameter, invert=False, minmass=10000, processes=1)
+    f = tp.batch(spheres[:], diameter, invert=True, minmass=1000, processes=1)
         #to check the mass brightness make this figure
     fighist, axhist = plt.subplots()
     axhist.hist(f['mass'], bins=1000)
@@ -53,7 +53,7 @@ def motiontracer(spheres, f):
     #suppress output so that it runs faster
     tp.quiet()
 
-    t = tp.link(f, 50, memory=20)
+    t = tp.link(f, 20, memory=20)
     
     fig1, ax00 = plt.subplots()
 
@@ -268,14 +268,14 @@ def psdplotter(t, framerate, spheres, f, rowlen, pixtoum, pcacheck, saveposdata,
     return totalspheres
 
 
-path = r"D:\Lab data\20241010\before chamber videos"
+path = r"D:\Lab data\20240830"
 os.chdir(path)
-vid='before-53Hz-100k.avi'
-diameter = 25
-pixtoum = 4.8
+vid='ulp2.avi'
+diameter = 23
+pixtoum = 0.55
 framerate = 1000
 pcacheck = False
-saveposdata = False
+saveposdata = True
 saveFFTavg = False
 rowlen = 1
 fftsave = "chargecheck"

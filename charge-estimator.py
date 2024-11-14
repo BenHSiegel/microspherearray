@@ -124,15 +124,14 @@ def lorentzian(f, f_0, T, gamma):
     omega0 = 2*np.pi*f_0
     return kb*T/(np.pi * m) * gamma/((omega0**2 - omega**2)**2 + omega**2 * gamma**2)
 
-def Efield(f, q):
+def Efield(q):
     m = 1e-12 # mass in kg
     gamma = 90
-    V = 4 #Vpp applied to electrode
-    d = 0.011 #separation of electrode plates in m
+    V = 4* 20 #Vpp
+    d = 0.011 #separation of electrode plates in m 
     omega_E = 2 * np.pi * 73 #73 Hz AC drive
-    omega = 2*np.pi*f
     omega0 = 2*np.pi*f0 #resonant frequency of the sphere
-    return V/d * q /(np.pi * m) * gamma/((omega0**2 - omega**2)**2 + omega**2 * gamma**2)
+    return V/d * q /(np.pi * m) * gamma/((omega0**2 - omega_E**2)**2 + omega_E**2 * gamma**2)
 
 
 def find_T(ref_psd, freqs):

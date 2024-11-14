@@ -170,7 +170,7 @@ fs = 1000
 #don't record the motion until t>=startrec to let the system evolve a bit
 startrec = 20.0
 
-arraysize = [5,5] #set how many rows/columns we have
+arraysize = [2,1] #set how many rows/columns we have
 
 #generate a list of empty lists for storing motion state
 list_template = [ [ [] for i in range(arraysize[0])] for j in range(arraysize[1]) ]
@@ -187,7 +187,7 @@ vel_gauss = [0,0]
 pressure = 0.4      # in mbar
 temp = 295          # in K
 kBT = 4.073e-21    # 1.381e-19 for T=10000K ||4.073e-21 for T = 295K (in N m)
-gamma = 9.863e-10 * pressure / np.sqrt(temp)              #9.863e-10 * pressure / np.sqrt(temp)     #Epstein drag using 10um sphere (in kg/s)
+gamma = 80              #9.863e-10 * pressure / np.sqrt(temp)     #Epstein drag using 10um sphere (in kg/s)
 
 #Bounds of electrons on the spheres:
 charge = [500,5000]      
@@ -253,7 +253,7 @@ print(fx_matrix)
 print(fy_matrix)
 
 
-sep = [100,85,70,55]          # separation in um
+sep = [50,60,70,80,100]          # separation in um
 mpl.rcParams.update({'font.size': 18})
 
 if arraysize[0] * arraysize[1] > 2:

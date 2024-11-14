@@ -13,6 +13,7 @@ from sklearn.decomposition import PCA ## need this for principle component analy
 from matplotlib.mlab import psd
 from scipy.optimize import minimize, curve_fit
 from scipy.stats import chi2, pearsonr
+from scipy.ndimage import variance
 from scipy.signal import welch
 from scipy.signal.windows import blackman
 from scipy.signal import find_peaks, butter, lfilter, csd, coherence
@@ -27,7 +28,7 @@ import matplotlib.gridspec as gridspec
 
 
 
-def butter_bandpass(data, highpassfq, fs, order=3):
+def butter_bandpass(data, highpassfq, fs, order=9):
     '''
     Passes data through a bandpass filter with a variable high pass corner and
     set low pass corner of 250 Hz
@@ -71,7 +72,15 @@ def corr_cross_calc(X, Y):
     
     return cor_matrix
 
+def unnorm_pearson(X,Y):
 
+    cor_matrix = np.zeros((X.shape[1],Y.shape[1]))
+    
+    for n in range(X.shape[1]):
+        for m in range(Y.shape[1]):
+            cor_matrix[n,m] = pearsonr(X[:,n], Y[:,m])[0] * variance(X[:,n] * variance(Y[:,m]))
+
+    return cor_matrix
 
     
 def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
@@ -126,16 +135,38 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
         
         xdf = pd.DataFrame(xfiltdata)
         ydf = pd.DataFrame(yfiltdata)
+        #xdf = pd.DataFrame(xposdata)
+        #ydf = pd.DataFrame(yposdata)
         
-        xcorrmatrix = xdf.corr()
-        ycorrmatrix = ydf.corr()  
+        #xcorrmatrix = xdf.corr()
+        #ycorrmatrix = ydf.corr()
+
         xycorrmatrix = corr_cross_calc(xfiltdata, yfiltdata)
+
+        #check if pearson normalization is making the filter not have any effects
+        #xcorrmatrix = unnorm_pearson(xfiltdata,xfiltdata)
+        #ycorrmatrix = unnorm_pearson(yfiltdata,yfiltdata)
         
         coherfreq = coherence(xfiltdata[:,0],xfiltdata[:,1], fs = fs, window='hann', nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[0]
 
-        xcohermatrix = [ [ coherence(xfiltdata[:,m],xfiltdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] for n in range(totalspheres) ] for m in range(totalspheres) ]
-        ycohermatrix = [ [ coherence(yfiltdata[:,m],yfiltdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] for n in range(totalspheres) ] for m in range(totalspheres) ]
+        #xcohermatrix = [ [ coherence(xfiltdata[:,m],xfiltdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] for n in range(totalspheres) ] for m in range(totalspheres) ]
+        #ycohermatrix = [ [ coherence(yfiltdata[:,m],yfiltdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] for n in range(totalspheres) ] for m in range(totalspheres) ]
 
+        # looking at non filtered data
+        xcohermatrix = [ [ coherence(xposdata[:,m],xposdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] for n in range(totalspheres) ] for m in range(totalspheres) ]
+        ycohermatrix = [ [ coherence(yposdata[:,m],yposdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] for n in range(totalspheres) ] for m in range(totalspheres) ]
+
+        xcorrvalue = 0
+        for z in range(len(coherfreq)):
+            if coherfreq[z] > 80:
+                xcorrvalue = xcorrvalue + xcohermatrix[0][1][z]
+        xcorrmatrix = np.full((xfiltdata.shape[1],xfiltdata.shape[1]),xcorrvalue)
+        
+        ycorrvalue = 0
+        for z in range(len(coherfreq)):
+            if coherfreq[z] > 80:
+                ycorrvalue = ycorrvalue + ycohermatrix[0][1][z]
+        ycorrmatrix = np.full((xfiltdata.shape[1],xfiltdata.shape[1]),ycorrvalue)
 
         if counter == 0:
             xcorrlist = xcorrmatrix
