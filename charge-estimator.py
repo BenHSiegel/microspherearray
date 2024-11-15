@@ -117,6 +117,7 @@ def hdf5_sphere_psd_scraper(filename):
     return freqs, X_psd, Y_psd
 
 
+
 def lorentzian(f, f_0, T, gamma):
     kb = 1.38e-23 # Boltzmann's constant, SI units
     m = 1e-12 # mass in kg
@@ -124,14 +125,14 @@ def lorentzian(f, f_0, T, gamma):
     omega0 = 2*np.pi*f_0
     return kb*T/(np.pi * m) * gamma/((omega0**2 - omega**2)**2 + omega**2 * gamma**2)
 
-def Efield(q):
+def Efieldsolver(gamma, f0, amp):
     m = 1e-12 # mass in kg
-    gamma = 90
-    V = 4* 20 #Vpp
+    V = 0.2* 20 #Vpp
     d = 0.011 #separation of electrode plates in m 
     omega_E = 2 * np.pi * 73 #73 Hz AC drive
     omega0 = 2*np.pi*f0 #resonant frequency of the sphere
-    return V/d * q /(np.pi * m) * gamma/((omega0**2 - omega_E**2)**2 + omega_E**2 * gamma**2)
+    q = amp / ( (V/d /(np.pi * m))**2 * 1/((omega0**2 - omega_E**2)**2 + omega_E**2 * gamma**2))
+    return q
 
 
 def find_T(ref_psd, freqs):
@@ -182,7 +183,7 @@ charge_motion_file = r"D:\Lab data\20240905\hdf5_datafiles\chargecheck\chargeche
 gammas = []
 noisefloor = [2E-9, 1.7E-9]
 freqs, X_psd, Y_psd = hdf5_sphere_psd_scraper(reference_motion_file)
-
+freqsq, X_charge, Y_charge = hdf5_sphere_psd_scraper(charge_motion_file)
 figx, axx = plt.subplots()
 for i in range(X_psd.shape[0]):
     fit_params, f0 = find_T(X_psd[i,:], freqs)
@@ -194,9 +195,14 @@ for i in range(X_psd.shape[0]):
     axx.set_ylabel('ASD (m^2/Hz)')
     print('For x direction of sphere ' + str(i))
     print(f0)
-
     print(fit_params)
+    power = estimate_charge(X_charge[i,:],freqsq, noisefloor[0])
+    amp = X_charge[i,150]
+    q = Efieldsolver(fit_params[0], fit_params[2], amp)
+    print('Charge on sphere '+str(i)+' is '+str(q))
     
+    
+
 
 figy, axy = plt.subplots()
 for i in range(Y_psd.shape[0]):
