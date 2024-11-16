@@ -13,6 +13,8 @@ from scipy.signal import find_peaks
 from matplotlib.pyplot import gca
 import h5py
 from sklearn import decomposition
+from uncertainties import ufloat
+import uncertainties.unumpy as unp
 
 def filepositionreader(filename):
     '''
@@ -120,18 +122,18 @@ def hdf5_sphere_psd_scraper(filename):
 
 def lorentzian(f, f_0, T, gamma):
     kb = 1.38e-23 # Boltzmann's constant, SI units
-    m = 1e-12 # mass in kg
+    m = 1.4e-12 # mass in kg
     omega = 2*np.pi*f
     omega0 = 2*np.pi*f_0
     return kb*T/(np.pi * m) * gamma/((omega0**2 - omega**2)**2 + omega**2 * gamma**2)
 
 def Efieldsolver(gamma, f0, amp):
-    m = 1e-12 # mass in kg
-    V = 0.2* 20 #Vpp
-    d = 0.011 #separation of electrode plates in m 
-    omega_E = 2 * np.pi * 73 #73 Hz AC drive
+    m = ufloat(1.25e-12, 0.4e-12) # mass in kg using 1 um diameter variance
+    V = ufloat(3.9,0.1) #Vamp
+    d = ufloat(0.011,0.002) #separation of electrode plates in m 
+    omega_E = 2 * np.pi * ufloat(73,0.01) #73 Hz AC drive
     omega0 = 2*np.pi*f0 #resonant frequency of the sphere
-    q = amp / ( (V/d /(np.pi * m))**2 * 1/((omega0**2 - omega_E**2)**2 + omega_E**2 * gamma**2))
+    q = (amp / ( (V/d /(m))**2 * 1/((omega0**2 - omega_E**2)**2 + omega_E**2 * gamma**2)))**0.5 / 1.602e-19
     return q
 
 
@@ -160,8 +162,8 @@ def find_T(ref_psd, freqs):
     freqfit = freqs[int(fguess_ind-200):fmax]
     ref_psdfit = ref_psd[int(fguess_ind-200):fmax]
     fit_params, cov = curve_fit(lorentzian, freqfit, ref_psdfit, p0=init_guess)#, bounds=([100,50,20,0],[300,1000,150,np.inf])
-    
-    return fit_params, fguess
+    perr = np.sqrt(np.diag(cov))
+    return fit_params, fguess, perr
 
 
 
@@ -181,12 +183,12 @@ charge_motion_file = r"D:\Lab data\20240905\hdf5_datafiles\chargecheck\chargeche
 
 #uses the already calculated PSDs
 gammas = []
-noisefloor = [2E-9, 1.7E-9]
+noisefloor = [(2E-9)**2, (1.7E-9)**2]
 freqs, X_psd, Y_psd = hdf5_sphere_psd_scraper(reference_motion_file)
 freqsq, X_charge, Y_charge = hdf5_sphere_psd_scraper(charge_motion_file)
 figx, axx = plt.subplots()
 for i in range(X_psd.shape[0]):
-    fit_params, f0 = find_T(X_psd[i,:], freqs)
+    fit_params, f0, perr = find_T(X_psd[i,:], freqs)
     trial_params = [fit_params[0], fit_params[1], fit_params[2]/2]
     axx.plot(freqs, X_psd[i,:], label='Sphere ' + str(i))
     axx.plot(freqs, lorentzian(freqs, *fit_params), label='Fit ' + str(i))
@@ -196,9 +198,11 @@ for i in range(X_psd.shape[0]):
     print('For x direction of sphere ' + str(i))
     print(f0)
     print(fit_params)
+    print(perr)
     power = estimate_charge(X_charge[i,:],freqsq, noisefloor[0])
     amp = X_charge[i,150]
-    q = Efieldsolver(fit_params[0], fit_params[2], amp)
+    q = Efieldsolver(ufloat(fit_params[0],perr[0]), ufloat(fit_params[2],perr[2]), power)
+    print(q)
     print('Charge on sphere '+str(i)+' is '+str(q))
     
     
@@ -206,7 +210,7 @@ for i in range(X_psd.shape[0]):
 
 figy, axy = plt.subplots()
 for i in range(Y_psd.shape[0]):
-    fit_params, f0 = find_T(Y_psd[i,:], freqs)
+    fit_params, f0, perr = find_T(Y_psd[i,:], freqs)
     axy.semilogy(freqs, Y_psd[i,:], label='Sphere ' + str(i))
     axy.plot(freqs, lorentzian(freqs, *fit_params), label='Fit ' + str(i))
     axx.set_xlabel('Frequency (Hz)')
@@ -214,6 +218,7 @@ for i in range(Y_psd.shape[0]):
     print('For y direction of sphere ' + str(i))
     print(f0)
     print(fit_params)
+    print(perr)
     gammas.append(fit_params[2])
 plt.show()
 
