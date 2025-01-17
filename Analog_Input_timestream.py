@@ -22,7 +22,7 @@ import h5py
 from mpl_toolkits.axes_grid1.inset_locator import (inset_axes, InsetPosition,
                                                   mark_inset)
 
-filenamelist = [r"E:\Lab data\20240919\QPD\4beams3trapped_AIstream_0.h5", r"E:\Lab data\20240919\QPD\4beams3trapped_AIstream_1.h5", r"E:\Lab data\20240919\QPD\4beams3trapped_AIstream_2.h5", r"E:\Lab data\20240919\QPD\4beams3trapped_AIstream_3.h5", r"E:\Lab data\20240919\QPD\4beams3trapped_AIstream_4.h5"]
+filenamelist = [r"F:\Lab data\20240919\QPD\4beams3trapped_AIstream_0.h5", r"F:\Lab data\20240919\QPD\4beams3trapped_AIstream_1.h5", r"F:\Lab data\20240919\QPD\4beams3trapped_AIstream_2.h5", r"F:\Lab data\20240919\QPD\4beams3trapped_AIstream_3.h5", r"F:\Lab data\20240919\QPD\4beams3trapped_AIstream_4.h5"]
 counter=0
 lastindex = 0
 locoffset = 0
@@ -108,7 +108,7 @@ ax[1].set_xlabel(r'Time (ms)',fontsize=20)
 #ax2.set_title('Timestream of Quadrant Photodiode for 4 Spheres',fontsize=28,pad=15)
 
 
-beamsorted_file = r'E:\Lab data\20240919\QPD\4beams3trapped_beamsorted_0.h5'
+beamsorted_file = r'F:\Lab data\20240919\QPD\4beams3trapped_beamsorted_0.h5'
 
 hf = h5py.File(beamsorted_file, 'r')
 sum_data= hf.get('SUM')

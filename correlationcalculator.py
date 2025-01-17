@@ -156,6 +156,7 @@ def hdf5file_correlationprocessing(path, totalspheres, sep, saveflag, savename):
         xcohermatrix = [ [ coherence(xposdata[:,m],xposdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] for n in range(totalspheres) ] for m in range(totalspheres) ]
         ycohermatrix = [ [ coherence(yposdata[:,m],yposdata[:,n], fs, nperseg=segmentsize, noverlap=overlap, nfft=fftbinning)[1] for n in range(totalspheres) ] for m in range(totalspheres) ]
 
+        #integrating coherence plots above z motion to check if there is any x/y interactions
         # xcorrvalue = 0
         # for z in range(len(coherfreq)):
         #     if coherfreq[z] > 80:
