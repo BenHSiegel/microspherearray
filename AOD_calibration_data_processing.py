@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 from mpl_toolkits.mplot3d import Axes3D
+from scipy.optimize import curve_fit
 
 def process_hdf5_file(file_path):
     '''
@@ -23,41 +24,69 @@ def process_hdf5_file(file_path):
         # Get the number of columns
         num_columns = data.shape[1]
         # Generate column names based on column numbers
-        column_names = ['Power', 'CH0 Freq', 'CH1 Freq', 'CH0 gain', 'CH1 gain', 'Abs time']
+        column_names = ['Power', 'CH0 Freq', 'CH1 Freq', 'CH0 gain','CH0 adjusted gain', 'CH1 gain', 'CH1 adjusted gain', 'Abs time']
         # Convert the data to a pandas dataframe
         df = pd.DataFrame(data, columns=column_names)
         # Remove the first row from the dataframe since it is an artifact of LabView HDF5 file writing
         df = df.iloc[1:].reset_index(drop=True)
     return df
 
-def plot_gain_sweep(df, x_column, y_column, title, x_label, y_label, save_path):
+def plot_gain_sweep(df, x_column, y_column, title, x_label, y_label, save_path, save_csv=False):
     '''
     Plots the data
     '''
-    # Fit a linear model to the first third of the data
-    first_third = df.iloc[:len(df) // 3]
-    coefficients = np.polyfit(first_third[x_column], first_third[y_column], 1)
-    linear_fit = np.poly1d(coefficients)
-    slope = coefficients[0]
-    intercept = coefficients[1]
-    residuals = first_third[y_column] - linear_fit(first_third[x_column])
-    residual_sum_of_squares = np.sum(residuals ** 2)
-
     # Plot the data
-    fig, ax = plt.subplots()
+    fig, (ax, ax_residuals) = plt.subplots(2, 1, sharex=True)
     ax.plot(df[x_column], df[y_column], label='Data')
-    ax.plot(first_third[x_column], linear_fit(first_third[x_column]), label=f'Linear Fit (slope={slope:.2f}, Residual={residual_sum_of_squares:.5f})', linestyle='--')
-
+    
     # Add labels and title
     ax.set_title(title)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
-    ax.legend()
+    # Create a secondary y-axis
+    ax2 = ax.twinx()
+    # Plot the normalized power on the secondary y-axis
+    normpower = df[y_column] / (df[y_column].max()/0.90)
+
+    # Perform a linear fit
+    slope, intercept = np.polyfit(df[x_column], normpower*100, 1)
+    fit_line = slope * df[x_column] + intercept
+    ax2.plot(df[x_column], fit_line, label=f'Linear Fit (slope={slope:.4f})', color='green', linestyle='--')
+
+    # Calculate R^2
+    residuals = normpower*100 - fit_line
+    ss_res = np.sum(residuals**2)
+    ss_tot = np.sum((normpower*100 - np.mean(normpower*100))**2)
+    r_squared = 1 - (ss_res / ss_tot)
+    
+    ax2.plot(df[x_column], normpower*100, label='Normalized Power', color='red')
+    ax2.set_ylabel('Normalized Power (%)')
+    ax2.legend()
+    # Set the number of y-axis tick marks
+    ax.yaxis.set_major_locator(plt.MaxNLocator(10))
+    ax2.yaxis.set_major_locator(plt.MaxNLocator(10))
+    
+    ax_residuals.plot(df[x_column], residuals, label='Residuals', color='blue')
+    ax_residuals.set_title('Residuals of Linear Fit')
+    ax_residuals.set_xlabel(x_label)
+    ax_residuals.set_ylabel('Residuals (%)')
+    ax_residuals.axhline(0, color='black', linestyle='--')
+    ax_residuals.legend()
+    
+    plt.tight_layout()
+
 
     # Save and show the plot
     #fig.savefig(save_path)
     plt.show()
     #plt.close(fig)
+    if save_csv:
+        # Save df[x_column] and normpower to a CSV file without a header
+        output_df = pd.DataFrame({
+            x_column: df[x_column]/100,
+            'Normalized Power': normpower
+        })
+        output_df.to_csv(save_path.replace('.png', '.csv'), index=False, header=False)
 
 def plot_freq_map(df, x_column, y_column, z_column, title, x_label, y_label, z_label, save_path):
     '''
@@ -111,24 +140,6 @@ def plot_freq_map(df, x_column, y_column, z_column, title, x_label, y_label, z_l
     # plt.close(fig_normalized)
 
 
-def main(file_path,filename):
-    '''
-    Main function
-    '''
-    # Check if the file exists
-    if not os.path.exists(file_path):
-        print('File does not exist')
-        sys.exit(1)
-    # Process the HDF5 file
-    df = process_hdf5_file(file_path)
-    # Plot the data
-    plot_gain_sweep(df, 'CH0 gain', 'Power', filename, 'Channel 0 Gain (%)', 'Power Output (W)', 'aod_gain_calibration_data.png')
-    #plot_freq_map(df, 'CH0 Freq', 'CH1 Freq', 'Power', 'AOD Calibration Data', 'Channel 0 Frequency (Hz)', 'Channel 1 Frequency (Hz)', 'Power Output', 'aod_freq_calibration_data.png')
-    
-    # Plot the difference in the dataframe
-    df_diff = df.diff().dropna().reset_index(drop=True)
-    plot_gain_sweep(df_diff, 'CH0 gain', 'Power', filename + ' Difference', 'Channel 0 Gain (%)', 'Power Output Difference (W)', 'aod_gain_calibration_data_diff.png')
-
 def power_scan_compare(path,filenames):
     counter = 0
     fig, ax = plt.subplots()
@@ -173,22 +184,56 @@ def power_scan_compare(path,filenames):
     for i in range(1,len(filenames)):
         avgpower = avgpower + df_container[i]['Power']/(df_container[i]['Power'].max()/0.9)
     avgpower = avgpower/len(filenames)
+    # Fit a logarithmic curve to the average power data
+    def log_fit(x, a, b):
+        return a * np.log(x) + b
+
+    popt, _ = curve_fit(log_fit, df_container[0]['CH0 gain'], avgpower)
+
     # Plot CH0 gain vs Avg Power
     fig5, ax5 = plt.subplots()
-    ax5.plot(df_container[0]['CH0 gain'], avgpower*100, label='Avg Power')
+    ax5.plot(df_container[0]['CH0 gain'], avgpower * 100, label='Avg Power')
+    # Plot the logarithmic fit
+    ax5.plot(df_container[0]['CH0 gain'], log_fit(df_container[0]['CH0 gain'], *popt) * 100, label='Logarithmic Fit', linestyle='--')
+    ax5.legend()
     ax5.set_xlabel('Channel 0 Gain (%)')
     ax5.set_ylabel('Gain Observed')
     ax5.set_title('Channel 0 Gain vs Average Power')
     plt.show()
     # Save the CH0 gain and avg power to a CSV file
-    output_df = pd.DataFrame({
-        'CH0 gain': df_container[0]['CH0 gain']/100,
-        'Avg Power': avgpower
-    })
-    output_df.to_csv(os.path.join(path, 'avg_power.csv'), index=False)
+    # output_df = pd.DataFrame({
+    #     'CH0 gain': df_container[0]['CH0 gain']/100,
+    #     'Avg Power': avgpower
+    # })
+    # output_df.to_csv(os.path.join(path, 'avg_power.csv'), index=False)
 
-path = r'D:\Lab data\20250121'
-filenames = ['gain_scan_20MHz.h5', 'gain_scan_23x20MHz.h5','gain_scan_24-4x22-7MHz.h5',
-             'gain_scan_26-5x20MHz.h5','gain_scan_26-53x27-2MHz.h5','gain_scan_28-1x21-8MHz.h5']
 
-power_scan_compare(path,filenames)
+
+def main(file_path,folder_path,filename):
+    '''
+    Main function
+    '''
+    # Check if the file exists
+    if not os.path.exists(file_path):
+        print('File does not exist')
+        sys.exit(1)
+    # Process the HDF5 file
+    df = process_hdf5_file(file_path)
+    # Plot the data
+    plot_gain_sweep(df, 'CH0 adjusted gain', 'Power', filename, 'Channel 0 Gain (%)', 'Power Output (W)', os.path.join(folder_path, 'aod_gain_calibration_data.png'),save_csv=False)
+    # plot_freq_map(df, 'CH0 Freq', 'CH1 Freq', 'Power', 'AOD Calibration Data', 'Channel 0 Frequency (Hz)', 'Channel 1 Frequency (Hz)', 'Power Output', 'aod_freq_calibration_data.png')
+
+
+
+# path = r'D:\Lab data\20250121'
+# filenames = ['gain_scan_20MHz.h5', 'gain_scan_23x20MHz.h5','gain_scan_24-4x22-7MHz.h5',
+#              'gain_scan_26-5x20MHz.h5','gain_scan_26-53x27-2MHz.h5','gain_scan_28-1x21-8MHz.h5']
+#power_scan_compare(path,filenames)
+
+# path = r'D:\Lab data\20250121\frequency map'
+# filename = 'expanded_frequency_map.h5'
+# main(os.path.join(path, filename),filename)
+
+path = r'D:\Lab data\20250122'
+filename = 'gain_interpolate_check_2.h5'
+main(os.path.join(path, filename),path,filename)
