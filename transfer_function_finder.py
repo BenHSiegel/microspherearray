@@ -43,6 +43,7 @@ def hdf5_scraper(filename):
 
 def file_psd_averager(folder, filelist):
     counter = 0
+    segmentsize = 2048
     for i in filelist:
         xdata, ydata, zdata, framerate = hdf5_scraper(os.path.join(folder,i))
         if len(xdata.shape) > 1:
@@ -61,14 +62,16 @@ def file_psd_averager(folder, filelist):
 
             
         for k in range(totalspheres):
-            xfreq, xPSD = welch(xdata, framerate)
-            yfreq, yPSD = welch(ydata, framerate)
-            zfreq, zPSD = welch(zdata, framerate)
+            xfreq, xPSD = welch(xdata, framerate, 'hann', segmentsize)
+            yfreq, yPSD = welch(ydata, framerate, 'hann', segmentsize)
+            zfreq, zPSD = welch(zdata, framerate, 'hann', segmentsize)
             if counter == 0:
+                xfreq = xfreq.reshape(1,-1)
                 xpsd_matrix[k] = xPSD.reshape(-1,1)
                 ypsd_matrix[k] = yPSD.reshape(-1,1)
                 zpsd_matrix[k] = zPSD.reshape(-1,1)
             else:
+                xfreq = xfreq.reshape(1,-1)
                 xpsd_matrix[k] = np.concatenate((xpsd_matrix[k], xPSD.reshape(-1,1)), axis = 1)
                 ypsd_matrix[k] = np.concatenate((ypsd_matrix[k], yPSD.reshape(-1,1)), axis = 1)
                 zpsd_matrix[k] = np.concatenate((zpsd_matrix[k], zPSD.reshape(-1,1)), axis = 1)
@@ -98,44 +101,33 @@ def folder_sorting(directory):
     return groups, settings_list
 
 
-xmod = r'D:\Lab data\20250214\CH0 modulate'
+filepath = r'D:\Lab data\20250219'
 
-static = r'D:\Lab data\20250214\No modulate'
+groups, settings_list = folder_sorting(filepath)
 
-static_group, static_setting = folder_sorting(static)
+conditionslist = ['0.1 mbar', '0.015 mbar', '2.8 mbar shaking', '2.8 mbar', '0.4 mbar', '0.77 mbar shaking','0.77 mbar', 'No sphere']
 
-for i in static_setting:
-    xref, yref, zref, freqref = file_psd_averager(static, static_group[i])
+figs = {}
+axs = {}
 
-groups, settings_list = folder_sorting(xmod)
+for i in range(len(settings_list)):
+    xpsd, ypsd, zpsd, freq = file_psd_averager(filepath, groups[settings_list[i]])
+    
+    figs[i], axs[i] = plt.subplots(3, 1, sharex=True, tight_layout=True)
+    print(freq)
+    print(xpsd)
 
-figx, axx = plt.subplots()
-figy, axy = plt.subplots()
-figz, axz = plt.subplots()
+    axs[i][0].semilogy(freq[0,2:150], xpsd[0][2:150])
+    axs[i][1].semilogy(freq[0,2:150], ypsd[0][2:150])
+    axs[i][2].semilogy(freq[0,2:150], zpsd[0][2:150])
+    axs[i][0].set_xlim(5,500)
+    axs[i][1].set_xlim(5,500)
+    axs[i][2].set_xlim(5,500)
+    axs[i][0].set_ylabel('X PSD (V^2/Hz)')
+    axs[i][1].set_ylabel('Y PSD (V^2/Hz)')
+    axs[i][2].set_ylabel('Z PSD (V^2/Hz)')
+    axs[i][2].set_xlabel('Frequency (Hz)')
+    figs[i].suptitle(conditionslist[i])
 
-for i in settings_list:
-    xpsd, ypsd, zpsd, freq = file_psd_averager(xmod, groups[i])
-    x_comp = np.subtract(xpsd,xref)
-    y_comp = np.subtract(ypsd,yref)
-    z_comp = np.subtract(zpsd,zref)
-    axx.loglog(freq, x_comp[0], label=i)
-    axy.loglog(freq, y_comp[0], label=i)
-    axz.loglog(freq, z_comp[0], label=i)
-
-axx.set_xlabel('Frequency (Hz)')
-axy.set_xlabel('Frequency (Hz)')
-axz.set_xlabel('Frequency (Hz)')
-
-axx.set_ylabel('PSD (V^2/Hz)')
-axy.set_ylabel('PSD (V^2/Hz)')
-axz.set_ylabel('PSD (V^2/Hz)')
-
-axx.set_title('X Motion')
-axy.set_title('Y Motion')
-axz.set_title('Z Motion')
-
-axx.legend()
-axy.legend()
-axz.legend()
 
 plt.show()
