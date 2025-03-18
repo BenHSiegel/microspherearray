@@ -7,7 +7,7 @@ import h5py
 import scipy as sp
 import matplotlib as mp
 import matplotlib.pyplot as plt
-from scipy.signal import welch
+from scipy.signal import welch, correlate, correlation_lags
 
 import basichdf5
 import os
@@ -38,20 +38,21 @@ def hdf5_scraper(filename):
     yout = np.array(yfeedback[1,:])
     zout = np.array(zfeedback[1,:])
     time = (np.arange(len(xin))) * sampleT
-    print(xin.shape)
     hf.close()
+    x = np.vstack((xin,xout))
+    y = np.vstack((yin,yout))
+    z = np.vstack((zin,zout))
 
-    return xin, xout, yin, yout, zin, zout, Fs
+    return xin, xout, yin, yout, zin, zout,Fs
 
 
-def file_psd_averager(folder, filelist):
+def file_frequency_space_TF(folder, filelist, drivingfreq):
     counter = 0
     segmentsize = 2048
     for i in filelist:
         xin, xout, yin, yout, zin, zout, framerate = hdf5_scraper(os.path.join(folder,i))
 
         totalspheres = 1
-        
         if counter == 0:
             xinpsd_matrix = [[] for j in range(totalspheres)]
             yinpsd_matrix = [[] for j in range(totalspheres)]
@@ -69,6 +70,17 @@ def file_psd_averager(folder, filelist):
             youtpsd_avg = [[] for j in range(totalspheres)]
             zoutpsd_avg = [[] for j in range(totalspheres)]
 
+            xphi_matrix = [[] for j in range(totalspheres)]
+            yphi_matrix = [[] for j in range(totalspheres)]
+            zphi_matrix = [[] for j in range(totalspheres)]
+            
+            xphi_avg = [[] for j in range(totalspheres)]
+            yphi_avg = [[] for j in range(totalspheres)]
+            zphi_avg = [[] for j in range(totalspheres)]
+
+            xg = [[] for j in range(totalspheres)]
+            yg = [[] for j in range(totalspheres)]
+            zg = [[] for j in range(totalspheres)]
             
         for k in range(totalspheres):
             xfreq, xPSD = welch(xin, framerate, 'hann', segmentsize)
@@ -77,6 +89,19 @@ def file_psd_averager(folder, filelist):
             xfreqout, xPSDout = welch(xout, framerate, 'hann', segmentsize)
             yfreqout, yPSDout = welch(yout, framerate, 'hann', segmentsize)
             zfreqout, zPSDout = welch(zout, framerate, 'hann', segmentsize)
+
+            xcorr = correlate(xin,xout)
+            xlags = correlation_lags(len(xin), len(xout))
+            xphi = xlags[np.argmax(xcorr)] * 2 * np.pi * drivingfreq / framerate
+
+            ycorr = correlate(yin,yout)
+            ylags = correlation_lags(len(yin), len(yout))
+            yphi = ylags[np.argmax(ycorr)] * 2 * np.pi * drivingfreq / framerate
+
+            zcorr = correlate(zin,zout)
+            zlags = correlation_lags(len(zin), len(zout))
+            zphi = zlags[np.argmax(zcorr)] * 2 * np.pi * drivingfreq / framerate
+
             if counter == 0:
                 xfreq = xfreq.reshape(1,-1)
                 xinpsd_matrix[k] = xPSD.reshape(-1,1)
@@ -86,6 +111,11 @@ def file_psd_averager(folder, filelist):
                 xoutpsd_matrix[k] = xPSDout.reshape(-1,1)
                 youtpsd_matrix[k] = yPSDout.reshape(-1,1)
                 zoutpsd_matrix[k] = zPSDout.reshape(-1,1)
+
+                xphi_matrix[k] = xphi
+                yphi_matrix[k] = yphi
+                zphi_matrix[k] = zphi
+
             else:
                 xfreq = xfreq.reshape(1,-1)
                 xinpsd_matrix[k] = np.concatenate((xinpsd_matrix[k], xPSD.reshape(-1,1)), axis = 1)
@@ -95,6 +125,10 @@ def file_psd_averager(folder, filelist):
                 xoutpsd_matrix[k] = np.concatenate((xoutpsd_matrix[k], xPSDout.reshape(-1,1)), axis = 1)
                 youtpsd_matrix[k] = np.concatenate((youtpsd_matrix[k], yPSDout.reshape(-1,1)), axis = 1)
                 zoutpsd_matrix[k] = np.concatenate((zoutpsd_matrix[k], zPSDout.reshape(-1,1)), axis = 1)
+
+                xphi_matrix.append(xphi)
+                yphi_matrix.append(yphi)
+                zphi_matrix.append(zphi)
 
         counter += 1
     
@@ -106,8 +140,16 @@ def file_psd_averager(folder, filelist):
         xoutpsd_avg[i] = np.mean(xoutpsd_matrix[i], axis=1)
         youtpsd_avg[i] = np.mean(youtpsd_matrix[i], axis=1)
         zoutpsd_avg[i] = np.mean(zoutpsd_matrix[i], axis=1)
+
+        xphi_avg[i] = np.mean(xphi_matrix[i])
+        yphi_avg[i] = np.mean(yphi_matrix[i])
+        zphi_avg[i] = np.mean(zphi_matrix[i])
+
+        xg[i] = np.sqrt(np.max(xoutpsd_avg[i])/(np.max(xinpsd_avg[i])))
+        yg[i] = np.sqrt(np.max(youtpsd_avg[i])/(np.max(yinpsd_avg[i])))
+        zg[i] = np.sqrt(np.max(zoutpsd_avg[i])/(np.max(zinpsd_avg[i])))
     
-    return xinpsd_avg, yinpsd_avg, zinpsd_avg, xoutpsd_avg, youtpsd_avg, zoutpsd_avg, xfreq
+    return xinpsd_avg, yinpsd_avg, zinpsd_avg, xoutpsd_avg, youtpsd_avg, zoutpsd_avg, xfreq, xphi_avg, yphi_avg, zphi_avg, xg, yg, zg
     
 
 def folder_sorting(directory):
@@ -123,37 +165,46 @@ def folder_sorting(directory):
     freqs_list = [i for i in testfreqs if testfreqs[i]!=testfreqs.default_factory()]
     return testfreqs, freqs_list
 
-
-filepath = r'D:\Lab data\20250313\p=0.1 tests'
+plt.close()
+filepath = r'C:\Users\Ben\Documents\Research\20250313\p=0.1 tests'
 
 testfreqs, freqs_list = folder_sorting(filepath)
-
+print(freqs_list)
 conditionslist = [15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 285, 300, 315, 330, 360, 390, 420, 450, 500, 600, 700, 800, 900, 1000, 1253, 1507, 1772, 2000]
 
 figs = {}
 axs = {}
 
+plotfreqs = []
+phases = np.empty((3,0))
+gains = np.empty((3,0))
+
 for i in range(len(freqs_list)):
+    xinpsd_avg, yinpsd_avg, zinpsd_avg, xoutpsd_avg, youtpsd_avg, zoutpsd_avg, xfreq, xphi_avg, yphi_avg, zphi_avg, xg, yg, zg = file_frequency_space_TF(filepath, testfreqs[freqs_list[i]], int(freqs_list[i]))
+    # freq = freq[0,:]
+    # figs[i], axs[i] = plt.subplots(3, 1, sharex=True, tight_layout=True)
 
+    # axs[i][0].semilogy(freq, xinpsd_avg[0])
+    # axs[i][0].semilogy(freq, xoutpsd_avg[0])
+    # axs[i][1].semilogy(freq, yinpsd_avg[0])
+    # axs[i][1].semilogy(freq, youtpsd_avg[0])
+    # axs[i][2].semilogy(freq, zinpsd_avg[0])
+    # axs[i][2].semilogy(freq, zoutpsd_avg[0])
+    # axs[i][0].set_ylabel('X PSD (V^2/Hz)')
+    # axs[i][1].set_ylabel('Y PSD (V^2/Hz)')
+    # axs[i][2].set_ylabel('Z PSD (V^2/Hz)')
+    # axs[i][2].set_xlabel('Frequency (Hz)')
+    # figs[i].suptitle(freqs_list[i])
 
-# for i in range(len(settings_list)):
-#     xpsd, ypsd, zpsd, freq = file_psd_averager(filepath, groups[settings_list[i]])
-    
-#     figs[i], axs[i] = plt.subplots(3, 1, sharex=True, tight_layout=True)
-#     print(freq)
-#     print(xpsd)
+    plotfreqs.append(int(freqs_list[i]))
+    phases = np.hstack((phases,np.vstack((xphi_avg,yphi_avg,zphi_avg)))) if phases.size else np.vstack((xphi_avg,yphi_avg,zphi_avg))
+    gains = np.hstack((gains,np.vstack((xg,yg,zg)))) if gains.size else np.vstack((xg,yg,zg))
 
-#     axs[i][0].semilogy(freq[0,2:150], xpsd[0][2:150])
-#     axs[i][1].semilogy(freq[0,2:150], ypsd[0][2:150])
-#     axs[i][2].semilogy(freq[0,2:150], zpsd[0][2:150])
-#     axs[i][0].set_xlim(5,500)
-#     axs[i][1].set_xlim(5,500)
-#     axs[i][2].set_xlim(5,500)
-#     axs[i][0].set_ylabel('X PSD (V^2/Hz)')
-#     axs[i][1].set_ylabel('Y PSD (V^2/Hz)')
-#     axs[i][2].set_ylabel('Z PSD (V^2/Hz)')
-#     axs[i][2].set_xlabel('Frequency (Hz)')
-#     figs[i].suptitle(conditionslist[i])
+figa,axa = plt.subplots(2,1,sharex=True)
+for i in range(3):
+    axa[0].scatter(plotfreqs,gains[i,:]/(np.max(gains[i,:])), label=str(i),s=(30-10*i))
+    axa[1].scatter(plotfreqs,phases[i,:], label=str(i),s=(30-10*i))
 
+axa[0].legend()
 
 plt.show()
