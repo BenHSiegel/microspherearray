@@ -165,8 +165,7 @@ def folder_sorting(directory):
     freqs_list = [i for i in testfreqs if testfreqs[i]!=testfreqs.default_factory()]
     return testfreqs, freqs_list
 
-plt.close()
-filepath = r'C:\Users\Ben\Documents\Research\20250313\p=0.1 tests'
+filepath = r'D:\Lab data\20250313\p=0.1 tests'
 
 testfreqs, freqs_list = folder_sorting(filepath)
 print(freqs_list)
@@ -201,10 +200,24 @@ for i in range(len(freqs_list)):
     gains = np.hstack((gains,np.vstack((xg,yg,zg)))) if gains.size else np.vstack((xg,yg,zg))
 
 figa,axa = plt.subplots(2,1,sharex=True)
+labels = ['x','y','z']
 for i in range(3):
-    axa[0].scatter(plotfreqs,gains[i,:]/(np.max(gains[i,:])), label=str(i),s=(30-10*i))
-    axa[1].scatter(plotfreqs,phases[i,:], label=str(i),s=(30-10*i))
+    axa[0].scatter(plotfreqs,gains[i,:]/(np.max(gains[i,:])), label=labels[i],s=(10-(i+1)**2))
+    axa[1].scatter(plotfreqs,phases[i,:], label=labels[i],s=(30-10*i))
 
-axa[0].legend()
-
+# axa[0].set_xlim(10,620)
+# axa[1].set_xlim(10,620)
+# axa[0].set_ylim(0,0.3)
+# axa[1].set_ylim((-2*np.pi),2*np.pi)
+axa[1].axhline(y=(0), color='r', linestyle='dotted',alpha=0.3,label='0')
+axa[1].set_yticks(np.arange(-np.pi, np.pi+0.01, np.pi/4))
+ticklabels = [r'$-\pi$',  r'$-3\pi/4$', r'$-\pi/2$', r'$-\pi/4$', '$0$', r'$\pi/4$', r'$\pi/2$',  r'$3\pi/4$',  r'$\pi$']
+#ticklabels = [r'$-2\pi$',r'$-3\pi/2$',r'$-\pi$', r'$-\pi/2$', '$0$',  r'$\pi/2$',  r'$\pi$',  r'$3\pi/2$', r'$2\pi$']
+axa[1].set_yticklabels(ticklabels)
+axa[0].legend(loc=2)
+axa[1].legend(loc=3)
+axa[0].set_ylabel('Normalized Gain (Gain/MaxGain)')
+axa[1].set_ylabel('Phase offset (rad)')
+axa[1].set_xlabel('Frequency (Hz)')
+figa.suptitle('Bode Plot for P Action of Feedback')
 plt.show()
