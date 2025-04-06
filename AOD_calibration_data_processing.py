@@ -11,7 +11,7 @@ import sys
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import curve_fit
 
-def process_hdf5_file(file_path):
+def process_hdf5_file(file_path, gainorfreq):
     '''
     Processes an HDF5 file and returns a pandas dataframe with the data
     '''
@@ -24,7 +24,10 @@ def process_hdf5_file(file_path):
         # Get the number of columns
         num_columns = data.shape[1]
         # Generate column names based on column numbers
-        column_names = ['Power', 'CH0 Freq', 'CH1 Freq', 'CH0 gain','CH0 adjusted gain', 'CH1 gain', 'CH1 adjusted gain', 'Abs time']
+        if gainorfreq == 'gain':
+            column_names = ['Power', 'CH0 Freq', 'CH1 Freq', 'CH0 gain','CH0 adjusted gain', 'CH1 gain', 'CH1 adjusted gain', 'Abs time']
+        elif gainorfreq =='freq':
+            column_names = ['Power', 'CH0 Freq', 'CH1 Freq', 'CH0 gain', 'CH1 gain', 'Abs time']
         # Convert the data to a pandas dataframe
         df = pd.DataFrame(data, columns=column_names)
         # Remove the first row from the dataframe since it is an artifact of LabView HDF5 file writing
@@ -93,7 +96,7 @@ def plot_freq_map(df, x_column, y_column, z_column, title, x_label, y_label, z_l
     Plots a 2D surface plot of the data point by point
     '''
     # Filter the dataframe to only include points where the z value is greater than 0.01
-    df = df[df[z_column] > 0.05]
+    #df = df[df[z_column] > 0.05]
     # Create a figure and a 3D axis
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -218,10 +221,10 @@ def main(file_path,folder_path,filename):
         print('File does not exist')
         sys.exit(1)
     # Process the HDF5 file
-    df = process_hdf5_file(file_path)
+    df = process_hdf5_file(file_path,'freq')
     # Plot the data
-    plot_gain_sweep(df, 'CH0 adjusted gain', 'Power', filename, 'Channel 0 Gain (%)', 'Power Output (W)', os.path.join(folder_path, 'aod_gain_calibration_data.png'),save_csv=False)
-    # plot_freq_map(df, 'CH0 Freq', 'CH1 Freq', 'Power', 'AOD Calibration Data', 'Channel 0 Frequency (Hz)', 'Channel 1 Frequency (Hz)', 'Power Output', 'aod_freq_calibration_data.png')
+    #plot_gain_sweep(df, 'CH0 adjusted gain', 'Power', filename, 'Channel 0 Gain (%)', 'Power Output (W)', os.path.join(folder_path, 'aod_gain_calibration_data.png'),save_csv=False)
+    plot_freq_map(df, 'CH0 Freq', 'CH1 Freq', 'Power', 'AOD Calibration Data', 'Channel 0 Frequency (Hz)', 'Channel 1 Frequency (Hz)', 'Power Output', 'aod_freq_calibration_data.png')
 
 
 
@@ -234,6 +237,6 @@ def main(file_path,folder_path,filename):
 # filename = 'expanded_frequency_map.h5'
 # main(os.path.join(path, filename),filename)
 
-path = r'D:\Lab data\20250122'
-filename = 'gain_interpolate_check_2.h5'
+path = r'D:\Lab data\20250121\frequency map'
+filename = 'expanded_frequency_map.h5'
 main(os.path.join(path, filename),path,filename)

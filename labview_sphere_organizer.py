@@ -196,7 +196,7 @@ def proximitycheck(xtravellines, ytravellines, row_ind, col_ind, swapenabled):
     
     alarm = False
     alreadyswappedlist = []
-    counter = 0;
+    counter = 0
     for i in range(max(len(a) for a in xtravellines)):
         xlocs=[]
         ylocs=[]
