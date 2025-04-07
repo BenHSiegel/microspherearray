@@ -14,7 +14,7 @@ import random
 import os
 import sys
 import time
-
+import h5py
 
 
 def makearray(startfreq1,startfreq2,separation,size,dim2):
@@ -350,8 +350,6 @@ def delaypath(xtravellines, ytravellines, row_ind, col_ind, delaylist, invertdel
                         
                     if i > len(xtravellines[dchoice]):
                         if 9 > len(xtravellines[dchoice]):
-                            pos = -4
-                        elif 4 > len(xtravellines[dchoice]):
                             pos = -2
                         else:
                             pos = -10
@@ -429,7 +427,7 @@ Run this section to generate a file to load into labview with the sorting paths
 
 
 
-# path = r"C:\Users\yalem\OneDrive\Documents\Optlev\LabView Code\ARRAY\Organizer startpoints and path csv"
+# path = r"C:\Users\yalem\Documents\Optlev\LabView Code\ARRAY\Organizer startpoints and path csv"
 # os.chdir(path)
 
 # filename = r"\startpoints.csv"
@@ -509,6 +507,9 @@ Run this section to generate a file to load into labview with the sorting paths
 ###############################################################################
 #Testing code for efficiency of sorting and brute force finding errors
 
+path = r"C:\Users\yalem\Documents\Optlev\LabView Code\ARRAY\Organizer startpoints and path csv"
+os.chdir(path)
+
 numspheres = [20,30,49,75,81,100]
 
 freqset = [22, 22, 21, 20, 20, 20]
@@ -563,7 +564,7 @@ for select in range(len(numspheres)):
     countertrialsavg.append(np.mean(countertrials[select]))
     delaycountertrialsavg.append(np.mean(delaycountertrials[select]))
     
-delaysums = [np.average(tt) for tt in timing]
+delaysums = []
 for i in delaytrials:
     delaysums.append(sum(i))
 
@@ -611,3 +612,21 @@ for i in range(len(countertrials)):
     axs[i][1].set_xlabel('Number of collisions')
     plt.show()
 
+savename = 'simulationresults_4-6-25.h5'
+hf = h5py.File(savename, 'w')
+for i in range(len(numspheres)):
+    g1 = hf.create_group(str(numspheres[i]) + 'Spheres')
+    g1.attrs.create('Number of simulations', 1000)
+    
+    d1 = g1.create_dataset('Timing', data = timing[i])
+    d2 = g1.create_dataset('Initial Collisions', data = countertrials[i])
+    d3 = g1.create_dataset('Final Collisions', data = delaycountertrials[i])
+    d4 = g1.create_dataset('Tried delay?', data = delaytrials[i])
+    
+    d1.attrs.create('Time STD', timestd[i])
+    d1.attrs.create('Average Time', timeavgs[i])
+    d2.attrs.create('Average # of intial collisions', countertrialsavg[i])
+    d3.attrs.create('Average # of collisions after delay', delaycountertrialsavg[i])
+    d4.attrs.create('Tried to use delay', delaysums[i])
+    
+hf.close()
