@@ -165,12 +165,14 @@ def folder_sorting(directory):
     freqs_list = [i for i in testfreqs if testfreqs[i]!=testfreqs.default_factory()]
     return testfreqs, freqs_list
 
-filepath = r'D:\Lab data\20250313\p=0.1 tests'
+filepath = r'D:\Lab data\20250414\Filter transfer function data'
 
 testfreqs, freqs_list = folder_sorting(filepath)
-print(freqs_list)
-conditionslist = [15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 285, 300, 315, 330, 360, 390, 420, 450, 500, 600, 700, 800, 900, 1000, 1253, 1507, 1772, 2000]
+freqs = [int(f) for f in freqs_list]
+print(freqs)
+#conditionslist = [15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 285, 300, 315, 330, 360, 390, 420, 450, 500, 600, 700, 800, 900, 1000, 1253, 1507, 1772, 2000]
 
+'''
 figs = {}
 axs = {}
 
@@ -221,3 +223,4 @@ axa[1].set_ylabel('Phase offset (rad)')
 axa[1].set_xlabel('Frequency (Hz)')
 figa.suptitle('Bode Plot for P Action of Feedback')
 plt.show()
+'''
