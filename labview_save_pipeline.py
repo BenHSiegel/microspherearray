@@ -76,34 +76,36 @@ class FileGrouper:
 
 import matplotlib.pyplot as plt
 
-    def plot_results(self, results):
-        # Extract data for plotting
-        drive_frequencies = []
-        ratio_riemann_sums = []
-        phase_differences = []
+def plot_results(self, results):
+    # Extract data for plotting
+    drive_frequencies = []
+    ratio_riemann_sums = []
+    phase_differences = []
 
-        for group_key, data in results.items():
-            drive_frequency = int(group_key.split('Hz')[0])
-            drive_frequencies.append(drive_frequency)
-            ratio_riemann_sums.append(data["ratios"]["riemann_sum"])
-            phase_differences.append(np.mean(data["phase_differences"]))  # Average phase differences
+    for group_key, data in results.items():
+        drive_frequency = int(group_key.split('Hz')[0])
+        drive_frequencies.append(drive_frequency)
+        ratio_riemann_sums.append(data["ratios"]["riemann_sum"])
+        phase_differences.append(np.mean(data["phase_differences"]))  # Average phase differences
 
-        # Plot ratio Riemann sums
-        plt.figure(figsize=(10, 5))
-        plt.plot(drive_frequencies, ratio_riemann_sums, marker='o', label="Ratio Riemann Sum")
-        plt.xlabel("Drive Frequency (Hz)")
-        plt.ylabel("Ratio Riemann Sum")
-        plt.title("Ratio Riemann Sum vs Drive Frequency")
-        plt.grid(True)
-        plt.legend()
-        plt.show()
+    # Plot ratio Riemann sums
+    plt.figure(figsize=(10, 5))
+    plt.plot(drive_frequencies, ratio_riemann_sums, marker='o', label="Ratio Riemann Sum")
+    plt.xlabel("Drive Frequency (Hz)")
+    plt.ylabel("Ratio Riemann Sum")
+    plt.title("Ratio Riemann Sum vs Drive Frequency")
+    plt.grid(True)
+    plt.legend()
+    plt.show()
 
-        # Plot phase differences
-        plt.figure(figsize=(10, 5))
-        plt.plot(drive_frequencies, phase_differences, marker='o', label="Phase Differences")
-        plt.xlabel("Drive Frequency (Hz)")
-        plt.ylabel("Average Phase Difference")
-        plt.title("Phase Differences vs Drive Frequency")
-        plt.grid(True)
-        plt.legend()
-        plt.show()
+    # Plot phase differences
+    plt.figure(figsize=(10, 5))
+    plt.plot(drive_frequencies, phase_differences, marker='o', label="Phase Differences")
+    plt.xlabel("Drive Frequency (Hz)")
+    plt.ylabel("Average Phase Difference")
+    plt.title("Phase Differences vs Drive Frequency")
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
+    return
