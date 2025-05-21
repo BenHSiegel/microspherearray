@@ -3,6 +3,7 @@ from collections import defaultdict
 import re
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 class FileGrouper:
     def __init__(self, folder_path):
@@ -73,8 +74,6 @@ class FileGrouper:
         freq_bins = np.arange(len(data))  # Assuming frequency bins are indexed
         closest_bin = np.argmin(np.abs(freq_bins - drive_frequency))
         return data[closest_bin]
-
-import matplotlib.pyplot as plt
 
     def plot_results(self, results):
         # Extract data for plotting

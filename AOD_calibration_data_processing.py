@@ -10,6 +10,8 @@ import os
 import sys
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import curve_fit
+import matplotlib as mpl
+from matplotlib.cm import ScalarMappable
 
 def process_hdf5_file(file_path, gainorfreq):
     '''
@@ -23,11 +25,8 @@ def process_hdf5_file(file_path, gainorfreq):
         data = file[keys[0]][()]
         # Get the number of columns
         num_columns = data.shape[1]
-        # Generate column names based on column numbers
-        if gainorfreq == 'gain':
-            column_names = ['Power', 'CH0 Freq', 'CH1 Freq', 'CH0 gain','CH0 adjusted gain', 'CH1 gain', 'CH1 adjusted gain', 'Abs time']
-        elif gainorfreq =='freq':
-            column_names = ['Power', 'CH0 Freq', 'CH1 Freq', 'CH0 gain', 'CH1 gain', 'Abs time']
+        # Generate column names based on column numbers 
+        column_names = ['Power', 'CH0 Freq', 'CH1 Freq', 'CH0 gain', 'CH0 adjusted gain', 'CH1 gain', 'CH1 adjusted gain', 'Abs time', 'Laser Power']
         # Convert the data to a pandas dataframe
         df = pd.DataFrame(data, columns=column_names)
         # Remove the first row from the dataframe since it is an artifact of LabView HDF5 file writing
@@ -98,6 +97,14 @@ def plot_freq_map(df, x_column, y_column, z_column, title, x_label, y_label, z_l
     # Filter the dataframe to only include points where the z value is greater than 0.01
     #df = df[df[z_column] > 0.05]
     # Create a figure and a 3D axis
+
+    fig1, ax1 = plt.subplots()
+    ax1.plot(df['Abs time'], df['Laser Power'])
+    ax1.set_title('Laser Power vs Time')
+    ax1.set_xlabel('Time (s)')
+    ax1.set_ylabel('Stabilizer PD reading (V but really arb)')
+
+
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
@@ -138,8 +145,162 @@ def plot_freq_map(df, x_column, y_column, z_column, title, x_label, y_label, z_l
 
     # Save and show the normalized plot
     #fig_normalized.savefig(save_path.replace('.png', '_normalized.png'))
+
+    df[z_column + '_pnorm'] = df[z_column] / df['Laser Power']
+    
+    fig_pnorm = plt.figure()
+    ax_pnorm = fig_pnorm.add_subplot(111, projection='3d')
+    # Plot the normalized data point by point
+    scatter_pnorm = ax_pnorm.scatter(df[x_column], df[y_column], df[z_column + '_pnorm'], c=df[z_column + '_pnorm'], cmap='viridis')
+
+    # Add labels and title for the normalized plot
+    ax_pnorm.set_title(title + ' (Power Normalized)')
+    ax_pnorm.set_xlabel(x_label)
+    ax_pnorm.set_ylabel(y_label)
+    ax_pnorm.set_zlabel(z_label + ' (Power Normalized)')
+
+    # Add a color bar for the normalized plot
+    fig_pnorm.colorbar(scatter_pnorm, ax=ax_pnorm, shrink=0.5, aspect=5)
+
+    df['comparison'] = df[z_column + '_pnorm']/df[z_column + '_pnorm'].max() - df[z_column + '_normalized']
+
+    fig_comp = plt.figure()
+    ax_comp = fig_comp.add_subplot(111, projection='3d')
+    # Plot the normalized data point by point
+    scatter_comp = ax_comp.scatter(df[x_column], df[y_column], df['comparison'], c=df['comparison'], cmap='viridis')
+
+    # Add labels and title for the normalized plot
+    ax_comp.set_title(title + '  (Normalization residuals)')
+    ax_comp.set_xlabel(x_label)
+    ax_comp.set_ylabel(y_label)
+    ax_comp.set_zlabel('Normalized - normalized with fluctuation corrections', labelpad=15)
+    ax_comp.tick_params(axis='z', pad=10)
+
+    # Add a color bar for the normalized plot
+    fig_comp.colorbar(scatter_comp, ax=ax_comp, shrink=0.5, aspect=5)
+    
+    # Normalize z_column by the maximum value for each unique (x_column, y_column) pair
+    # Here, we normalize z_column by the maximum value for each unique y_column
+    df['z_by_ymax'] = df.groupby(y_column)[z_column].transform(lambda x: x / x.max())
+
+    fig_ynorm = plt.figure()
+    ax_ynorm = fig_ynorm.add_subplot(111, projection='3d')
+    scatter_ynorm = ax_ynorm.scatter(df[x_column], df[y_column], df['z_by_ymax'], c=df['z_by_ymax'], cmap='viridis')
+
+    ax_ynorm.set_title(title + ' (Normalized by max of each ' + y_column + ')')
+    ax_ynorm.set_xlabel(x_label)
+    ax_ynorm.set_ylabel(y_label)
+    ax_ynorm.set_zlabel(z_label + ' (Row-normalized by y)')
+
+    fig_ynorm.colorbar(scatter_ynorm, ax=ax_ynorm, shrink=0.5, aspect=5)
+
+    # Plot the difference of each x value row to the mean of all x value rows
+    # Compute the mean z_by_ymax for each x_column across all y_column
+    mean_z_by_x = df.groupby(x_column)['z_by_ymax'].mean()
+    # Map the mean to each row
+    df['mean_z_by_x'] = df[x_column].map(mean_z_by_x)
+    # Compute the difference
+    df['z_by_ymax_diff_x'] = df['z_by_ymax'] - df['mean_z_by_x']
+
+    fig_diff_x = plt.figure()
+    ax_diff_x = fig_diff_x.add_subplot(111, projection='3d')
+    scatter_diff_x = ax_diff_x.scatter(df[x_column], df[y_column], df['z_by_ymax_diff_x'], c=df['z_by_ymax_diff_x'], cmap='coolwarm')
+
+    # Recolor points green if z is between -0.01 and 0.01
+    cmap = plt.get_cmap('coolwarm')
+    normed = (df['z_by_ymax_diff_x'] - df['z_by_ymax_diff_x'].min()) / (df['z_by_ymax_diff_x'].max() - df['z_by_ymax_diff_x'].min())
+    colors = np.array([cmap(val) for val in normed])
+    mask = (df['z_by_ymax_diff_x'] >= -0.01) & (df['z_by_ymax_diff_x'] <= 0.01)
+    colors[mask] = (0, 1, 0, 1)  # RGBA for green
+
+    fig_diff_x = plt.figure()
+    ax_diff_x = fig_diff_x.add_subplot(111, projection='3d')
+    scatter_diff_x = ax_diff_x.scatter(
+        df[x_column], df[y_column], df['z_by_ymax_diff_x'],
+        c=colors, marker='o'
+    )
+
+    ax_diff_x.set_title(title + ' (Difference to mean of all ' + x_column + ' rows)')
+    ax_diff_x.set_xlabel(x_label)
+    ax_diff_x.set_ylabel(y_label)
+    ax_diff_x.set_zlabel('Difference to mean (Row-normalized by x)')
+
+    # Add a colorbar for only the non-green points
+    norm = mpl.colors.Normalize(
+        vmin=df['z_by_ymax_diff_x'].min(),
+        vmax=df['z_by_ymax_diff_x'].max())
+    sm = mpl.cm.ScalarMappable(cmap='coolwarm', norm=norm)
+    sm.set_array([])
+    fig_diff_x.colorbar(sm, ax=ax_diff_x, shrink=0.5, aspect=5, label='z_by_ymax_diff_x')
+
+    # Now repeat for each unique x_column: normalize z_column by the maximum value for each unique x_column
+    df['z_by_xmax'] = df.groupby(x_column)[z_column].transform(lambda x: x / x.max())
+
+    fig_xnorm = plt.figure()
+    ax_xnorm = fig_xnorm.add_subplot(111, projection='3d')
+    scatter_xnorm = ax_xnorm.scatter(df[x_column], df[y_column], df['z_by_xmax'], c=df['z_by_xmax'], cmap='viridis')
+
+    ax_xnorm.set_title(title + ' (Normalized by max of each ' + x_column + ')')
+    ax_xnorm.set_xlabel(x_label)
+    ax_xnorm.set_ylabel(y_label)
+    ax_xnorm.set_zlabel(z_label + ' (Row-normalized by x)')
+    # Filter to only include rows where x and y are between 18 and 32
+    mask_xy = (df[x_column] >= 18) & (df[x_column] <= 32) & (df[y_column] >= 18) & (df[y_column] <= 32)
+    df_xy = df[mask_xy]
+
+    # Use log scale for z values, avoid log(0) by adding a small epsilon
+    epsilon = 1e-8
+    z_log = np.log10(df_xy['z_by_xmax'] + epsilon)
+
+    scatter_xnorm = ax_xnorm.scatter(df_xy[x_column], df_xy[y_column], z_log, c=z_log, cmap='viridis')
+    ax_xnorm.set_title(title + ' (Log10 Normalized by max of each ' + x_column + ')')
+    ax_xnorm.set_xlabel(x_label)
+    ax_xnorm.set_ylabel(y_label)
+    ax_xnorm.set_zlabel('log10(' + z_label + ' Row-normalized by x)')
+
+    fig_xnorm.colorbar(scatter_xnorm, ax=ax_xnorm, shrink=0.5, aspect=5)
+
+    # Plot the difference of each y value row to the mean of all y value rows, on log scale
+    mean_z_by_y = df.groupby(y_column)['z_by_xmax'].mean()
+    df['mean_z_by_y'] = df[y_column].map(mean_z_by_y)
+    df['z_by_xmax_diff_y'] = df['z_by_xmax'] - df['mean_z_by_y']
+
+    df_xy = df[mask_xy]
+
+    # Use log scale for the difference, add epsilon to avoid log(0)
+    z_diff_log = np.log10(np.abs(df_xy['z_by_xmax_diff_y']) + epsilon) * np.sign(df_xy['z_by_xmax_diff_y'])
+
+    fig_diff_y = plt.figure()
+    ax_diff_y = fig_diff_y.add_subplot(111, projection='3d')
+    scatter_diff_y = ax_diff_y.scatter(df_xy[x_column], df_xy[y_column], z_diff_log, c=z_diff_log, cmap='coolwarm')
+
+    # Recolor points green if z_diff_log is between -0.01 and 0.01
+    cmap_y = plt.get_cmap('coolwarm')
+    normed_y = (z_diff_log - z_diff_log.min()) / (z_diff_log.max() - z_diff_log.min())
+    colors_y = np.array([cmap_y(val) for val in normed_y])
+    mask_y = (z_diff_log >= -0.01) & (z_diff_log <= 0.01)
+    colors_y[mask_y] = (0, 1, 0, 1)  # RGBA for green
+
+    fig_diff_y = plt.figure()
+    ax_diff_y = fig_diff_y.add_subplot(111, projection='3d')
+    scatter_diff_y = ax_diff_y.scatter(
+        df_xy[x_column], df_xy[y_column], z_diff_log,
+        c=colors_y, marker='o'
+    )
+
+    ax_diff_y.set_title(title + ' (Log10 Difference to mean of all ' + y_column + ' rows)')
+    ax_diff_y.set_xlabel(x_label)
+    ax_diff_y.set_ylabel(y_label)
+    ax_diff_y.set_zlabel('log10(Difference to mean) (Row-normalized by y)')
+
+    norm_y = mpl.colors.Normalize(
+        vmin=z_diff_log.min(),
+        vmax=z_diff_log.max())
+    sm_y = mpl.cm.ScalarMappable(cmap='coolwarm', norm=norm_y)
+    sm_y.set_array([])
+    fig_diff_y.colorbar(sm_y, ax=ax_diff_y, shrink=0.5, aspect=5, label='log10(z_by_xmax_diff_y)')
+
     plt.show()
-    # plt.close(fig)
     # plt.close(fig_normalized)
 
 
@@ -237,6 +398,6 @@ def main(file_path,folder_path,filename):
 # filename = 'expanded_frequency_map.h5'
 # main(os.path.join(path, filename),filename)
 
-path = r'D:\Lab data\20250121\frequency map'
-filename = 'expanded_frequency_map.h5'
+path = r'D:\Lab data\20250520'
+filename = 'AOD frequency sweep.h5'
 main(os.path.join(path, filename),path,filename)

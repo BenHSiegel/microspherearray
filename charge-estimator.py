@@ -120,7 +120,7 @@ def hdf5_sphere_psd_scraper(filename):
 
 
 
-def lorentzian(f, f_0, T, gamma):
+def temp_fit(f, f_0, T, gamma):
     kb = 1.38e-23 # Boltzmann's constant, SI units
     m = 1.4e-12 # mass in kg
     omega = 2*np.pi*f
@@ -161,7 +161,7 @@ def find_T(ref_psd, freqs):
         fmax = int(fguess_ind + 200)
     freqfit = freqs[int(fguess_ind-200):fmax]
     ref_psdfit = ref_psd[int(fguess_ind-200):fmax]
-    fit_params, cov = curve_fit(lorentzian, freqfit, ref_psdfit, p0=init_guess)#, bounds=([100,50,20,0],[300,1000,150,np.inf])
+    fit_params, cov = curve_fit(temp_fit, freqfit, ref_psdfit, p0=init_guess)#, bounds=([100,50,20,0],[300,1000,150,np.inf])
     perr = np.sqrt(np.diag(cov))
     return fit_params, fguess, perr
 
@@ -191,8 +191,8 @@ for i in range(X_psd.shape[0]):
     fit_params, f0, perr = find_T(X_psd[i,:], freqs)
     trial_params = [fit_params[0], fit_params[1], fit_params[2]/2]
     axx.plot(freqs, X_psd[i,:], label='Sphere ' + str(i))
-    axx.plot(freqs, lorentzian(freqs, *fit_params), label='Fit ' + str(i))
-    #axx.plot(freqs, lorentzian(freqs,*trial_params))
+    axx.plot(freqs, temp_fit(freqs, *fit_params), label='Fit ' + str(i))
+    #axx.plot(freqs, temp_fit(freqs,*trial_params))
     axx.set_xlabel('Frequency (Hz)')
     axx.set_ylabel('ASD (m^2/Hz)')
     print('For x direction of sphere ' + str(i))
@@ -212,7 +212,7 @@ figy, axy = plt.subplots()
 for i in range(Y_psd.shape[0]):
     fit_params, f0, perr = find_T(Y_psd[i,:], freqs)
     axy.semilogy(freqs, Y_psd[i,:], label='Sphere ' + str(i))
-    axy.plot(freqs, lorentzian(freqs, *fit_params), label='Fit ' + str(i))
+    axy.plot(freqs, temp_fit(freqs, *fit_params), label='Fit ' + str(i))
     axx.set_xlabel('Frequency (Hz)')
     axx.set_ylabel('ASD (m^2/Hz)')
     print('For y direction of sphere ' + str(i))
@@ -245,8 +245,8 @@ for i in range(len(xPSDlist)):
     #fit_params, f0 = find_T(X_psd[i,:], freqs)
     #trial_params = [fit_params[0], fit_params[1], fit_params[2]/2]
     axx.semilogy(xfrequency, xPSDlist[i], label='Sphere ' + str(i))
-    #axx.plot(frequency, lorentzian(freqs, *fit_params), label='Fit ' + str(i))
-    #axx.plot(frequency, lorentzian(freqs,*trial_params))
+    #axx.plot(frequency, temp_fit(freqs, *fit_params), label='Fit ' + str(i))
+    #axx.plot(frequency, temp_fit(freqs,*trial_params))
     axx.set_xlabel('Frequency (Hz)')
     axx.set_ylabel('PSD (m^2/Hz)')
 
@@ -254,7 +254,7 @@ figy, axy = plt.subplots()
 for i in range(len(yPSDlist)):
     #fit_params, f0 = find_T(Y_psd[i,:], freqs)
     axy.semilogy(yfrequency, yPSDlist[i], label='Sphere ' + str(i))
-    #axy.plot(freqs, lorentzian(freqs, *fit_params), label='Fit ' + str(i))
+    #axy.plot(freqs, temp_fit(freqs, *fit_params), label='Fit ' + str(i))
     #axy.set_xlabel('Frequency (Hz)')
     #axy.set_ylabel('ASD (m^2/Hz)')
     # print('For y direction of sphere ' + str(i))

@@ -26,28 +26,27 @@ from folderscanning_videoprocessor import *
 
 
 
-path = r"D:\Lab data\20240509\3MHzline"
+path = r"D:\Lab data\20250421\temperature measurement\camera"
 os.chdir(path)
-framerate = 700
+framerate = 1123
 
 
 ## This part is used to run on the first video and make sure you have the right
 ## minmass value for processmovie
 
-# filename = "3MHzsep-1.avi"
-# [spheres, f] = processmovie(filename, framerate)
-# fig, ax = plt.subplots()
-# ax.hist(f['mass'], bins=1000)
-
-
+filename = "temperature check.avi"
+[spheres, f] = processmovie(filename, framerate,15)
+fig, ax = plt.subplots()
+ax.hist(f['mass'], bins=1000)
+plt.show()
 
 ## This part will run through a single folder, processing the avi in it and
 ## computing the RMS ASDs from them all
 
-pcacheck = False
-saveposdata = True
-saveFFTavg = True
-fftsave = "3MHzline_rmsavg"
+# pcacheck = False
+# saveposdata = True
+# saveFFTavg = True
+# fftsave = "3MHzline_rmsavg"
 
-totalspheres = videofolder_dataextractions(path, framerate, pcacheck, saveposdata)
-hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)
+# totalspheres = videofolder_dataextractions(path, framerate, pcacheck, saveposdata)
+# hdf5file_RMSprocessing(path, totalspheres, saveFFTavg, fftsave)
