@@ -37,60 +37,79 @@ def plot_gain_sweep(df, x_column, y_column, title, x_label, y_label, save_path, 
     '''
     Plots the data
     '''
-    # Plot the data
-    fig, (ax, ax_residuals) = plt.subplots(2, 1, sharex=True)
-    ax.plot(df[x_column], df[y_column], label='Data')
-    
-    # Add labels and title
-    ax.set_title(title)
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-    # Create a secondary y-axis
-    ax2 = ax.twinx()
-    # Plot the normalized power on the secondary y-axis
-    normpower = df[y_column] / (df[y_column].max()/0.90)
 
+    #Plot the laser power vs time
+    fig1, ax1 = plt.subplots()
+    ax1.plot(df['Abs time'], df['Laser Power'])
+    ax1.set_title('Laser Power vs Time')
+    ax1.set_xlabel('Time (s)')
+    ax1.set_ylabel('Stabilizer PD reading (V but really arb)')
+
+    # Plot the normalized power and fits
+    fig2, ax2 = plt.subplots()
+    ax2.set_title(title)
+    ax2.set_xlabel(x_label)
+    ax2.set_ylabel('Normalized Power (%)')
+    df['normpower'] = df[y_column] / (df[y_column].max())
+    df['lasernorm'] = df[y_column] / df['Laser Power']
+    df['lasernorm'] = df['lasernorm'] / (df['lasernorm'].max())
+    df['lasernorm2'] = df['normpower'] * (df['Laser Power'].max()) / df['Laser Power']
+    ax2.plot(df[x_column], df['lasernorm']*100, label='Laser Power Normalized', color='orange')
+    ax2.plot(df[x_column], df['lasernorm2']*100, label='Laser Power Normalized 2', color='purple')
     # Perform a linear fit
-    slope, intercept = np.polyfit(df[x_column], normpower*100, 1)
+    n = len(df)
+    start = int(n * 0.2)
+    end = int(n * 0.8)
+    fit_x = df[x_column].iloc[start:end]
+    fit_y = (df['lasernorm'] * 100).iloc[start:end]
+    slope, intercept = np.polyfit(fit_x, fit_y, 1)
     fit_line = slope * df[x_column] + intercept
     ax2.plot(df[x_column], fit_line, label=f'Linear Fit (slope={slope:.4f})', color='green', linestyle='--')
-
-    # Calculate R^2
-    residuals = normpower*100 - fit_line
-    ss_res = np.sum(residuals**2)
-    ss_tot = np.sum((normpower*100 - np.mean(normpower*100))**2)
-    r_squared = 1 - (ss_res / ss_tot)
-    
-    ax2.plot(df[x_column], normpower*100, label='Normalized Power', color='red')
-    ax2.set_ylabel('Normalized Power (%)')
-    ax2.legend()
-    # Set the number of y-axis tick marks
-    ax.yaxis.set_major_locator(plt.MaxNLocator(10))
+    # Add dotted lines at y = 0 and y = 100
+    ax2.axhline(0, color='gray', linestyle=':', linewidth=1)
+    ax2.axhline(100, color='gray', linestyle=':', linewidth=1)
+    ax2.plot(df[x_column], df['normpower']*100, label='Normalized Power', color='red')
     ax2.yaxis.set_major_locator(plt.MaxNLocator(10))
-    
+    ax2.legend()
+
+    # Residuals figure
+    fig_residuals, ax_residuals = plt.subplots()
+    residuals = df['normpower']*100 - fit_line
+    ss_res = np.sum(residuals**2)
+    ss_tot = np.sum((df['normpower']*100 - np.mean(df['normpower']*100))**2)
+    r_squared = 1 - (ss_res / ss_tot)
     ax_residuals.plot(df[x_column], residuals, label='Residuals', color='blue')
-    ax_residuals.set_title('Residuals of Linear Fit')
+    ax_residuals.set_title('Residuals')
     ax_residuals.set_xlabel(x_label)
     ax_residuals.set_ylabel('Residuals (%)')
-    ax_residuals.axhline(0, color='black', linestyle='--')
     ax_residuals.legend()
-    
+
+    # Errors figure
+    fig_errors, ax_errors = plt.subplots()
+    residuals_laser = df['lasernorm']*100 - df['normpower']*100
+    residuals_laser2 = df['lasernorm2']*100 - df['normpower']*100
+    residuals_laser3 = df['lasernorm2']*100 - df['lasernorm']*100
+    ax_errors.plot(df[x_column], residuals_laser, label='Error calc 1', color='blue')
+    ax_errors.plot(df[x_column], residuals_laser2, label='Error calc 2', color='orange')
+    ax_errors.plot(df[x_column], residuals_laser3, label='Error 2-1', color='purple')
+    ax_errors.set_title('Errors based on laser fluctuations')
+    ax_errors.set_xlabel(x_label)
+    ax_errors.set_ylabel('Residuals (%)')
+    ax_errors.axhline(0, color='black', linestyle='--')
+    ax_errors.legend()
+
     plt.tight_layout()
-
-
-    # Save and show the plot
-    #fig.savefig(save_path)
     plt.show()
     #plt.close(fig)
     if save_csv:
         # Save df[x_column] and normpower to a CSV file without a header
         output_df = pd.DataFrame({
             x_column: df[x_column]/100,
-            'Normalized Power': normpower
+            'Normalized Power': df['lasernorm']
         })
         output_df.to_csv(save_path.replace('.png', '.csv'), index=False, header=False)
 
-def plot_freq_map(df, x_column, y_column, z_column, title, x_label, y_label, z_label, save_path):
+def plot_freq_map(df, x_column, y_column, z_column, title, x_label, y_label, z_label, save_path, save_csv=False):
     '''
     Plots a 2D surface plot of the data point by point
     '''
@@ -124,6 +143,9 @@ def plot_freq_map(df, x_column, y_column, z_column, title, x_label, y_label, z_l
     # Save and show the plot
     #fig.savefig(save_path)
 
+    ###########################################################################################
+    # Create a new figure and a 3D axis for the normalized plot
+
     # Normalize the z_column using its max value
     df[z_column + '_normalized'] = df[z_column] / df[z_column].max()
 
@@ -146,23 +168,30 @@ def plot_freq_map(df, x_column, y_column, z_column, title, x_label, y_label, z_l
     # Save and show the normalized plot
     #fig_normalized.savefig(save_path.replace('.png', '_normalized.png'))
 
-    df[z_column + '_pnorm'] = df[z_column] / df['Laser Power']
+    ####################################################################################################################
+    #Adjusts the measured laser power to account for the laser power fluctuations measured by the stabilizer
+
+    df[z_column + '_padjust'] = df[z_column] / df['Laser Power']
     
     fig_pnorm = plt.figure()
     ax_pnorm = fig_pnorm.add_subplot(111, projection='3d')
     # Plot the normalized data point by point
-    scatter_pnorm = ax_pnorm.scatter(df[x_column], df[y_column], df[z_column + '_pnorm'], c=df[z_column + '_pnorm'], cmap='viridis')
+    scatter_pnorm = ax_pnorm.scatter(df[x_column], df[y_column], df[z_column + '_padjust'], c=df[z_column + '_padjust'], cmap='viridis')
 
     # Add labels and title for the normalized plot
-    ax_pnorm.set_title(title + ' (Power Normalized)')
+    ax_pnorm.set_title(title + ' (Adjusted)')
     ax_pnorm.set_xlabel(x_label)
     ax_pnorm.set_ylabel(y_label)
-    ax_pnorm.set_zlabel(z_label + ' (Power Normalized)')
+    ax_pnorm.set_zlabel(z_label + ' (Adjusted)')
 
     # Add a color bar for the normalized plot
     fig_pnorm.colorbar(scatter_pnorm, ax=ax_pnorm, shrink=0.5, aspect=5)
 
-    df['comparison'] = df[z_column + '_pnorm']/df[z_column + '_pnorm'].max() - df[z_column + '_normalized']
+    ###########################################################################################################
+    # Calculate the difference between the normalized z_column and the normalized z_column with fluctuation corrections
+
+    df[z_column + '_adjustnorm'] = df[z_column + '_padjust']/df[z_column + '_padjust'].max()
+    df['comparison'] = df[z_column + '_adjustnorm'] - df[z_column + '_normalized']
 
     fig_comp = plt.figure()
     ax_comp = fig_comp.add_subplot(111, projection='3d')
@@ -170,18 +199,20 @@ def plot_freq_map(df, x_column, y_column, z_column, title, x_label, y_label, z_l
     scatter_comp = ax_comp.scatter(df[x_column], df[y_column], df['comparison'], c=df['comparison'], cmap='viridis')
 
     # Add labels and title for the normalized plot
-    ax_comp.set_title(title + '  (Normalization residuals)')
+    ax_comp.set_title(title + '  (Normalization Comparison)')
     ax_comp.set_xlabel(x_label)
     ax_comp.set_ylabel(y_label)
-    ax_comp.set_zlabel('Normalized - normalized with fluctuation corrections', labelpad=15)
+    ax_comp.set_zlabel('Normalized - Adjusted and Normalized', labelpad=15)
     ax_comp.tick_params(axis='z', pad=10)
 
     # Add a color bar for the normalized plot
     fig_comp.colorbar(scatter_comp, ax=ax_comp, shrink=0.5, aspect=5)
     
-    # Normalize z_column by the maximum value for each unique (x_column, y_column) pair
-    # Here, we normalize z_column by the maximum value for each unique y_column
-    df['z_by_ymax'] = df.groupby(y_column)[z_column].transform(lambda x: x / x.max())
+    ##########################################################################################################
+
+    # Normalize the adjusted power values by the maximum value for each unique (x_column, y_column) pair
+    # Here, we normalize adjusted power by the maximum value for each unique y_column
+    df['z_by_ymax'] = df.groupby(y_column)[z_column + '_padjust'].transform(lambda x: x / x.max())
 
     fig_ynorm = plt.figure()
     ax_ynorm = fig_ynorm.add_subplot(111, projection='3d')
@@ -196,15 +227,16 @@ def plot_freq_map(df, x_column, y_column, z_column, title, x_label, y_label, z_l
 
     # Plot the difference of each x value row to the mean of all x value rows
     # Compute the mean z_by_ymax for each x_column across all y_column
-    mean_z_by_x = df.groupby(x_column)['z_by_ymax'].mean()
-    # Map the mean to each row
-    df['mean_z_by_x'] = df[x_column].map(mean_z_by_x)
+    median_z_by_x = df.groupby(x_column)['z_by_ymax'].median()
+    print(median_z_by_x)
+    # Map the median to each row
+    df['median_z_by_x'] = df[x_column].map(median_z_by_x)
     # Compute the difference
-    df['z_by_ymax_diff_x'] = df['z_by_ymax'] - df['mean_z_by_x']
+    df['z_by_ymax_diff_x'] = df['z_by_ymax'] - df['median_z_by_x']
 
-    fig_diff_x = plt.figure()
-    ax_diff_x = fig_diff_x.add_subplot(111, projection='3d')
-    scatter_diff_x = ax_diff_x.scatter(df[x_column], df[y_column], df['z_by_ymax_diff_x'], c=df['z_by_ymax_diff_x'], cmap='coolwarm')
+    # fig_diff_x = plt.figure()
+    # ax_diff_x = fig_diff_x.add_subplot(111, projection='3d')
+    # scatter_diff_x = ax_diff_x.scatter(df[x_column], df[y_column], df['z_by_ymax_diff_x'], c=df['z_by_ymax_diff_x'], cmap='coolwarm')
 
     # Recolor points green if z is between -0.01 and 0.01
     cmap = plt.get_cmap('coolwarm')
@@ -223,7 +255,7 @@ def plot_freq_map(df, x_column, y_column, z_column, title, x_label, y_label, z_l
     ax_diff_x.set_title(title + ' (Difference to mean of all ' + x_column + ' rows)')
     ax_diff_x.set_xlabel(x_label)
     ax_diff_x.set_ylabel(y_label)
-    ax_diff_x.set_zlabel('Difference to mean (Row-normalized by x)')
+    ax_diff_x.set_zlabel('Difference to mean (Row-normalized by y)')
 
     # Add a colorbar for only the non-green points
     norm = mpl.colors.Normalize(
@@ -234,7 +266,8 @@ def plot_freq_map(df, x_column, y_column, z_column, title, x_label, y_label, z_l
     fig_diff_x.colorbar(sm, ax=ax_diff_x, shrink=0.5, aspect=5, label='z_by_ymax_diff_x')
 
     # Now repeat for each unique x_column: normalize z_column by the maximum value for each unique x_column
-    df['z_by_xmax'] = df.groupby(x_column)[z_column].transform(lambda x: x / x.max())
+    # Normalize the adjusted power values by the maximum value for each unique x_column
+    df['z_by_xmax'] = df.groupby(x_column)[z_column + '_padjust'].transform(lambda x: x / x.max())
 
     fig_xnorm = plt.figure()
     ax_xnorm = fig_xnorm.add_subplot(111, projection='3d')
@@ -244,62 +277,54 @@ def plot_freq_map(df, x_column, y_column, z_column, title, x_label, y_label, z_l
     ax_xnorm.set_xlabel(x_label)
     ax_xnorm.set_ylabel(y_label)
     ax_xnorm.set_zlabel(z_label + ' (Row-normalized by x)')
-    # Filter to only include rows where x and y are between 18 and 32
-    mask_xy = (df[x_column] >= 18) & (df[x_column] <= 32) & (df[y_column] >= 18) & (df[y_column] <= 32)
-    df_xy = df[mask_xy]
-
-    # Use log scale for z values, avoid log(0) by adding a small epsilon
-    epsilon = 1e-8
-    z_log = np.log10(df_xy['z_by_xmax'] + epsilon)
-
-    scatter_xnorm = ax_xnorm.scatter(df_xy[x_column], df_xy[y_column], z_log, c=z_log, cmap='viridis')
-    ax_xnorm.set_title(title + ' (Log10 Normalized by max of each ' + x_column + ')')
-    ax_xnorm.set_xlabel(x_label)
-    ax_xnorm.set_ylabel(y_label)
-    ax_xnorm.set_zlabel('log10(' + z_label + ' Row-normalized by x)')
 
     fig_xnorm.colorbar(scatter_xnorm, ax=ax_xnorm, shrink=0.5, aspect=5)
 
-    # Plot the difference of each y value row to the mean of all y value rows, on log scale
-    mean_z_by_y = df.groupby(y_column)['z_by_xmax'].mean()
-    df['mean_z_by_y'] = df[y_column].map(mean_z_by_y)
-    df['z_by_xmax_diff_y'] = df['z_by_xmax'] - df['mean_z_by_y']
+    # Plot the difference of each y value row to the mean of all y value rows
+    median_z_by_y = df.groupby(y_column)['z_by_xmax'].median()
+    df['median_z_by_y'] = df[y_column].map(median_z_by_y)
+    df['z_by_xmax_diff_y'] = df['z_by_xmax'] - df['median_z_by_y']
 
-    df_xy = df[mask_xy]
-
-    # Use log scale for the difference, add epsilon to avoid log(0)
-    z_diff_log = np.log10(np.abs(df_xy['z_by_xmax_diff_y']) + epsilon) * np.sign(df_xy['z_by_xmax_diff_y'])
-
-    fig_diff_y = plt.figure()
-    ax_diff_y = fig_diff_y.add_subplot(111, projection='3d')
-    scatter_diff_y = ax_diff_y.scatter(df_xy[x_column], df_xy[y_column], z_diff_log, c=z_diff_log, cmap='coolwarm')
-
-    # Recolor points green if z_diff_log is between -0.01 and 0.01
-    cmap_y = plt.get_cmap('coolwarm')
-    normed_y = (z_diff_log - z_diff_log.min()) / (z_diff_log.max() - z_diff_log.min())
-    colors_y = np.array([cmap_y(val) for val in normed_y])
-    mask_y = (z_diff_log >= -0.01) & (z_diff_log <= 0.01)
-    colors_y[mask_y] = (0, 1, 0, 1)  # RGBA for green
+    cmap2 = plt.get_cmap('coolwarm')
+    normed2 = (df['z_by_xmax_diff_y'] - df['z_by_xmax_diff_y'].min()) / (df['z_by_xmax_diff_y'].max() - df['z_by_xmax_diff_y'].min())
+    colors2 = np.array([cmap2(val) for val in normed2])
+    mask2 = (df['z_by_xmax_diff_y'] >= -0.01) & (df['z_by_xmax_diff_y'] <= 0.01)
+    colors2[mask2] = (0, 1, 0, 1)  # RGBA for green
 
     fig_diff_y = plt.figure()
     ax_diff_y = fig_diff_y.add_subplot(111, projection='3d')
     scatter_diff_y = ax_diff_y.scatter(
-        df_xy[x_column], df_xy[y_column], z_diff_log,
-        c=colors_y, marker='o'
+        df[x_column], df[y_column], df['z_by_xmax_diff_y'],
+        c=colors2, marker='o'
     )
 
-    ax_diff_y.set_title(title + ' (Log10 Difference to mean of all ' + y_column + ' rows)')
+    ax_diff_y.set_title(title + ' (Difference to mean of all ' + y_column + ' rows)')
     ax_diff_y.set_xlabel(x_label)
     ax_diff_y.set_ylabel(y_label)
-    ax_diff_y.set_zlabel('log10(Difference to mean) (Row-normalized by y)')
+    ax_diff_y.set_zlabel('Difference to mean (Row-normalized by x)')
 
-    norm_y = mpl.colors.Normalize(
-        vmin=z_diff_log.min(),
-        vmax=z_diff_log.max())
-    sm_y = mpl.cm.ScalarMappable(cmap='coolwarm', norm=norm_y)
-    sm_y.set_array([])
-    fig_diff_y.colorbar(sm_y, ax=ax_diff_y, shrink=0.5, aspect=5, label='log10(z_by_xmax_diff_y)')
+    norm2 = mpl.colors.Normalize(
+        vmin=df['z_by_xmax_diff_y'].min(),
+        vmax=df['z_by_xmax_diff_y'].max())
+    sm2 = mpl.cm.ScalarMappable(cmap='coolwarm', norm=norm2)
+    sm2.set_array([])
+    fig_diff_y.colorbar(sm2, ax=ax_diff_y, shrink=0.5, aspect=5, label='z_by_xmax_diff_y')
 
+    if save_csv:
+        # Save a CSV file with the x values and median z by x
+        output_df = pd.DataFrame({
+            x_column: median_z_by_x.index,
+            'median_z_by_x': median_z_by_x.values
+        })
+        output_df.to_csv(save_path.replace('.png', '_CH0calibration.csv'), index=False, header=False)
+
+        # Save a CSV file with the y values and median z by y
+        output_df_y = pd.DataFrame({
+            y_column: median_z_by_y.index,
+            'median_z_by_y': median_z_by_y.values
+        })
+        output_df_y.to_csv(save_path.replace('.png', '_CH1calibration.csv'), index=False, header=False)
+    
     plt.show()
     # plt.close(fig_normalized)
 
@@ -373,19 +398,36 @@ def power_scan_compare(path,filenames):
 
 
 
-def main(file_path,folder_path,filename):
+def main(file_path, folder_path, filename, plot_type='freq_map',save_csv=False):
     '''
     Main function
+    plot_type: 'gain_sweep' or 'freq_map'
     '''
     # Check if the file exists
     if not os.path.exists(file_path):
         print('File does not exist')
         sys.exit(1)
     # Process the HDF5 file
-    df = process_hdf5_file(file_path,'freq')
-    # Plot the data
-    #plot_gain_sweep(df, 'CH0 adjusted gain', 'Power', filename, 'Channel 0 Gain (%)', 'Power Output (W)', os.path.join(folder_path, 'aod_gain_calibration_data.png'),save_csv=False)
-    plot_freq_map(df, 'CH0 Freq', 'CH1 Freq', 'Power', 'AOD Calibration Data', 'Channel 0 Frequency (Hz)', 'Channel 1 Frequency (Hz)', 'Power Output', 'aod_freq_calibration_data.png')
+    df = process_hdf5_file(file_path, 'freq')
+    # Choose which plot to run
+    if plot_type == 'gain_sweep':
+        plot_gain_sweep(
+            df, 'CH1 gain', 'Power', filename,
+            'Channel 1 Gain (%)', 'Power Output (W)',
+            os.path.join(folder_path, 'aod_gain_calibration_data.png'),
+            save_csv=False
+        )
+    elif plot_type == 'freq_map':
+        plot_freq_map(
+            df, 'CH0 Freq', 'CH1 Freq', 'Power',
+            'AOD Calibration Data',
+            'Channel 0 Frequency (Hz)', 'Channel 1 Frequency (Hz)', 'Power Output',
+            os.path.join(folder_path, 'aod_gain_calibration_data.png'),
+            save_csv=True
+        )
+    else:
+        print(f"Unknown plot_type: {plot_type}")
+        sys.exit(1)
 
 
 
@@ -394,10 +436,7 @@ def main(file_path,folder_path,filename):
 #              'gain_scan_26-5x20MHz.h5','gain_scan_26-53x27-2MHz.h5','gain_scan_28-1x21-8MHz.h5']
 #power_scan_compare(path,filenames)
 
-# path = r'D:\Lab data\20250121\frequency map'
-# filename = 'expanded_frequency_map.h5'
-# main(os.path.join(path, filename),filename)
 
-path = r'D:\Lab data\20250520'
-filename = 'AOD frequency sweep.h5'
-main(os.path.join(path, filename),path,filename)
+path = r'D:\Lab data\20250522'
+filename = 'test_CH1freq_fix.h5'
+main(os.path.join(path, filename),path,filename, plot_type='freq_map')
