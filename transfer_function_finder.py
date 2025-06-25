@@ -102,6 +102,8 @@ def file_plotter(folder, filelist):
     counter = 0
     figs, axs = {}, {}
     figfall, axfall = {}, {}
+    fallcounter = 0
+    falllist = []
     for i in filelist:
         xdata, ydata, zdata, framerate, fb_included, x_fb, y_fb, z_fb, xgains, ygains, zgains, xcorrection, ycorrection, zcorrection = hdf5_scraper(os.path.join(folder,i))
         if len(xdata.shape) > 1:
@@ -125,8 +127,6 @@ def file_plotter(folder, filelist):
             axs[counter][1].plot(time,ydata, label='Sphere 1')
             axs[counter][2].plot(time,zdata, label='Sphere 1')
 
-            if min(zdata) < 0.1:
-
 
         else:
             for j in range(totalspheres):
@@ -134,13 +134,34 @@ def file_plotter(folder, filelist):
                 axs[counter][1].plot(time, ydata[j, :], label=f'Sphere {j+1}', alpha=0.6)
                 axs[counter][2].plot(time, zdata[j, :], label=f'Sphere {j+1}', alpha=0.6)
 
-                if min(zdata[j,:]) < 0.1:
-                    segmentsize = framerate * 0.3
-                    xfreq, xPSD = welch(xdata[j, :], framerate, 'hann', segmentsize)
-                    yfreq, yPSD = welch(ydata[j, :], framerate, 'hann', segmentsize)
-                    zfreq, zPSD = welch(zdata[j, :], framerate, 'hann', segmentsize)
-                    ## TODO FIX THIS
+                # if min(zdata[j,:]) < 0.1 and j not in falllist: #sphere fell out since no backscatter
+                #     falllist.append(j)
+                #     segmentsize = framerate * 0.2 #scan in 0.2 second segments
+                #     zderivative = np.diff(zdata[j, :])
+                #     max_deriv_idx = np.argmax(np.abs(zderivative))
 
+                #     for k in range(1,5): #scan 4 segments before the fall
+                #         figfall[fallcounter], axfall[fallcounter] = plt.subplots(3, 1, sharex=True, tight_layout=True)
+                #         start_idx = int(max_deriv_idx - k * segmentsize)
+                #         end_idx = int(start_idx + segmentsize)
+                #         xfreq, xPSD = welch(xdata[j, start_idx:end_idx], framerate, 'hann', segmentsize)
+                #         yfreq, yPSD = welch(ydata[j, start_idx:end_idx], framerate, 'hann', segmentsize)
+                #         zfreq, zPSD = welch(zdata[j, start_idx:end_idx], framerate, 'hann', segmentsize)
+                #         axfall[fallcounter][0].semilogy(xfreq, xPSD, alpha=0.6)
+                #         axfall[fallcounter][1].semilogy(yfreq, yPSD, alpha=0.6)
+                #         axfall[fallcounter][2].semilogy(zfreq, zPSD, alpha=0.6)
+                #         axfall[fallcounter][0].set_title(f'X motion before fall of sphere {j+1}')
+                #         axfall[fallcounter][1].set_title(f'Y motion before fall of sphere {j+1}')
+                #         axfall[fallcounter][2].set_title(f'Z motion before fall of sphere {j+1}')
+                #         axfall[fallcounter][0].set_ylabel('X PSD (V^2/Hz)')
+                #         axfall[fallcounter][1].set_ylabel('Y PSD (V^2/Hz)')
+                #         axfall[fallcounter][2].set_ylabel('Z PSD (V^2/Hz)')
+                #         axfall[fallcounter][2].set_xlabel('Frequency (Hz)')
+                #         axfall[fallcounter][0].set_xlim(10, 400)
+                #         axfall[fallcounter][1].set_xlim(10, 400)
+                #         axfall[fallcounter][2].set_xlim(10, 400)
+                #         figfall[fallcounter].suptitle(f'PSD before fall of sphere {j+1} in {i} from {start_idx/framerate:.2f} to {(end_idx-1)/framerate:.2f} seconds')
+                #         fallcounter += 1
 
 
             axs[counter][0].legend(loc='upper left', bbox_to_anchor=(1.01, 1))
@@ -160,7 +181,7 @@ def file_psd_averager(folder, filelist):
             totalspheres = xdata.shape[0]
         else:
             totalspheres = 1
-        
+
         if counter == 0:
             xpsd_matrix = [[] for j in range(totalspheres)]
             ypsd_matrix = [[] for j in range(totalspheres)]
@@ -172,9 +193,9 @@ def file_psd_averager(folder, filelist):
 
             
         for k in range(totalspheres):
-            xfreq, xPSD = welch(xdata, framerate, 'hann', len(xdata))
-            yfreq, yPSD = welch(ydata, framerate, 'hann', len(ydata))
-            zfreq, zPSD = welch(zdata, framerate, 'hann', len(zdata))
+            xfreq, xPSD = welch(xdata[k], framerate, 'hann', len(xdata[k]))
+            yfreq, yPSD = welch(ydata[k], framerate, 'hann', len(ydata[k]))
+            zfreq, zPSD = welch(zdata[k], framerate, 'hann', len(zdata[k]))
             if counter == 0:
                 xfreq = xfreq.reshape(1,-1)
                 xpsd_matrix[k] = xPSD.reshape(-1,1)
@@ -192,7 +213,7 @@ def file_psd_averager(folder, filelist):
         xpsd_avg[i] = np.mean(xpsd_matrix[i], axis=1)
         ypsd_avg[i] = np.mean(ypsd_matrix[i], axis=1)
         zpsd_avg[i] = np.mean(zpsd_matrix[i], axis=1)
-    
+
     return xpsd_avg, ypsd_avg, zpsd_avg, xfreq
 
 
@@ -218,70 +239,54 @@ def folder_sorting(directory):
     return groups, settings_list
 
 
-filepath = r'D:\Lab data\20250623\2sphere cooling\pumping down'
+filepath = r'D:\Lab data\20250620'
 groups, settings_list = folder_sorting(filepath)
 print(settings_list)
-for i in range(len(settings_list)):
-    file_plotter(filepath, groups[settings_list[i]])
-
-# filepath = r'D:\Lab data\20250603\sphere 1'
-# #xdata, ydata, zdata, framerate, fb_included, x_fb, y_fb, z_fb, xgains, ygains, zgains, xcorrection, ycorrection, zcorrection = hdf5_scraper(os.path.join(filepath,filename))
 
 
-# groups, settings_list = folder_sorting(filepath)
-
-# print(settings_list)
-# figs = {}
-# axs = {}
-# figx, axx = plt.subplots(1, 1, tight_layout=True)
-# figy, ayy = plt.subplots(1, 1, tight_layout=True)
-# figz, azz = plt.subplots(1, 1, tight_layout=True)
 # for i in range(len(settings_list)):
-#     xpsd, ypsd, zpsd, freq = file_psd_averager(filepath, groups[settings_list[i]])
+#     file_plotter(filepath, groups[settings_list[i]])
+
+
+figs = {}
+axs = {}
+figx, axx = plt.subplots(1, 1, tight_layout=True)
+figy, ayy = plt.subplots(1, 1, tight_layout=True)
+figz, azz = plt.subplots(1, 1, tight_layout=True)
+for i in range(len(settings_list)):
+    xpsd, ypsd, zpsd, freq = file_psd_averager(filepath, groups[settings_list[i]])
     
-#     if settings_list[i][0] == 'n':
-#         label = (settings_list[i]).replace('_', ' ')
-#         axx.semilogy(freq[0], xpsd[0], label=label)
-#         ayy.semilogy(freq[0], ypsd[0], label=label)
-#         azz.semilogy(freq[0], zpsd[0], label=label)
+    if settings_list[i][0] == 'i':
+        label = (settings_list[i]).replace('_', ' ')
+        axx.semilogy(freq[0], xpsd[0], label=label, alpha=0.6)
+        ayy.semilogy(freq[0], ypsd[0], label=label, alpha=0.6)
+        azz.semilogy(freq[0], zpsd[0], label=label, alpha=0.6)
 
-#     if settings_list[i][0] == 'X':
-#         axx.semilogy(freq[0], xpsd[0], label=('D=' + settings_list[i][4:]).replace('_', '.'))
-#     elif settings_list[i][0] == 'Y':
-#         ayy.semilogy(freq[0], ypsd[0], label=('D=' + settings_list[i][4:]).replace('_', '.'))
-#     elif settings_list[i][0] == 'Z':
-#         label=(settings_list[i]).replace('_', ' ')
-#         azz.semilogy(freq[0], zpsd[0], label=label)
+    if settings_list[i][0] == 'X':
+        axx.semilogy(freq[0], xpsd[0], alpha=0.6, label=(settings_list[i].replace('__', ' ')).replace('_', ' '))
+    elif settings_list[i][0] == 'Y':
+        ayy.semilogy(freq[0], ypsd[0], alpha=0.6, label=(settings_list[i].replace('__', ' ')).replace('_', ' '))
+    elif settings_list[i][0] == 'Z':
+        label=(settings_list[i].replace('__', ' ')).replace('_', ' ')
+        azz.semilogy(freq[0], zpsd[0], alpha=0.6, label=label)
 
-#     # figs[i], axs[i] = plt.subplots(3, 1, sharex=True, tight_layout=True)
+axx.set_ylabel('X PSD (V^2/Hz)')
+axx.set_xlabel('Frequency (Hz)')
+ayy.set_ylabel('Y PSD (V^2/Hz)')
+ayy.set_xlabel('Frequency (Hz)')
+azz.set_ylabel('Z PSD (V^2/Hz)')
+azz.set_xlabel('Frequency (Hz)')
+axx.legend()
+ayy.legend()
+azz.legend()
+axx.set_title('X PSD')
+ayy.set_title('Y PSD')
+azz.set_title('Z PSD')
+axx.set_xlim(1, 1000)
+ayy.set_xlim(1, 1000)
+azz.set_xlim(1, 1000)
+#axx.set_ylim(1e-10, 1e-3)
+#ayy.set_ylim(1e-10, 1e-3)
+#azz.set_ylim(1e-11, 1e-4)
 
-#     # axs[i][0].semilogy(freq[0], xpsd[0])
-#     # axs[i][1].semilogy(freq[0], ypsd[0])
-#     # axs[i][2].semilogy(freq[0], zpsd[0])
-#     # axs[i][0].set_ylabel('X PSD (V^2/Hz)')
-#     # axs[i][1].set_ylabel('Y PSD (V^2/Hz)')
-#     # axs[i][2].set_ylabel('Z PSD (V^2/Hz)')
-#     # axs[i][2].set_xlabel('Frequency (Hz)')
-#     # figs[i].suptitle(settings_list[i])
-
-
-# axx.set_ylabel('X PSD (V^2/Hz)')
-# axx.set_xlabel('Frequency (Hz)')
-# ayy.set_ylabel('Y PSD (V^2/Hz)')
-# ayy.set_xlabel('Frequency (Hz)')
-# azz.set_ylabel('Z PSD (V^2/Hz)')
-# azz.set_xlabel('Frequency (Hz)')
-# axx.legend()
-# ayy.legend()
-# azz.legend()
-# axx.set_title('X PSD')
-# ayy.set_title('Y PSD')
-# azz.set_title('Z PSD')
-# axx.set_xlim(0, 1000)
-# ayy.set_xlim(0, 1000)
-# azz.set_xlim(0, 1000)
-# axx.set_ylim(1e-10, 1e-3)
-# ayy.set_ylim(1e-10, 1e-3)
-# azz.set_ylim(1e-11, 1e-4)
-
-# plt.show()
+plt.show()
