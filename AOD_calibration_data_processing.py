@@ -30,7 +30,7 @@ def process_hdf5_file(file_path, gainorfreq):
         # Convert the data to a pandas dataframe
         df = pd.DataFrame(data, columns=column_names)
         # Remove the first row from the dataframe since it is an artifact of LabView HDF5 file writing
-        df = df.iloc[1:].reset_index(drop=True)
+        df = df.iloc[2:].reset_index(drop=True)
     return df
 
 def plot_gain_sweep(df, x_column, y_column, title, x_label, y_label, save_path, save_csv=False):
@@ -437,6 +437,6 @@ def main(file_path, folder_path, filename, plot_type='freq_map',save_csv=False):
 #power_scan_compare(path,filenames)
 
 
-path = r'D:\Lab data\20250522'
-filename = 'test_CH1freq_fix.h5'
-main(os.path.join(path, filename),path,filename, plot_type='freq_map')
+path = r'D:\Lab data\20250701'
+filename = 'gain_scan_CH1.h5'
+main(os.path.join(path, filename),path,filename, plot_type='gain_sweep')
