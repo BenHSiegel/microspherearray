@@ -313,7 +313,7 @@ def folder_sorting(directory):
     return groups, settings_list
 
 
-filepath = r'D:\Lab data\20250702'
+filepath = r'E:\Lab data\20250623\2sphere cooling'
 groups, settings_list = folder_sorting(filepath)
 print(settings_list)
 
@@ -322,11 +322,14 @@ print(settings_list)
 #     file_plotter(filepath, groups[settings_list[i]])
 
 
+#for the 6-23 data of two spheres
+actual_labels = ['No feedback', 'D1 = -0.1, D2 = -0.3', 'D = -0.1', 'D = -0.3 ', 'D = 0.1', 'D1 = 0.2, D2 = 0.1', 'D = 0.2', 'D = 0.4']
+label_dict = dict(zip(settings_list, actual_labels))
 figs = {}
 axs = {}
-figx, axx = plt.subplots(1, 1, tight_layout=True)
-figy, ayy = plt.subplots(1, 1, tight_layout=True)
-figz, azz = plt.subplots(1, 1, tight_layout=True)
+figx, axx = plt.subplots(2, 1, tight_layout=True)
+figy, ayy = plt.subplots(2, 1, tight_layout=True)
+figz, azz = plt.subplots(2, 1, tight_layout=True)
 for i in range(len(settings_list)):
     xpsd, ypsd, zpsd, freq, laser_psd = file_psd_averager(filepath, groups[settings_list[i]])
     if laser_psd is not None:
@@ -343,9 +346,9 @@ for i in range(len(settings_list)):
     axs[i][0].semilogy(freq[0], xpsd[0])
     axs[i][1].semilogy(freq[0], ypsd[0])
     axs[i][2].semilogy(freq[0], zpsd[0])
-    axs[i][0].set_xlim(1, 1000)
-    axs[i][1].set_xlim(1, 1000)
-    axs[i][2].set_xlim(1, 1000)
+    axs[i][0].set_xlim(1, 400)
+    axs[i][1].set_xlim(1, 400)
+    axs[i][2].set_xlim(1, 400)
     if laser_psd is not None:
         axs[i][3].set_title('Laser fluctuations')
         axs[i][3].set_ylabel('Laser PSD (V^2/Hz)')
@@ -356,28 +359,56 @@ for i in range(len(settings_list)):
     else:
         axs[i][2].set_xlabel('Frequency (Hz)')
 
-    label = (settings_list[i]).replace('_', ' ')
-    axx.semilogy(freq[0], xpsd[0], label=label, alpha=0.6)
-    ayy.semilogy(freq[0], ypsd[0], label=label, alpha=0.6)
-    azz.semilogy(freq[0], zpsd[0], label=label, alpha=0.6)
+    if settings_list[i][0] == 'i':
+        axx[0].semilogy(freq[0], xpsd[0], label=label_dict[settings_list[i]], alpha=0.6)
+        axx[1].semilogy(freq[0], xpsd[1], label=label_dict[settings_list[i]], alpha=0.6)
+        ayy[0].semilogy(freq[0], ypsd[0], label=label_dict[settings_list[i]], alpha=0.6)
+        ayy[1].semilogy(freq[0], ypsd[1], label=label_dict[settings_list[i]], alpha=0.6)
+        azz[0].semilogy(freq[0], zpsd[0], label=label_dict[settings_list[i]], alpha=0.6)
+        azz[1].semilogy(freq[0], zpsd[1], label=label_dict[settings_list[i]], alpha=0.6)
 
-axx.set_ylabel('X PSD (V^2/Hz)')
-axx.set_xlabel('Frequency (Hz)')
-ayy.set_ylabel('Y PSD (V^2/Hz)')
-ayy.set_xlabel('Frequency (Hz)')
-azz.set_ylabel('Z PSD (V^2/Hz)')
-azz.set_xlabel('Frequency (Hz)')
-axx.legend()
-ayy.legend()
-azz.legend()
-axx.set_title('X PSD')
-ayy.set_title('Y PSD')
-azz.set_title('Z PSD')
-axx.set_xlim(1, 1000)
-ayy.set_xlim(1, 1000)
-azz.set_xlim(1, 1000)
-#axx.set_ylim(1e-10, 1e-3)
-#ayy.set_ylim(1e-10, 1e-3)
-#azz.set_ylim(1e-11, 1e-4)
+    elif settings_list[i][0] == 'X':
+        axx[0].semilogy(freq[0], xpsd[0], label=label_dict[settings_list[i]], alpha=0.6)
+        axx[1].semilogy(freq[0], xpsd[1], label=label_dict[settings_list[i]], alpha=0.6)
+    elif settings_list[i][0] == 'Y':
+        ayy[0].semilogy(freq[0], ypsd[0], label=label_dict[settings_list[i]], alpha=0.6)
+        ayy[1].semilogy(freq[0], ypsd[1], label=label_dict[settings_list[i]], alpha=0.6)
+    elif settings_list[i][0] == 'Z':
+        azz[0].semilogy(freq[0], zpsd[0], label=label_dict[settings_list[i]], alpha=0.6)
+        azz[1].semilogy(freq[0], zpsd[1], label=label_dict[settings_list[i]], alpha=0.6)
 
+axx[0].set_ylabel('X PSD (V^2/Hz)')
+axx[1].set_ylabel('X PSD (V^2/Hz)')
+axx[1].set_xlabel('Frequency (Hz)')
+ayy[0].set_ylabel('Y PSD (V^2/Hz)')
+ayy[1].set_ylabel('Y PSD (V^2/Hz)')
+ayy[1].set_xlabel('Frequency (Hz)')
+azz[0].set_ylabel('Z PSD (V^2/Hz)')
+azz[1].set_ylabel('Z PSD (V^2/Hz)')
+azz[1].set_xlabel('Frequency (Hz)')
+axx[0].legend()
+ayy[0].legend()
+azz[0].legend()
+axx[0].set_title('Sphere 1')
+axx[1].set_title('Sphere 2')
+ayy[0].set_title('Sphere 1')
+ayy[1].set_title('Sphere 2')
+azz[0].set_title('Sphere 1')
+azz[1].set_title('Sphere 2')
+axx[0].set_xlim(100, 300)
+axx[1].set_xlim(100, 300)
+ayy[0].set_xlim(100, 300)
+ayy[1].set_xlim(100, 300)
+azz[0].set_xlim(1, 400)
+azz[1].set_xlim(1, 400)
+
+axx[0].set_ylim(1e-8, 1e-3)
+axx[1].set_ylim(1e-8, 1e-3)
+ayy[0].set_ylim(1e-8, 1e-3)
+ayy[1].set_ylim(1e-8, 1e-3)
+azz[0].set_ylim(1e-11, 1e-4)
+azz[1].set_ylim(1e-11, 1e-4)
+figx.suptitle('X motion')
+figy.suptitle('Y motion')
+figz.suptitle('Z motion')
 plt.show()
