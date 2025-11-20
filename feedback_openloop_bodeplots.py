@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-folder_path = r"C:\Users\bensi\Documents\Research\Moore Lab\20250925"
+folder_path = r"F:\Lab data\20250925"
 csv_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.csv')]
 
 dataframes = {}
@@ -42,15 +42,18 @@ def plot_bode(selected_dfs, title_suffix):
     # Place legend in the right 1/4 of the figure
     fig.legend(handles, labels, loc='center left', bbox_to_anchor=(0.77, 0.5))
     plt.tight_layout()
+    plt.show()
 
 # Split dataframes by name
 pass_prop_dfs = {name: df for name, df in dataframes.items() if (("pass" in name.lower() or "prop" in name.lower()) and not any(x in name.lower() for x in ["butter", "cheby", "ellip"]))}
 deriv_dfs = {name: df for name, df in dataframes.items() if ("deriv" in name.lower() and not any(x in name.lower() for x in ["butter", "cheby", "ellip"]))}
-other_dfs = {name: df for name, df in dataframes.items() if name not in pass_prop_dfs and name not in deriv_dfs}
+bandpass_dfs = {name: df for name, df in dataframes.items() if ("60-600bandpass" in name.lower())}
+other_dfs = {name: df for name, df in dataframes.items() if name not in pass_prop_dfs and name not in deriv_dfs and name not in bandpass_dfs}
 
 # Plot each group
 plot_bode(pass_prop_dfs, "(pass/prop)")
 plot_bode(deriv_dfs, "(deriv)")
+plot_bode(bandpass_dfs, "(bandpass 60-600)")
 plot_bode(other_dfs, "(other)")
 
 # Compare specific butter bandpass dataframes
@@ -92,16 +95,13 @@ def plot_bode_autoscale(selected_dfs, title_suffix):
         phase2 = df2["Phase"]
 
         fig_diff, (ax_amp_diff, ax_phase_diff) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
-        endind = int(3/4*len(freq_common))
-        ax_amp_diff.plot(freq_common[:endind], amp1[:endind] - amp2[:endind], '.', label="Amplitude diff", alpha=0.5)
+        ax_amp_diff.plot(freq_common, amp1 - amp2, '.', label="Amplitude diff", alpha=0.5)
         ax_amp_diff.set_ylabel("Amplitude Difference (dB)")
         ax_amp_diff.set_title("Amplitude Difference (1st - 2nd)")
         ax_amp_diff.grid(True)
         ax_amp_diff.legend()
-        phase_diff = np.zeros_like(phase1)
-        for i in range(len(phase1)):
-            phase_diff[i] = phase1[i] - phase2[i] if phase1[i] - phase2[i] > 0 else phase1[i] - phase2[i] + 360
-        ax_phase_diff.plot(freq_common[:endind], phase_diff[:endind], '.', label="Phase diff", alpha=0.5)
+
+        ax_phase_diff.plot(freq_common, phase1 - phase2, '.', label="Phase diff", alpha=0.5)
         ax_phase_diff.set_xlabel("Frequency (Hz)")
         ax_phase_diff.set_ylabel("Phase Difference (deg.)")
         ax_phase_diff.set_title("Phase Difference (1st - 2nd)")
@@ -113,7 +113,7 @@ def plot_bode_autoscale(selected_dfs, title_suffix):
     handles, labels = ax1.get_legend_handles_labels()
     fig.legend(handles, labels, loc='center left', bbox_to_anchor=(0.77, 0.5))
     plt.tight_layout()
+    plt.show()
 
 
 plot_bode_autoscale(compare_butter_dfs, "(1beam vs 10beam butter 60-600 bandpass)")
-plt.show()
