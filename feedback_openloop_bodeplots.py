@@ -23,9 +23,13 @@ def plot_bode(selected_dfs, title_suffix):
     ax2 = fig.add_subplot(gs[1, :3], sharex=ax1)
 
     for name, df in selected_dfs.items():
-        ax1.plot(df["frequency"], df["Amplitude"], '.', label=name, alpha=0.3)
+        if "CDIF" in name:
+            
+            ax1.plot(df["frequency"], df["Amplitude"]- 6 -df["Amplitude"].max(), '.', label=name, alpha=0.3)
+        else:
+            ax1.plot(df["frequency"], df["Amplitude"]-df["Amplitude"].max(), '.', label=name, alpha=0.3)
     ax1.set_ylabel("Magnitude (dB)")
-    ax1.set_title(f"Amplitude vs Frequency {title_suffix}")
+    ax1.set_title(f"Normalized Amplitude vs Frequency {title_suffix}")
     ax1.grid(True)
     ax1.set_xlim(0, 2000)
     ax1.set_ylim(-20, 0)  # Set y limits from -20 to 0
