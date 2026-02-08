@@ -4,6 +4,7 @@ Created on Fri Sep 29 14:26:35 2023
 
 @author: Ben
 """
+import time
 import numpy as np
 import pandas as pd
 from scipy.optimize import linear_sum_assignment
@@ -394,80 +395,80 @@ Run this section to generate a file to load into labview with the sorting paths
 
 
 
-path = r"C:\Users\yalem\OneDrive\Documents\Optlev\LabView Code\ARRAY\Organizer startpoints and path csv"
-os.chdir(path)
+# path = r"C:\Users\yalem\OneDrive\Documents\Optlev\LabView Code\ARRAY\Organizer startpoints and path csv"
+# os.chdir(path)
 
-filename = r"\startpoints.csv"
-filename = path + filename
+# filename = r"\startpoints.csv"
+# filename = path + filename
 
-startpoints = np.genfromtxt(filename,delimiter=',')
+# startpoints = np.genfromtxt(filename,delimiter=',')
 
-startfreq0 = float(sys.argv[1])
-startfreq1 = float(sys.argv[2])
-col_length = int(sys.argv[3])
+# startfreq0 = float(sys.argv[1])
+# startfreq1 = float(sys.argv[2])
+# col_length = int(sys.argv[3])
 
-endpoints = makearray(startfreq0, startfreq1, 1, len(startpoints), col_length)
+# endpoints = makearray(startfreq0, startfreq1, 1, len(startpoints), col_length)
 
-counter = 0
-trieddelay = False
-delaycounter = 0
+# counter = 0
+# trieddelay = False
+# delaycounter = 0
 
-xtravellines, ytravellines, row_ind, col_ind = optimalassignment(startpoints, endpoints)
+# xtravellines, ytravellines, row_ind, col_ind = optimalassignment(startpoints, endpoints)
 
-xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_ind, np.arange(0,(len(startpoints))))
+# xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_ind, np.arange(0,(len(startpoints))))
 
-alarm, row_ind, col_ind, counter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
+# alarm, row_ind, col_ind, counter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
 
-if alarm == True:
-    xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, delaycounter, badpaths = doublecheck(alarm, xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints, redrawlist)
+# if alarm == True:
+#     xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, delaycounter, badpaths = doublecheck(alarm, xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints, redrawlist)
 
-print(delaycounter)
+# print(delaycounter)
 
-for i in range(len(xtravellines)):
-    plt.plot(xtravellines[i], ytravellines[i],'.')
-    plt.plot(xtravellines[i][0], ytravellines[i][0], 'og')
-    plt.plot(xtravellines[i][-1], ytravellines[i][-1], 'ob')
+# for i in range(len(xtravellines)):
+#     plt.plot(xtravellines[i], ytravellines[i],'.')
+#     plt.plot(xtravellines[i][0], ytravellines[i][0], 'og')
+#     plt.plot(xtravellines[i][-1], ytravellines[i][-1], 'ob')
 
-for i in badpaths:
-    lines = plt.plot(xtravellines[i], ytravellines[i],'--')
-    plt.setp(lines, color='black')
-    plt.plot(xtravellines[i][0], ytravellines[i][0], 'rs')
-    plt.plot(xtravellines[i][-1], ytravellines[i][-1], 'r^')
+# for i in badpaths:
+#     lines = plt.plot(xtravellines[i], ytravellines[i],'--')
+#     plt.setp(lines, color='black')
+#     plt.plot(xtravellines[i][0], ytravellines[i][0], 'rs')
+#     plt.plot(xtravellines[i][-1], ytravellines[i][-1], 'r^')
     
-plt.grid()
+# plt.grid()
     
-plt.title('Sorting paths')
+# plt.title('Sorting paths')
 
-plt.show()
+# plt.show()
 
-fixedrowsize = max(len(a) for a in xtravellines)
-for i in range(len(xtravellines)):
-    comparelength = len(xtravellines[i])
-    if comparelength < fixedrowsize:
-        padding = fixedrowsize - comparelength
-        xtravellines[i] = np.concatenate((xtravellines[i], [xtravellines[i][-1]]*padding))
+# fixedrowsize = max(len(a) for a in xtravellines)
+# for i in range(len(xtravellines)):
+#     comparelength = len(xtravellines[i])
+#     if comparelength < fixedrowsize:
+#         padding = fixedrowsize - comparelength
+#         xtravellines[i] = np.concatenate((xtravellines[i], [xtravellines[i][-1]]*padding))
         
 
-fixedrowsize = max(len(a) for a in ytravellines)        
-for i in range(len(ytravellines)):
-    comparelength = len(ytravellines[i])
-    if comparelength < fixedrowsize:
-        padding = fixedrowsize - comparelength
-        ytravellines[i] = np.concatenate((ytravellines[i], [ytravellines[i][-1]]*padding))
+# fixedrowsize = max(len(a) for a in ytravellines)        
+# for i in range(len(ytravellines)):
+#     comparelength = len(ytravellines[i])
+#     if comparelength < fixedrowsize:
+#         padding = fixedrowsize - comparelength
+#         ytravellines[i] = np.concatenate((ytravellines[i], [ytravellines[i][-1]]*padding))
 
-#sanitize folder to make sure there isn't junk from previous sortings
-try:
-    os.remove("ch0paths.csv")
-except OSError:
-    pass
+# #sanitize folder to make sure there isn't junk from previous sortings
+# try:
+#     os.remove("ch0paths.csv")
+# except OSError:
+#     pass
 
-try:
-    os.remove("ch1paths.csv")
-except OSError:
-    pass
+# try:
+#     os.remove("ch1paths.csv")
+# except OSError:
+#     pass
         
-np.savetxt("ch0paths.csv", xtravellines, delimiter=",", fmt='%1.4f')
-np.savetxt("ch1paths.csv", ytravellines, delimiter=",", fmt='%1.4f')
+# np.savetxt("ch0paths.csv", xtravellines, delimiter=",", fmt='%1.4f')
+# np.savetxt("ch1paths.csv", ytravellines, delimiter=",", fmt='%1.4f')
 
 
 ###############################################################################
@@ -477,6 +478,7 @@ numspheres = [20,30,49,75,81,100]
 freqset = [22, 22, 21, 20, 20, 20]
 arraysize = [5,5,7,8,9,10]
 
+timing = [ [] for i in range(len(numspheres)) ]
 countertrials = [ [] for i in range(len(numspheres)) ]
 delaytrials = [ [] for i in range(len(numspheres)) ]
 delaycountertrials = [ [] for i in range(len(numspheres)) ]
@@ -489,6 +491,8 @@ for select in range(len(numspheres)):
     
     for t in range(1000):
         
+        start_time = time.time()
+
         counter = 0
         trieddelay = False
         delaycounter = 0
@@ -516,6 +520,8 @@ for select in range(len(numspheres)):
         countertrials[select].append(counter)
         delaytrials[select].append(trieddelay)
         delaycountertrials[select].append(delaycounter)
+        looptime = time.time() - start_time
+        timing[select].append(looptime)
         
     
     countertrialsavg.append(np.mean(countertrials[select]))
@@ -568,7 +574,7 @@ for i in range(len(countertrials)):
     axs[i][1].set_xlabel('Number of collisions')
     plt.show()
 
-savename = r'C:\Users\bensi\Desktop\simulationresults_2-8-25.h5'
+savename = r'C:\Users\Ben\Desktop\simresults\simulationresults_2-8-25.h5'
 hf = h5py.File(savename, 'w')
 for i in range(len(numspheres)):
     g1 = hf.create_group(str(numspheres[i]) + 'Spheres')
