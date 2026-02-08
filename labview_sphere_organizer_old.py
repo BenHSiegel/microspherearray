@@ -13,6 +13,7 @@ from scipy.spatial.distance import cdist
 import random
 import os
 import sys
+import h5py
 
 
 
@@ -471,93 +472,117 @@ np.savetxt("ch1paths.csv", ytravellines, delimiter=",", fmt='%1.4f')
 
 ###############################################################################
 #Testing code for efficiency of sorting and brute force finding errors
+numspheres = [20,30,49,75,81,100]
 
-# numspheres = [20,30,49,75,81,100]
+freqset = [22, 22, 21, 20, 20, 20]
+arraysize = [5,5,7,8,9,10]
 
-# freqset = [22, 22, 21, 20, 20, 20]
-# arraysize = [5,5,7,8,9,10]
+countertrials = [ [] for i in range(len(numspheres)) ]
+delaytrials = [ [] for i in range(len(numspheres)) ]
+delaycountertrials = [ [] for i in range(len(numspheres)) ]
+countertrialsavg = []
+delaycountertrialsavg = []
 
-# countertrials = [ [] for i in range(len(numspheres)) ]
-# delaytrials = [ [] for i in range(len(numspheres)) ]
-# delaycountertrials = [ [] for i in range(len(numspheres)) ]
-# countertrialsavg = []
-# delaycountertrialsavg = []
-
-# for select in range(len(numspheres)):
+for select in range(len(numspheres)):
     
-#     print('Doing ' + str(numspheres[select]) + ' spheres')
+    print('Doing ' + str(numspheres[select]) + ' spheres')
     
-#     for t in range(1000):
+    for t in range(1000):
         
-#         counter = 0
-#         trieddelay = False
-#         delaycounter = 0
+        counter = 0
+        trieddelay = False
+        delaycounter = 0
         
-#         startpoints = makearray(17,17,1,256,16)
-#         random.shuffle(startpoints[:,0])
-#         random.shuffle(startpoints[:,1])
-#         startpoints = pd.DataFrame(startpoints)
-#         startpoints = startpoints.drop_duplicates()
-#         startpoints = startpoints.to_numpy()
-#         startpoints = startpoints[:numspheres[select],:]
+        startpoints = makearray(17,17,1,256,16)
+        random.shuffle(startpoints[:,0])
+        random.shuffle(startpoints[:,1])
+        startpoints = pd.DataFrame(startpoints)
+        startpoints = startpoints.drop_duplicates()
+        startpoints = startpoints.to_numpy()
+        startpoints = startpoints[:numspheres[select],:]
         
-#         endpoints = makearray(freqset[select], freqset[select], 1, numspheres[select], arraysize[select])
-#         endpoints = endpoints[:len(startpoints),:]
+        endpoints = makearray(freqset[select], freqset[select], 1, numspheres[select], arraysize[select])
+        endpoints = endpoints[:len(startpoints),:]
         
-#         xtravellines, ytravellines, row_ind, col_ind = optimalassignment(startpoints, endpoints)
+        xtravellines, ytravellines, row_ind, col_ind = optimalassignment(startpoints, endpoints)
         
-#         xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_ind, np.arange(0,(len(startpoints))))
+        xtravellines, ytravellines = pathfinder(xtravellines, ytravellines, startpoints, endpoints, row_ind, col_ind, np.arange(0,(len(startpoints))))
         
-#         alarm, row_ind, col_ind, counter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
+        alarm, row_ind, col_ind, counter, redrawlist = proximitycheck(xtravellines, ytravellines, row_ind, col_ind,True)
         
-#         if alarm == True:
-#             xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, delaycounter, redrawlist = doublecheck(alarm, xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints, redrawlist)
+        if alarm == True:
+            xtravellines, ytravellines, row_ind, col_ind, counter, trieddelay, delaycounter, redrawlist = doublecheck(alarm, xtravellines, ytravellines, row_ind, col_ind, startpoints, endpoints, redrawlist)
     
-#         countertrials[select].append(counter)
-#         delaytrials[select].append(trieddelay)
-#         delaycountertrials[select].append(delaycounter)
+        countertrials[select].append(counter)
+        delaytrials[select].append(trieddelay)
+        delaycountertrials[select].append(delaycounter)
         
     
-#     countertrialsavg.append(np.mean(countertrials[select]))
-#     delaycountertrialsavg.append(np.mean(delaycountertrials[select]))
+    countertrialsavg.append(np.mean(countertrials[select]))
+    delaycountertrialsavg.append(np.mean(delaycountertrials[select]))
     
-# delaysums = []
-# for i in delaytrials:
-#     delaysums.append(sum(i))
+delaysums = []
+for i in delaytrials:
+    delaysums.append(sum(i))
+
+fig1, ax1 = plt.subplots()
+ax1.plot([str(j) for j in numspheres], countertrialsavg, '.')
+ax1.plot([str(j) for j in numspheres], delaycountertrialsavg, '.')
+ax1.grid(axis='y')
+ax1.set_xlabel('Spheres to Rearrange')
+ax1.set_ylabel('Average Number of Collisions')
+ax1.legend(['Swapping', 'Swapping + Delay'])
+ax1.set_title('Collision per number of spheres for 1000 simulations')
 
 
-# fig1, ax1 = plt.subplots()
-# ax1.plot([str(j) for j in numspheres], countertrialsavg, '.')
-# ax1.plot([str(j) for j in numspheres], delaycountertrialsavg, '.')
-# ax1.grid(axis='y')
-# ax1.set_xlabel('Spheres to Rearrange')
-# ax1.set_ylabel('Average Number of Collisions')
-# ax1.legend(['Swapping', 'Swapping + Delay'])
-# ax1.set_title('Collision per number of spheres for 1000 simulations')
+fig3, ax3 = plt.subplots()
+ax3.plot([str(j) for j in numspheres], delaysums, '.')
+ax3.set_xlabel('Spheres to Rearrange')
+ax3.set_ylabel('Number of times delayed')
+ax3.set_title('Attempts to delay path per number of spheres for 1000 simulations')
 
+timeavgs = [np.mean(tt) for tt in timing]
+timestd = [np.std(tt) for tt in timing]
+fig4, ax4 = plt.subplots()
+ax4.errorbar(numspheres, timeavgs, yerr=timestd,fmt='o')
+ax4.set_xlabel('Spheres to Rearrange')
+ax4.set_ylabel('Time to calculate paths (s)')
+ax4.set_title('Average calculation time for 1000 simulations')
 
-# fig3, ax3 = plt.subplots()
-# ax3.plot([str(j) for j in numspheres], delaysums, '.')
-# ax3.set_xlabel('Spheres to Rearrange')
-# ax3.set_ylabel('Number of times delayed')
-# ax3.set_title('Attempts to delay path per number of spheres for 1000 simulations')
-
-# figs={}
-# axs={}
-# for i in range(len(countertrials)):
+figs={}
+axs={}
+for i in range(len(countertrials)):
     
-#     figs[i], axs[i] = plt.subplots(1, 2, sharey=True, tight_layout=True) 
+    figs[i], axs[i] = plt.subplots(1, 2, sharey=True, tight_layout=True) 
 
-#     binning = max(countertrials[i])
-#     axs[i][0].hist(countertrials[i], binning)
-#     figs[i].suptitle("Histogram of number of expected collisions for rearranging " + str(numspheres[i]) + ' spheres')
-#     axs[i][0].set_xlabel('Number of collisions')
-#     axs[i][0].set_ylabel('Frequency in 1000 simulation trials')
-#     axs[i][0].set_title('Swapping method')
+    binning = max(countertrials[i])
+    axs[i][0].hist(countertrials[i], binning)
+    figs[i].suptitle("Histogram of number of expected collisions for rearranging " + str(numspheres[i]) + ' spheres')
+    axs[i][0].set_xlabel('Number of collisions')
+    axs[i][0].set_ylabel('Frequency in 1000 simulation trials')
+    axs[i][0].set_title('Swapping method')
     
-#     binning = max(delaycountertrials[i])
-#     axs[i][1].hist(delaycountertrials[i], binning)
-#     axs[i][1].set_title('Swap and delay method')
-#     axs[i][1].set_xlabel('Number of collisions')
-#     plt.show()
+    binning = max(delaycountertrials[i])
+    axs[i][1].hist(delaycountertrials[i], binning)
+    axs[i][1].set_title('Swap and delay method')
+    axs[i][1].set_xlabel('Number of collisions')
+    plt.show()
 
+savename = r'C:\Users\bensi\Desktop\simulationresults_2-8-25.h5'
+hf = h5py.File(savename, 'w')
+for i in range(len(numspheres)):
+    g1 = hf.create_group(str(numspheres[i]) + 'Spheres')
+    g1.attrs.create('Number of simulations', 1000)
+    
+    d1 = g1.create_dataset('Timing', data = timing[i])
+    d2 = g1.create_dataset('Initial Collisions', data = countertrials[i])
+    d3 = g1.create_dataset('Final Collisions', data = delaycountertrials[i])
+    d4 = g1.create_dataset('Tried delay?', data = delaytrials[i])
+    
+    d1.attrs.create('Time STD', timestd[i])
+    d1.attrs.create('Average Time', timeavgs[i])
+    d2.attrs.create('Average # of intial collisions', countertrialsavg[i])
+    d3.attrs.create('Average # of collisions after delay', delaycountertrialsavg[i])
+    d4.attrs.create('Tried to use delay', delaysums[i])
+    
+hf.close()

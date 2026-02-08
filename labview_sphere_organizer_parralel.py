@@ -507,7 +507,7 @@ Run this section to generate a file to load into labview with the sorting paths
 ###############################################################################
 #Testing code for efficiency of sorting and brute force finding errors
 
-path = r"C:\Users\yalem\Documents\Optlev\LabView Code\ARRAY\Organizer startpoints and path csv"
+path = r"C:\Users\bensi\Desktop"
 os.chdir(path)
 
 numspheres = [20,30,49,75,81,100]
