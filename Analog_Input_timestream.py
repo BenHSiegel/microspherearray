@@ -19,8 +19,27 @@ from scipy.signal.windows import blackman
 from scipy.signal import find_peaks
 from matplotlib.pyplot import gca
 import h5py
-from mpl_toolkits.axes_grid1.inset_locator import (inset_axes, InsetPosition,
-                                                  mark_inset)
+#from mpl_toolkits.axes_grid1.inset_locator import (inset_axes, InsetPosition,mark_inset)
+import pyfonts
+
+#Set global plotting parameters
+mpl.rcParams['agg.path.chunksize'] = 10000
+mpl.rcParams['figure.dpi'] = 600
+
+# font = pyfonts.load_google_font("Average Sans")
+# plt.rcParams["font.family"] = "sans-serif"
+# plt.rcParams["font.sans-serif"] = ['Verdana']#, "DejaVu Sans", "Liberation Sans", "Verdana", "Arial", "Helvetica", "sans-serif"]
+# SIZE_DEFAULT = 8
+# plt.rcParams["font.size"] = SIZE_DEFAULT
+# plt.rcParams["axes.titlesize"] = 16
+# plt.rcParams["axes.labelsize"] = 14
+# plt.rcParams["xtick.labelsize"] = SIZE_DEFAULT
+# plt.rcParams["ytick.labelsize"] = SIZE_DEFAULT
+
+
+wong_colors = ['#E69F00', '#56B4E9', '#009E73', '#F0E442', '#0072B2', '#D55E00', '#CC79A7', '#000000']
+
+
 
 filenamelist = [r"F:\Lab data\20240919\QPD\4beams3trapped_AIstream_0.h5", r"F:\Lab data\20240919\QPD\4beams3trapped_AIstream_1.h5", r"F:\Lab data\20240919\QPD\4beams3trapped_AIstream_2.h5", r"F:\Lab data\20240919\QPD\4beams3trapped_AIstream_3.h5", r"F:\Lab data\20240919\QPD\4beams3trapped_AIstream_4.h5"]
 counter=0
@@ -68,8 +87,8 @@ for filename in filenamelist:
 
 
 Time = (np.arange(len(df.Time))) * sampleT *1e3 #converted to ms)
-fig1, ax = plt.subplots(1,3)
-fig1.set_size_inches(7,3)
+fig1, ax = plt.subplots(1,3,sharey=True, tight_layout=True)
+fig1.set_size_inches(6,3)
 fig1.tight_layout()
 ax[0].tick_params(axis='both', which='major', labelsize=14)
 ax[2].tick_params(axis='both', which='major', labelsize=14)

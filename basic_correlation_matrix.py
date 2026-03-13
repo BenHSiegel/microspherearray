@@ -16,12 +16,14 @@ files = [r'F:\Lab data\20240604\0-8MHz\0.8correlationmatrix.h5', r'F:\Lab data\2
 separations = ['56', '70', '88', '105']
 mpl.rcParams.update({'font.size': 18})
 
-fig, ax = plt.subplots(1, len(files))
-cax = fig.add_axes(rect=(0.2,0.2,0.6,0.03))
+fig, ax = plt.subplots(2, int(len(files)/2))
+#cax = fig.add_axes(rect=(0.2,0.2,0.6,0.03))
 #fig.suptitle('Correlation of Motion of a 5x5 Array of Spheres')
 for i in range(len(files)):
     hf = h5py.File(files[i], 'r')
 
+    plotidx = i % 2
+    plotidy = i // 2
     totalspheres = 25
     xcor = hf.get('X_correlations')
     ycor = hf.get('Y_correlations')
@@ -41,16 +43,16 @@ for i in range(len(files)):
 
     spherenames = [str(x+1) for x in range(totalspheres)]
     #norm = LogNorm()
-    if i == len(files) - 1:
-        plot_cbar = True
-        cbar_kws = {'shrink' : 0.8,
-                    'orientation': 'horizontal'}
-        cbar_ax = cax
+    #if i == len(files) - 1:
+        #plot_cbar = True
+        #cbar_kws = {'shrink' : 0.8,
+        #            'orientation': 'horizontal'}
+        #cbar_ax = cax
         
-    else:
-        plot_cbar = False
-        cbar_kws = None
-        cbar_ax = None
+    #else:
+    plot_cbar = False
+    cbar_kws = None
+    cbar_ax = None
     
     symcor = xcor
     for a in range(xcor.shape[0]):
@@ -59,14 +61,14 @@ for i in range(len(files)):
                 symcor[a][b] = ycor[a][b]
     mask = np.triu(np.ones_like(xcor, dtype=bool))
     diagmask = np.identity(xcor.shape[0])
-    sn.heatmap(symcor, mask=diagmask, square=True, cmap = 'viridis', vmin=-0.25, vmax=0.25, ax=ax[i], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
-    ax[i].tick_params(axis='both', which='major', labelsize=18)
+    sn.heatmap(symcor, mask=diagmask, square=True, cmap = 'viridis', vmin=-0.25, vmax=0.25, ax=ax[plotidy, plotidx], cbar=plot_cbar, cbar_ax = cbar_ax, cbar_kws=cbar_kws)
+    ax[plotidy, plotidx].tick_params(axis='both', which='major', labelsize=18)
     #ax[i].set_xticks(np.arange(xcor.shape[1])+.5, labels=spherenames,fontsize=16)
     #ax[i].set_yticks(np.arange(xcor.shape[0])+.5, labels=spherenames,fontsize=16)
-    plt.setp(ax[i].get_xticklabels(), rotation=0)
-    ax[i].set_title(separations[i] + r'$\mu$m Spacing', fontsize=26, pad=15)
-    ax[i].set_xlabel('Sphere Index', fontsize=22, labelpad=5)
-    ax[i].set_ylabel('Sphere Index',fontsize=22,labelpad=5)
+    plt.setp(ax[plotidy, plotidx].get_xticklabels(), rotation=0)
+    ax[plotidy, plotidx].set_title(separations[i] + r'$\mu$m Spacing', fontsize=26, pad=15)
+    ax[plotidy, plotidx].set_xlabel('Sphere Index', fontsize=22, labelpad=5)
+    ax[plotidy, plotidx].set_ylabel('Sphere Index',fontsize=22,labelpad=5)
 fig.tight_layout()
-cax.set_title('Correlation Coefficients',fontsize=26)
+#cax.set_title('Correlation Coefficients',fontsize=26)
 plt.show()
