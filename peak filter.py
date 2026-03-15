@@ -73,8 +73,8 @@ def lorentzian(f, f0, gamma):
 
 # Parameters for the Lorentzian
 f0_lorentzian = 100.0  # Resonance frequency in Hz
-gamma_values = [0.001, 0.01, 0.1, 1.0]  # Linewidth values
-frequencies_lorentzian = np.linspace(60, 140, 3000)  # Frequency range for plotting
+gamma_values = [0.1, 1.0, 10]  # Linewidth values
+frequencies_lorentzian = np.linspace(1, 1000, 5000)  # Frequency range for plotting
 
 plt.figure()
 
@@ -84,10 +84,11 @@ for gamma_lorentzian in gamma_values:
     amplitude_lorentzian_lin = (amplitude_lorentzian / np.max(amplitude_lorentzian))
     amplitude_lorentzian_db = 10 * np.log10(amplitude_lorentzian / np.max(amplitude_lorentzian))  # Convert to dB and normalize
     plt.semilogy(frequencies_lorentzian, amplitude_lorentzian_lin, label=f'$\Gamma_0$ = {gamma_lorentzian} Hz')
-plt.xlim(85, 115)
+plt.xlim(1, 300)
+plt.ylim(1e-4, 2)
 plt.xlabel('Frequency (Hz)', fontsize=14)
 plt.ylabel('Normalized Amplitude', fontsize=14)
-plt.title('Simulated Particle Response for 100 Hz Resonance', fontsize=18)
+plt.title('Sphere Response for Different Damping Values', fontsize=18)
 plt.legend(fontsize=12)
 plt.grid()
 plt.show()
