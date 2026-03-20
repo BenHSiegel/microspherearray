@@ -115,6 +115,72 @@ def erf_model_flipped(x, x0, p_max, w, offset):
     return offset + (1/2) * p_max * (1 - special.erf(np.sqrt(2) * (x - x0) / w))
 
 
+def fit_erf_anchored(x, y, n_flat=3, flipped=None):
+    """
+    Fit a knife-edge ERF with amplitude and offset anchored to the endpoint averages.
+
+    When only part of the ERF is captured (e.g. the bottom flat is not reached),
+    a 4-parameter free fit struggles because p_max and offset are unconstrained.
+    This function anchors the top and bottom asymptotes to the mean of the first/last
+    n_flat sorted data points, then does a fast 2-parameter fit for (x0, w) only.
+
+    Parameters
+    ----------
+    x, y    : knife-edge position and power arrays (any order)
+    n_flat  : number of endpoint samples to average for asymptote anchoring (default 3)
+    flipped : True = descending ERF (knife cuts in), False = ascending, None = auto
+
+    Returns
+    -------
+    x0_fit, w_fit, y_top, y_bottom, r2, model_fn
+        model_fn(x_array) -> y_array using the fitted parameters
+    """
+    sort_idx = np.argsort(x)
+    xs, ys = x[sort_idx], y[sort_idx]
+
+    n_flat = min(n_flat, len(xs) // 2)
+    y_start = np.mean(ys[:n_flat])   # average of the first n_flat points
+    y_end   = np.mean(ys[-n_flat:])  # average of the last n_flat points
+
+    if flipped is None:
+        flipped = y_start > y_end
+
+    if flipped:
+        y_top, y_bottom = y_start, y_end
+    else:
+        y_top, y_bottom = y_end, y_start
+
+    p_max  = y_top - y_bottom
+    offset = y_bottom
+
+    def model_2p(x_, x0, w):
+        z = np.sqrt(2) * (x_ - x0) / w
+        return offset + 0.5 * p_max * (1 - special.erf(z) if flipped else 1 + special.erf(z))
+
+    # Initial guess for x0 (midpoint crossing) and w (16%–84% transition half-width)
+    interp_ys = ys[::-1] if flipped else ys
+    interp_xs = xs[::-1] if flipped else xs
+
+    y_mid = (y_top + y_bottom) / 2.0
+    y_16  = y_bottom + 0.16 * p_max
+    y_84  = y_bottom + 0.84 * p_max
+
+    x0_guess = float(np.interp(y_mid, interp_ys, interp_xs))
+    x_16     = float(np.interp(y_16,  interp_ys, interp_xs))
+    x_84     = float(np.interp(y_84,  interp_ys, interp_xs))
+    w_guess  = abs(x_84 - x_16) / 2.0
+
+    try:
+        popt, _ = curve_fit(model_2p, x, y, p0=[x0_guess, max(w_guess, 1.0)],
+                            bounds=([-np.inf, 1e-9], [np.inf, np.inf]))
+        x0_fit, w_fit = popt
+    except RuntimeError:
+        x0_fit, w_fit = x0_guess, w_guess
+
+    r2 = r2_score(y, model_2p(x, x0_fit, w_fit))
+    return x0_fit, w_fit, y_top, y_bottom, r2, lambda x_: model_2p(x_, x0_fit, w_fit)
+
+
 def fit_knife_edge(file_names, data_frames, p0=None, power_scale=1e3, plot=True):
     """
     Fit knife-edge data with error function to extract beam waist at each z position.
