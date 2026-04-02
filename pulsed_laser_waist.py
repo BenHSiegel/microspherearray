@@ -90,6 +90,97 @@ def read_pulsed_csv(folder, min_peak_distance=50, min_peak_prominence=None, plot
     return yy_positions, avg_power, dict(groups)
 
 
+def read_knife_edge_by_z(folder, min_peak_distance=50, min_peak_prominence=None, plot=False):
+    """
+    Read all diode70_A_b_c_d.csv files (only directly in folder, no subdirs),
+    group by z position A, and compute the average peak power at each knife-edge
+    x position c for each z.
+
+    File naming convention:
+        diode70_A_b_c_d.csv
+        A : z position along optical path (mm, integer)
+        b : step size between x positions in units of 0.001 inch
+        c : knife-edge x position index
+        d : repeat index at this (A, c) position
+
+    Physical x spacing: x_um = c * b * 25.4  (since 1 inch = 25400 µm)
+
+    Parameters
+    ----------
+    folder              : path to folder (subdirectories are ignored)
+    min_peak_distance   : minimum sample separation between peaks
+    min_peak_prominence : minimum peak prominence; None uses 5% of signal range
+    plot                : if True, plot raw data + peaks for every file
+
+    Returns
+    -------
+    z_data : dict  {A_mm: {'b': b, 'x_um': ndarray, 'avg_power': ndarray}}
+        Sorted by A. x_um and avg_power are sorted by x position.
+    """
+    pattern = re.compile(r'^diode\d+_(\d+)_(\d+)_(\d+)_(\d+)\.csv$')
+
+    # groups[(A, b, c)] -> list of per-file peak averages
+    groups = defaultdict(list)
+
+    for filename in sorted(os.listdir(folder)):
+        filepath = os.path.join(folder, filename)
+        if not os.path.isfile(filepath):
+            continue  # skip subdirectories
+        m = pattern.match(filename)
+        if not m:
+            continue
+
+        A, b, c, d = int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4))
+
+        with open(filepath, 'r') as f:
+            raw = f.read().split(',')
+        data = np.array([float(v) for v in raw if v.strip()])
+
+        prominence = min_peak_prominence
+        if prominence is None:
+            data_range = data.max() - data.min()
+            prominence = 0.05 * data_range if data_range > 0 else 1e-6
+
+        peaks, _ = find_peaks(data, distance=min_peak_distance, prominence=prominence)
+
+        if len(peaks) == 0:
+            print(f'  WARNING: no peaks found in {filename}, skipping.')
+            continue
+
+        file_avg = data[peaks].mean()
+        groups[(A, b, c)].append(file_avg)
+
+        if plot:
+            fig, ax = plt.subplots(figsize=(10, 3))
+            ax.plot(data, lw=0.5, label='Data')
+            ax.plot(peaks, data[peaks], 'x', color='red', label='Peaks')
+            ax.set_title(filename)
+            ax.set_xlabel('Sample index')
+            ax.set_ylabel('Power')
+            ax.legend()
+            plt.tight_layout()
+            plt.show()
+
+    # Build per-z dict: average over repeats d, convert c -> x_um
+    z_groups = defaultdict(lambda: {'b': None, 'c_avgs': {}})
+    for (A, b, c), avgs in groups.items():
+        z_groups[A]['b'] = b
+        z_groups[A]['c_avgs'][c] = np.mean(avgs)
+
+    z_data = {}
+    for A in sorted(z_groups.keys()):
+        b = z_groups[A]['b']
+        c_avgs = z_groups[A]['c_avgs']
+        c_sorted = sorted(c_avgs.keys())
+        x_um = np.array([c * b * 25.4 for c in c_sorted])
+        avg_power = np.array([c_avgs[c] for c in c_sorted])
+        z_data[A] = {'b': b, 'x_um': x_um, 'avg_power': avg_power}
+
+        print(f'z = {A} mm  (step = {b}×0.001" = {b*25.4:.1f} µm)  |  {len(c_sorted)} x positions')
+
+    return z_data
+
+
 def load_data(path, delimiter='\t', header=32, time_col=0, power_col=1):
     """Load all .txt knife-edge data files from a directory."""
     os.chdir(path)
